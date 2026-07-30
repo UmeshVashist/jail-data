@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ success: false, message: 'View users cannot send delete requests.' });
     }
 
-    const { recordId } = req.body;
+    const { recordId, reason } = req.body;
     const targetRecordId = parseInt(recordId, 10);
 
     const records = await getRecords();
@@ -71,7 +71,8 @@ router.post('/', async (req, res) => {
       aadharNo: targetRecord.aadharNo,
       requestedBy: req.user.username,
       requestedDate: reqDate,
-      requestedTime: reqTime
+      requestedTime: reqTime,
+      reason: (reason || '').toString().trim()
     });
 
     res.json({ success: true, message: `Delete request sent successfully for PID ${targetRecord.pid}!` });
@@ -80,7 +81,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/delete-requests/pending - List all pending delete requests (Admin / Delete Request Access)
+// GET /api/delete-requests/pending - List all pending delete requests
 router.get('/pending', requireDeleteRequestPermission, async (req, res) => {
   try {
     const allRequests = await getDeleteRequests();
@@ -89,6 +90,16 @@ router.get('/pending', requireDeleteRequestPermission, async (req, res) => {
     res.json({ success: true, data: pendingRequests });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Fetch pending requests error: ' + err.message });
+  }
+});
+
+// GET /api/delete-requests/all - List ALL delete requests (Pending, Approved, Rejected)
+router.get('/all', requireDeleteRequestPermission, async (req, res) => {
+  try {
+    const allRequests = await getDeleteRequests();
+    res.json({ success: true, data: allRequests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch all requests error: ' + err.message });
   }
 });
 

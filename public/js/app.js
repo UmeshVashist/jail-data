@@ -31,8 +31,10 @@ let selectedImportFile = null;
 let searchDebounceTimer = null;
 let currentRemarkOptions = [];
 let remarkOptionModalInstance = null;
+let sendDeleteRequestModalInstance = null;
 let rawPendingDeleteRequests = [];
 let rawMyDeleteRequests = [];
+let rawUsersList = [];
 
 document.addEventListener('DOMContentLoaded', function () {
   recordModalInstance = new bootstrap.Modal(document.getElementById('recordModal'));
@@ -42,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
   resetPasswordModalInstance = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
   importDetailsModalInstance = new bootstrap.Modal(document.getElementById('importDetailsModal'));
   remarkOptionModalInstance = new bootstrap.Modal(document.getElementById('remarkOptionModal'));
+  sendDeleteRequestModalInstance = new bootstrap.Modal(document.getElementById('sendDeleteRequestModal'));
 
   checkSessionOnLoad();
   setupDropzone();
@@ -401,7 +404,7 @@ function renderRecordsTable(records) {
       if (rec.hasPendingDeleteRequest) {
         actionButtons += `<span class="badge bg-warning text-dark me-1" title="Delete Request Pending"><i class="bi bi-clock-history me-1"></i>Requested</span>`;
       } else {
-        actionButtons += `<button class="btn btn-sm btn-outline-warning" title="Send Delete Request" onclick="sendDeleteRequest(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-send me-1"></i>Request Delete</button>`;
+        actionButtons += `<button class="btn btn-sm btn-outline-warning" title="Send Delete Request" onclick="openSendDeleteRequestModal(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-send me-1"></i>Request Delete</button>`;
       }
     }
 
@@ -707,36 +710,9 @@ function resetImportSelection() {
   document.getElementById('import-summary-card').classList.add('d-none');
 }
 
-async function downloadSampleTemplate() {
-  await loadRemarkOptions();
-  const options = currentRemarkOptions.length > 0 ? currentRemarkOptions : ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other'];
-
-  const sampleData = [
-    {
-      "PID": "1001",
-      "Name": "Sample User",
-      "Father": "Father Name",
-      "UT No": "UT-5001",
-      "Aadhar No": "123456789012",
-      "Date": new Date().toISOString().split('T')[0],
-      "Remark": options[0] || "Completed"
-    }
-  ];
-
-  const worksheet = XLSX.utils.json_to_sheet(sampleData, {
-    header: ["PID", "Name", "Father", "UT No", "Aadhar No", "Date", "Remark"]
-  });
-
-  // Create a second sheet 'Remark_Options' listing all dynamic dropdown options
-  const optionsRows = options.map(opt => ({ "Remark Options": opt }));
-  const optionsWorksheet = XLSX.utils.json_to_sheet(optionsRows);
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Template");
-  XLSX.utils.book_append_sheet(workbook, optionsWorksheet, "Remark_Options");
-
-  XLSX.writeFile(workbook, "Data_Import_Template.xlsx");
-  showToast('success', 'Template Downloaded', 'Sample Excel template downloaded with dropdown Remark Options tab.');
+function downloadSampleTemplate() {
+  window.location.href = '/api/import/sample-template';
+  showToast('success', 'Template Downloaded', 'Downloading sample Excel template with native Remark dropdown list.');
 }
 
 function processSelectedImportFile() {
@@ -955,7 +931,8 @@ async function loadUsersList() {
     hideLoader();
 
     if (data.success) {
-      renderUsersTable(data.data);
+      rawUsersList = data.data || [];
+      filterUsersTable();
     } else {
       showToast('danger', 'Users Error', data.message);
     }
@@ -963,6 +940,28 @@ async function loadUsersList() {
     hideLoader();
     showToast('danger', 'Error', err.message);
   }
+}
+
+function filterUsersTable() {
+  const searchInput = document.getElementById('search-users-input');
+  const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+  const statusSelect = document.getElementById('filter-users-status');
+  const targetStatus = statusSelect ? statusSelect.value : 'All';
+
+  let filtered = [...rawUsersList];
+
+  if (targetStatus !== 'All') {
+    filtered = filtered.filter(u => (u.status || 'Active').toLowerCase() === targetStatus.toLowerCase());
+  }
+
+  if (q) {
+    filtered = filtered.filter(u => 
+      (u.username || '').toLowerCase().includes(q)
+    );
+  }
+
+  renderUsersTable(filtered);
 }
 
 function renderUsersTable(usersList) {
@@ -1174,51 +1173,54 @@ async function fetchPendingDeleteRequestsCount() {
   } catch (err) {}
 }
 
-async function sendDeleteRequest(recordId, pid) {
-  document.getElementById('confirmModalTitle').innerText = 'Request Data Deletion?';
-  document.getElementById('confirmModalMessage').innerText = `Send a delete request to Admin for record PID "${pid}"?`;
-  const executeBtn = document.getElementById('confirmModalExecuteBtn');
-  executeBtn.innerText = 'Yes, Send Request';
-  executeBtn.className = 'btn btn-warning btn-sm px-3';
+function openSendDeleteRequestModal(recordId, pid) {
+  const rec = currentRecordsData.find(r => r.id === parseInt(recordId, 10) || r.pid === String(pid));
+  document.getElementById('send-delete-record-id').value = recordId;
+  document.getElementById('send-delete-pid').innerText = pid;
+  document.getElementById('send-delete-name').innerText = rec ? rec.name : '-';
+  document.getElementById('send-delete-ut').innerText = rec ? (rec.utNo || '-') : '-';
+  document.getElementById('send-delete-aadhar').innerText = rec ? (rec.aadharNo || '#N/A') : '#N/A';
+  document.getElementById('send-delete-reason').value = '';
+  sendDeleteRequestModalInstance.show();
+}
 
-  executeBtn.onclick = async function () {
-    confirmModalInstance.hide();
-    showLoader('Sending delete request...');
-    try {
-      const res = await fetch('/api/delete-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recordId })
-      });
-      const data = await res.json();
-      hideLoader();
+async function handleSendDeleteRequestSubmit(event) {
+  event.preventDefault();
+  const recordId = document.getElementById('send-delete-record-id').value;
+  const reason = document.getElementById('send-delete-reason').value.trim();
 
-      if (data.success) {
-        showToast('success', 'Request Sent', data.message);
-        triggerFetchRecords();
-      } else {
-        showToast('danger', 'Error', data.message);
-      }
-    } catch (err) {
-      hideLoader();
-      showToast('danger', 'Error', err.message);
+  sendDeleteRequestModalInstance.hide();
+  showLoader('Sending delete request...');
+  try {
+    const res = await fetch('/api/delete-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId, reason })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Request Sent', data.message);
+      triggerFetchRecords();
+    } else {
+      showToast('danger', 'Error', data.message);
     }
-  };
-
-  confirmModalInstance.show();
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
 }
 
 async function loadDeleteRequestsList() {
   showLoader('Loading delete requests...');
   try {
-    const res = await fetch('/api/delete-requests/pending');
+    const res = await fetch('/api/delete-requests/all');
     const data = await res.json();
     hideLoader();
 
     if (data.success) {
       rawPendingDeleteRequests = data.data || [];
-      const searchInput = document.getElementById('search-delete-requests-input');
-      if (searchInput) searchInput.value = '';
       filterDeleteRequestsTable();
       fetchPendingDeleteRequestsCount();
     } else {
@@ -1231,16 +1233,23 @@ async function loadDeleteRequestsList() {
 }
 
 function filterDeleteRequestsTable() {
-  const inputEl = document.getElementById('search-delete-requests-input');
-  const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
-  if (!q) {
-    renderDeleteRequestsTable(rawPendingDeleteRequests);
-    return;
+  const searchInput = document.getElementById('search-delete-requests-input');
+  const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+  const statusSelect = document.getElementById('filter-delete-requests-status');
+  const targetStatus = statusSelect ? statusSelect.value : 'Pending';
+
+  let filtered = [...rawPendingDeleteRequests];
+
+  if (targetStatus !== 'All') {
+    filtered = filtered.filter(r => (r.status || 'Pending').toLowerCase() === targetStatus.toLowerCase());
   }
 
-  const filtered = rawPendingDeleteRequests.filter(r => 
-    (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
-  );
+  if (q) {
+    filtered = filtered.filter(r => 
+      (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+    );
+  }
 
   renderDeleteRequestsTable(filtered);
 }
@@ -1248,12 +1257,28 @@ function filterDeleteRequestsTable() {
 function renderDeleteRequestsTable(requests) {
   const tbody = document.getElementById('delete-requests-table-body');
   if (!requests || requests.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle fs-3 d-block mb-2 text-success opacity-50"></i>No pending delete requests.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>No delete requests match the criteria.</td></tr>';
     return;
   }
 
   let html = '';
   requests.forEach(req => {
+    const statusBadge = req.status === 'Approved' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>' : req.status === 'Rejected' ? '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Rejected</span>' : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>';
+
+    let actionCol = '';
+    if (req.status === 'Pending') {
+      actionCol = `
+        <button class="btn btn-sm btn-danger me-1" title="Approve and Delete Data" onclick="approveDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+          <i class="bi bi-check-circle me-1"></i>Delete Data
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+          <i class="bi bi-x-circle me-1"></i>Reject
+        </button>
+      `;
+    } else {
+      actionCol = `<span class="small text-muted"><i class="bi bi-person-check me-1"></i>${escapeHtml(req.status)} by <strong>${escapeHtml(req.actionBy || 'Admin')}</strong></span>`;
+    }
+
     html += `
       <tr>
         <td class="fw-bold text-primary">${escapeHtml(req.pid)}</td>
@@ -1261,16 +1286,10 @@ function renderDeleteRequestsTable(requests) {
         <td>${escapeHtml(req.father || '-')}</td>
         <td>${escapeHtml(req.utNo || '-')}</td>
         <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
+        <td><span class="small text-dark fw-semibold text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(req.reason)}">${escapeHtml(req.reason || '-')}</span></td>
         <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
-        <td><span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span></td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-danger me-1" title="Approve and Delete Data" onclick="approveDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
-            <i class="bi bi-check-circle me-1"></i>Delete Data
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" title="Cancel Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
-            <i class="bi bi-x-circle me-1"></i>Cancel Request
-          </button>
-        </td>
+        <td>${statusBadge}</td>
+        <td class="text-end">${actionCol}</td>
       </tr>
     `;
   });
@@ -1377,7 +1396,7 @@ function filterMyRequestsTable() {
 function renderMyRequestsTable(requests) {
   const tbody = document.getElementById('my-requests-table-body');
   if (!requests || requests.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any delete requests.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any delete requests.</td></tr>';
     return;
   }
 
@@ -1396,6 +1415,7 @@ function renderMyRequestsTable(requests) {
         <td class="fw-semibold">${escapeHtml(req.name)}</td>
         <td>${escapeHtml(req.father || '-')}</td>
         <td>${escapeHtml(req.utNo || '-')}</td>
+        <td><span class="small text-dark fw-semibold text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(req.reason)}">${escapeHtml(req.reason || '-')}</span></td>
         <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
         <td><span class="badge ${statusBadge}">${escapeHtml(req.status)}</span></td>
         <td>${escapeHtml(req.actionBy || '-')}</td>

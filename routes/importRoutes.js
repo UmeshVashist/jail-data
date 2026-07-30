@@ -4,8 +4,64 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, batchAddRecords } = require('../config/googleSheets');
+const ExcelJS = require('exceljs');
+const { getRecords, batchAddRecords, getRemarkOptions } = require('../config/googleSheets');
 const { requireAuth, requireImportPermission } = require('../middleware/auth');
+
+// GET /api/import/sample-template - Native Excel file download with Inline Data Validation Dropdowns
+router.get('/sample-template', requireAuth, async (req, res) => {
+  try {
+    const remarkOptions = await getRemarkOptions();
+    const options = remarkOptions.length > 0 ? remarkOptions : ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other'];
+
+    const workbook = new ExcelJS.Workbook();
+
+    // Data_Template Sheet
+    const sheet1 = workbook.addWorksheet('Data_Template');
+    sheet1.columns = [
+      { header: 'PID', key: 'pid', width: 14 },
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Father', key: 'father', width: 25 },
+      { header: 'UT No', key: 'utNo', width: 18 },
+      { header: 'Aadhar No', key: 'aadharNo', width: 20 },
+      { header: 'Date', key: 'date', width: 16 },
+      { header: 'Remark', key: 'remark', width: 32 }
+    ];
+
+    // Style Header Row for ONLY Columns A to G (1 to 7)
+    for (let col = 1; col <= 7; col++) {
+      const cell = sheet1.getCell(1, col);
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E78' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    }
+
+    // Inline list formula so no extra sheet is needed
+    const listFormula = `"${options.map(o => o.replace(/"/g, '""')).join(',')}"`;
+
+    // Add 35 blank data rows with inline Excel Data Validation on Column G (Remark)
+    for (let r = 2; r <= 35; r++) {
+      const row = sheet1.getRow(r);
+      row.values = ['', '', '', '', '', '', ''];
+      row.getCell(7).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [listFormula],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Remark Option',
+        error: 'Please select a valid Remark from the dropdown list.'
+      };
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Data_Import_Template.xlsx"');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Template download error: ' + err.message });
+  }
+});
 
 function getFormattedDate(d = new Date()) {
   const year = d.getFullYear();
@@ -125,6 +181,11 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
       const formattedRecordDate = formatDateValue(rawDate) || createdDate;
 
       const remark = (item.remark || item.Remark || 'Bulk Import').toString().trim();
+
+      // Skip completely empty rows (e.g. blank template rows 2 to 31)
+      if (!pid && !name && !father && !utNo && !rawAadhar) {
+        continue;
+      }
 
       if (!pid) {
         failedCount++;

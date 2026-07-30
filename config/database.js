@@ -81,11 +81,16 @@ async function initDatabase() {
         requested_by TEXT NOT NULL,
         requested_date TEXT NOT NULL,
         requested_time TEXT NOT NULL,
+        reason TEXT,
         status TEXT DEFAULT 'Pending',
         action_by TEXT,
         action_date TEXT
       )
     `);
+
+    try {
+      await dbRun(`ALTER TABLE delete_requests ADD COLUMN reason TEXT`);
+    } catch (e) {}
 
     // Create Remark Options table
     await dbRun(`

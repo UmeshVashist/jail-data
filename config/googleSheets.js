@@ -137,8 +137,26 @@ async function initGoogleSheets() {
       console.log('Creating "DeleteRequests" sheet in Google Sheet...');
       deleteRequestsSheet = await doc.addSheet({
         title: 'DeleteRequests',
-        headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Requested By', 'Requested Date', 'Requested Time', 'Status', 'Action By', 'Action Date']
+        headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Requested By', 'Requested Date', 'Requested Time', 'Remark', 'Reason', 'Status', 'Action By', 'Action Date']
       });
+    } else {
+      try {
+        await deleteRequestsSheet.loadHeaderRow();
+        const headers = deleteRequestsSheet.headerValues || [];
+        if (!headers.includes('Remark') && !headers.includes('Reason')) {
+          console.log('Adding "Remark" column to existing "DeleteRequests" sheet header...');
+          const newHeaders = [...headers];
+          const statusIdx = newHeaders.indexOf('Status');
+          if (statusIdx !== -1) {
+            newHeaders.splice(statusIdx, 0, 'Remark');
+          } else {
+            newHeaders.push('Remark');
+          }
+          await deleteRequestsSheet.setHeaderRow(newHeaders);
+        }
+      } catch (e) {
+        console.error('Error checking DeleteRequests header row:', e.message);
+      }
     }
 
     // Ensure 'DropdownOptions' sheet exists
@@ -223,24 +241,28 @@ function formatDateValue(val) {
 
 async function getUsers() {
   if (!isConnected) {
-    return inMemoryData.users;
+    return inMemoryData.users.map(u => ({ ...u, id: u.rowIndex }));
   }
 
   try {
     const rows = await usersSheet.getRows();
-    return rows.map(row => ({
-      rowIndex: row.rowNumber,
-      username: (row.get('Username') || '').toString().trim(),
-      password: (row.get('Password') || '').toString().trim(),
-      role: (row.get('Role') || 'View').toString().trim(),
-      importPermission: (row.get('Import Permission') || '').toString().trim().toLowerCase() === 'yes',
-      fullAccess: (row.get('Full Access') || '').toString().trim().toLowerCase() === 'yes',
-      deleteRequestPermission: (row.get('Delete Request Permission') || '').toString().trim().toLowerCase() === 'yes',
-      status: (row.get('Status') || 'Active').toString().trim()
-    }));
+    return rows.map(row => {
+      const delReqVal = (row.get('Delete Request Access') || row.get('Delete Request Permission') || '').toString().trim().toLowerCase();
+      return {
+        id: row.rowNumber,
+        rowIndex: row.rowNumber,
+        username: (row.get('Username') || '').toString().trim(),
+        password: (row.get('Password') || '').toString().trim(),
+        role: (row.get('Role') || 'View').toString().trim(),
+        importPermission: (row.get('Import Permission') || '').toString().trim().toLowerCase() === 'yes',
+        fullAccess: (row.get('Full Access') || '').toString().trim().toLowerCase() === 'yes',
+        deleteRequestPermission: delReqVal === 'yes',
+        status: (row.get('Status') || 'Active').toString().trim()
+      };
+    });
   } catch (err) {
     console.error('getUsers error:', err.message);
-    return inMemoryData.users;
+    return inMemoryData.users.map(u => ({ ...u, id: u.rowIndex }));
   }
 }
 
@@ -267,21 +289,25 @@ async function createUser(userObj) {
     return true;
   }
 
-  await usersSheet.addRow({
+  const delReqStr = userObj.deleteRequestPermission ? 'Yes' : 'No';
+  const rowData = {
     Username: userObj.username,
     Password: userObj.password,
     Role: userObj.role || 'View',
     'Import Permission': userObj.importPermission ? 'Yes' : 'No',
     'Full Access': userObj.fullAccess ? 'Yes' : 'No',
-    'Delete Request Permission': userObj.deleteRequestPermission ? 'Yes' : 'No',
     Status: userObj.status || 'Active'
-  });
+  };
+  rowData['Delete Request Access'] = delReqStr;
+  rowData['Delete Request Permission'] = delReqStr;
+
+  await usersSheet.addRow(rowData);
   return true;
 }
 
 async function updateUser(rowIndex, userObj) {
   if (!isConnected) {
-    const target = inMemoryData.users.find(u => u.rowIndex === parseInt(rowIndex, 10));
+    const target = inMemoryData.users.find(u => u.rowIndex === parseInt(rowIndex, 10) || (userObj.username && u.username.toLowerCase() === userObj.username.toLowerCase()));
     if (target) {
       if (userObj.password) target.password = userObj.password;
       if (userObj.role) target.role = userObj.role;
@@ -294,12 +320,16 @@ async function updateUser(rowIndex, userObj) {
   }
 
   const rows = await usersSheet.getRows();
-  const targetRow = rows.find(r => r.rowNumber === parseInt(rowIndex, 10));
+  const targetRow = rows.find(r => r.rowNumber === parseInt(rowIndex, 10) || (userObj.username && (r.get('Username') || '').toString().trim().toLowerCase() === userObj.username.toLowerCase()));
   if (targetRow) {
     if (userObj.role) targetRow.set('Role', userObj.role);
     if (userObj.importPermission !== undefined) targetRow.set('Import Permission', userObj.importPermission ? 'Yes' : 'No');
     if (userObj.fullAccess !== undefined) targetRow.set('Full Access', userObj.fullAccess ? 'Yes' : 'No');
-    if (userObj.deleteRequestPermission !== undefined) targetRow.set('Delete Request Permission', userObj.deleteRequestPermission ? 'Yes' : 'No');
+    if (userObj.deleteRequestPermission !== undefined) {
+      const val = userObj.deleteRequestPermission ? 'Yes' : 'No';
+      try { targetRow.set('Delete Request Access', val); } catch (e) {}
+      try { targetRow.set('Delete Request Permission', val); } catch (e) {}
+    }
     if (userObj.status) targetRow.set('Status', userObj.status);
     if (userObj.password) targetRow.set('Password', userObj.password);
     await targetRow.save();
@@ -308,13 +338,14 @@ async function updateUser(rowIndex, userObj) {
 }
 
 async function deleteUser(rowIndex, targetUsername) {
+  const cleanUser = (targetUsername || '').toString().trim().toLowerCase();
   if (!isConnected) {
-    inMemoryData.users = inMemoryData.users.filter(u => u.rowIndex !== parseInt(rowIndex, 10));
+    inMemoryData.users = inMemoryData.users.filter(u => u.rowIndex !== parseInt(rowIndex, 10) && u.username.toLowerCase() !== cleanUser);
     return true;
   }
 
   const rows = await usersSheet.getRows();
-  const targetRow = rows.find(r => r.rowNumber === parseInt(rowIndex, 10) || (r.get('Username') || '').toLowerCase() === targetUsername.toLowerCase());
+  const targetRow = rows.find(r => r.rowNumber === parseInt(rowIndex, 10) || (r.get('Username') || '').toString().trim().toLowerCase() === cleanUser);
   if (targetRow) {
     await targetRow.delete();
   }
@@ -482,22 +513,27 @@ async function getDeleteRequests() {
 
   try {
     const rows = await deleteRequestsSheet.getRows();
-    return rows.map(row => ({
-      id: row.rowNumber,
-      rowIndex: row.rowNumber,
-      recordId: (row.get('ID') || row.rowNumber).toString().trim(),
-      pid: (row.get('Record PID') || '').toString().trim(),
-      name: (row.get('Record Name') || '').toString().trim(),
-      father: (row.get('Father') || '').toString().trim(),
-      utNo: (row.get('UT No') || '').toString().trim(),
-      aadharNo: (row.get('Aadhar No') || '').toString().trim(),
-      requestedBy: (row.get('Requested By') || '').toString().trim(),
-      requestedDate: (row.get('Requested Date') || '').toString().trim(),
-      requestedTime: (row.get('Requested Time') || '').toString().trim(),
-      status: (row.get('Status') || 'Pending').toString().trim(),
-      actionBy: (row.get('Action By') || '').toString().trim(),
-      actionDate: (row.get('Action Date') || '').toString().trim()
-    }));
+    return rows.map(row => {
+      const remarkVal = (row.get('Remark') || row.get('Reason') || '').toString().trim();
+      return {
+        id: row.rowNumber,
+        rowIndex: row.rowNumber,
+        recordId: (row.get('ID') || row.rowNumber).toString().trim(),
+        pid: (row.get('Record PID') || '').toString().trim(),
+        name: (row.get('Record Name') || '').toString().trim(),
+        father: (row.get('Father') || '').toString().trim(),
+        utNo: (row.get('UT No') || '').toString().trim(),
+        aadharNo: (row.get('Aadhar No') || '').toString().trim(),
+        requestedBy: (row.get('Requested By') || '').toString().trim(),
+        requestedDate: (row.get('Requested Date') || '').toString().trim(),
+        requestedTime: (row.get('Requested Time') || '').toString().trim(),
+        reason: remarkVal,
+        remark: remarkVal,
+        status: (row.get('Status') || 'Pending').toString().trim(),
+        actionBy: (row.get('Action By') || '').toString().trim(),
+        actionDate: (row.get('Action Date') || '').toString().trim()
+      };
+    });
   } catch (err) {
     console.error('getDeleteRequests error:', err.message);
     return inMemoryData.deleteRequests;
@@ -505,12 +541,14 @@ async function getDeleteRequests() {
 }
 
 async function createDeleteRequest(reqObj) {
+  const remarkVal = (reqObj.remark || reqObj.reason || '').toString().trim();
+
   if (!isConnected) {
     try {
       const { dbRun } = require('./database');
       const res = await dbRun(
-        `INSERT INTO delete_requests (record_id, pid, name, father, ut_no, aadhar_no, requested_by, requested_date, requested_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [reqObj.recordId, reqObj.pid, reqObj.name, reqObj.father || '', reqObj.utNo || '', reqObj.aadharNo || '', reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, 'Pending']
+        `INSERT INTO delete_requests (record_id, pid, name, father, ut_no, aadhar_no, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [reqObj.recordId, reqObj.pid, reqObj.name, reqObj.father || '', reqObj.utNo || '', reqObj.aadharNo || '', reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, remarkVal, 'Pending']
       );
       reqObj.id = res.lastID;
       reqObj.rowIndex = res.lastID;
@@ -519,7 +557,7 @@ async function createDeleteRequest(reqObj) {
       reqObj.id = newId;
       reqObj.rowIndex = newId;
     }
-    inMemoryData.deleteRequests.push({ ...reqObj, status: 'Pending' });
+    inMemoryData.deleteRequests.push({ ...reqObj, reason: remarkVal, remark: remarkVal, status: 'Pending' });
     return true;
   }
 
@@ -533,6 +571,8 @@ async function createDeleteRequest(reqObj) {
     'Requested By': reqObj.requestedBy,
     'Requested Date': reqObj.requestedDate,
     'Requested Time': reqObj.requestedTime,
+    'Remark': remarkVal,
+    'Reason': remarkVal,
     'Status': 'Pending',
     'Action By': '',
     'Action Date': ''
