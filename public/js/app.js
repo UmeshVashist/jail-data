@@ -117,7 +117,94 @@ function togglePasswordVisibility(inputId, iconId) {
 
 /* Authentication & Session */
 
+/* Auto Logout Inactivity Tracker (10 Minutes = 600,000 ms) */
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+let lastActivityTimestamp = Date.now();
+let inactivityTimerId = null;
+let activityListenersAttached = false;
+let lastActivityResetCall = 0;
+
+function resetInactivityTimer() {
+  lastActivityTimestamp = Date.now();
+  try {
+    localStorage.setItem('informaction_last_activity', lastActivityTimestamp.toString());
+  } catch (e) {}
+}
+
+function handleUserActivity() {
+  const now = Date.now();
+  if (now - lastActivityResetCall > 2000) {
+    lastActivityResetCall = now;
+    resetInactivityTimer();
+  }
+}
+
+function attachActivityListeners() {
+  if (activityListenersAttached) return;
+  const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+  events.forEach(evt => {
+    window.addEventListener(evt, handleUserActivity, { passive: true });
+  });
+  activityListenersAttached = true;
+}
+
+function detachActivityListeners() {
+  if (!activityListenersAttached) return;
+  const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+  events.forEach(evt => {
+    window.removeEventListener(evt, handleUserActivity);
+  });
+  activityListenersAttached = false;
+}
+
+function startInactivityMonitor() {
+  stopInactivityMonitor();
+  resetInactivityTimer();
+  attachActivityListeners();
+  inactivityTimerId = setInterval(checkInactivity, 5000);
+}
+
+function stopInactivityMonitor() {
+  if (inactivityTimerId) {
+    clearInterval(inactivityTimerId);
+    inactivityTimerId = null;
+  }
+  detachActivityListeners();
+}
+
+function checkInactivity() {
+  if (!currentUserState) {
+    stopInactivityMonitor();
+    return;
+  }
+
+  let storedLastActivity = lastActivityTimestamp;
+  try {
+    const val = localStorage.getItem('informaction_last_activity');
+    if (val) {
+      storedLastActivity = Math.max(lastActivityTimestamp, parseInt(val, 10) || 0);
+    }
+  } catch (e) {}
+
+  const idleTime = Date.now() - storedLastActivity;
+  if (idleTime >= INACTIVITY_TIMEOUT_MS) {
+    stopInactivityMonitor();
+    performAutoLogoutDueToInactivity();
+  }
+}
+
+async function performAutoLogoutDueToInactivity() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) {}
+  currentUserState = null;
+  document.getElementById('login-form').reset();
+  showLoginScreen();
+  showToast('warning', 'Session Expired', 'Aap 10 minute se inactive the, isliye auto-logout ho gaya hai (Logged out due to 10 min inactivity).');
+}
+
 function showLoginScreen() {
+  stopInactivityMonitor();
   document.getElementById('app-shell').classList.add('d-none');
   document.getElementById('login-view').classList.remove('d-none');
 }
@@ -190,9 +277,11 @@ function initializeAuthenticatedApp() {
 
   updateUIForRolePermissions();
   navigateToView('dashboard');
+  startInactivityMonitor();
 }
 
 async function handleLogout() {
+  stopInactivityMonitor();
   await fetch('/api/auth/logout', { method: 'POST' });
   currentUserState = null;
   document.getElementById('login-form').reset();
@@ -293,7 +382,7 @@ function toggleMobileSidebar() {
 
 /* Dashboard Module */
 
-async function loadDashboardData() {
+async function loadDashboardData(highlightPid = null) {
   showLoader('Refreshing dashboard...');
   try {
     const res = await fetch('/api/records/dashboard');
@@ -315,8 +404,11 @@ async function loadDashboardData() {
 
       let html = '';
       stats.recentActivities.forEach(rec => {
+        const isHighlighted = (highlightPid && (String(rec.pid) === String(highlightPid) || String(rec.id) === String(highlightPid)));
+        const highlightClass = isHighlighted ? 'highlight-new-row' : '';
+
         html += `
-          <tr>
+          <tr class="${highlightClass}">
             <td class="fw-bold text-primary">${escapeHtml(rec.pid)}</td>
             <td>${escapeHtml(rec.name)}</td>
             <td>${escapeHtml(rec.father || '-')}</td>
@@ -348,7 +440,7 @@ function handleInstantSearch() {
   }, 300);
 }
 
-async function triggerFetchRecords() {
+async function triggerFetchRecords(highlightPid = null) {
   searchState.startDate = document.getElementById('filter-start-date').value;
   searchState.endDate = document.getElementById('filter-end-date').value;
 
@@ -369,7 +461,7 @@ async function triggerFetchRecords() {
     hideLoader();
 
     if (data.success) {
-      renderRecordsTable(data.data.records);
+      renderRecordsTable(data.data.records, highlightPid);
       renderPagination(data.data.totalRecords, data.data.page, data.data.pageSize);
     } else {
       showToast('danger', 'Fetch Error', data.message);
@@ -380,7 +472,7 @@ async function triggerFetchRecords() {
   }
 }
 
-function renderRecordsTable(records) {
+function renderRecordsTable(records, highlightPid = null) {
   currentRecordsData = records || [];
   const tbody = document.getElementById('records-table-body');
 
@@ -392,6 +484,8 @@ function renderRecordsTable(records) {
   let html = '';
   records.forEach(rec => {
     const recJson = encodeURIComponent(JSON.stringify(rec));
+    const isHighlighted = (highlightPid && (String(rec.pid) === String(highlightPid) || String(rec.id) === String(highlightPid)));
+    const highlightClass = isHighlighted ? 'highlight-new-row' : '';
     
     let actionButtons = `<button class="btn btn-sm btn-outline-info me-1" title="View Details" onclick="viewRecordDetails('${recJson}')"><i class="bi bi-eye"></i></button>`;
 
@@ -409,7 +503,7 @@ function renderRecordsTable(records) {
     }
 
     html += `
-      <tr>
+      <tr class="${highlightClass}">
         <td class="fw-bold text-primary">${escapeHtml(rec.pid)}</td>
         <td class="fw-semibold">${escapeHtml(rec.name)}</td>
         <td>${escapeHtml(rec.father || '-')}</td>
@@ -603,7 +697,30 @@ async function handleRecordFormSubmit(event) {
     if (data.success) {
       recordModalInstance.hide();
       showToast('success', 'Success', data.message);
-      triggerFetchRecords();
+      let highlightPid = null;
+      if (mode === 'add') {
+        // Reset search & date filters to ensure new record is visible immediately
+        searchState.query = '';
+        searchState.startDate = '';
+        searchState.endDate = '';
+        searchState.page = 1;
+        searchState.sortColumn = 'createdDate';
+        searchState.sortDirection = 'desc';
+
+        const searchInput = document.getElementById('search-query-input');
+        if (searchInput) searchInput.value = '';
+        const startDateInput = document.getElementById('filter-start-date');
+        if (startDateInput) startDateInput.value = '';
+        const endDateInput = document.getElementById('filter-end-date');
+        if (endDateInput) endDateInput.value = '';
+
+        highlightPid = (data.record && data.record.pid) ? data.record.pid : pid;
+      }
+
+      // Refresh Dashboard stats & Recent Table without switching views
+      loadDashboardData(highlightPid);
+      // Refresh Records Table in background
+      await triggerFetchRecords(highlightPid);
     } else {
       showToast('danger', 'Validation Error', data.message);
     }

@@ -730,7 +730,7 @@
           <h5 class="modal-title fw-bold" id="recordModalTitle">Add New Record</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form id="recordForm" onsubmit="handleRecordFormSubmit(event)" autocomplete="off">
+        <form id="recordForm" onsubmit="handleRecordFormSubmit(event); return false;" autocomplete="off">
           <div class="modal-body">
             <input type="hidden" id="record-id">
             <input type="hidden" id="record-edit-mode" value="add">

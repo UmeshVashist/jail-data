@@ -195,7 +195,18 @@ router.get('/', requireAuth, async (req, res) => {
 
       if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
       if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
+
+      // Tie-breaker if primary values are equal
+      if (sortColumn === 'createdDate') {
+        const timeA = a.createdTime || '';
+        const timeB = b.createdTime || '';
+        if (timeA !== timeB) {
+          return sortDirection === 'asc' ? (timeA < timeB ? -1 : 1) : (timeA > timeB ? -1 : 1);
+        }
+      }
+      const idA = Number(a.id || a.rowIndex || 0);
+      const idB = Number(b.id || b.rowIndex || 0);
+      return sortDirection === 'asc' ? idA - idB : idB - idA;
     });
 
     const totalRecords = filteredRecords.length;
@@ -277,7 +288,7 @@ router.post('/', requireAuth, async (req, res) => {
     const createdTime = getFormattedTime(now);
     const recordDate = date || createdDate;
 
-    await addRecord({
+    const createdRec = await addRecord({
       pid: cleanPid,
       name: cleanName,
       father: (father || '').trim(),
@@ -290,7 +301,7 @@ router.post('/', requireAuth, async (req, res) => {
       createdTime: createdTime
     });
 
-    res.json({ success: true, message: 'Record created successfully!' });
+    res.json({ success: true, message: 'Record created successfully!', record: createdRec });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Add record error: ' + err.message });
   }

@@ -390,10 +390,10 @@ async function addRecord(recObj) {
     const newId = inMemoryData.records.length + 2;
     const newRec = { id: newId, rowIndex: newId, ...recObj };
     inMemoryData.records.push(newRec);
-    return true;
+    return newRec;
   }
 
-  await dataSheet.addRow({
+  const addedRow = await dataSheet.addRow({
     PID: recObj.pid,
     Name: recObj.name,
     Father: recObj.father || '',
@@ -407,7 +407,7 @@ async function addRecord(recObj) {
     'Updated Date': '',
     'Updated Time': ''
   });
-  return true;
+  return { id: addedRow.rowNumber, rowIndex: addedRow.rowNumber, ...recObj };
 }
 
 async function updateRecord(rowIndex, recObj) {

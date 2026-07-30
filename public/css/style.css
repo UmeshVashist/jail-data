@@ -212,3 +212,15 @@ body {
     margin-left: 0;
   }
 }
+
+/* Newly Added Record Animation */
+@keyframes highlightRowFade {
+  0% { background-color: #d1fae5; }
+  50% { background-color: #a7f3d0; }
+  100% { background-color: transparent; }
+}
+
+.highlight-new-row {
+  animation: highlightRowFade 3s ease-out;
+}
+
