@@ -29,6 +29,10 @@ let searchState = {
 
 let selectedImportFile = null;
 let searchDebounceTimer = null;
+let currentRemarkOptions = [];
+let remarkOptionModalInstance = null;
+let rawPendingDeleteRequests = [];
+let rawMyDeleteRequests = [];
 
 document.addEventListener('DOMContentLoaded', function () {
   recordModalInstance = new bootstrap.Modal(document.getElementById('recordModal'));
@@ -37,9 +41,11 @@ document.addEventListener('DOMContentLoaded', function () {
   userModalInstance = new bootstrap.Modal(document.getElementById('userModal'));
   resetPasswordModalInstance = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
   importDetailsModalInstance = new bootstrap.Modal(document.getElementById('importDetailsModal'));
+  remarkOptionModalInstance = new bootstrap.Modal(document.getElementById('remarkOptionModal'));
 
   checkSessionOnLoad();
   setupDropzone();
+  loadRemarkOptions();
 });
 
 /* Helper to format Aadhar No as 'XXXX XXXX XXXX' or '#N/A' */
@@ -230,8 +236,12 @@ function updateUIForRolePermissions() {
 
   if (role === 'Admin') {
     document.getElementById('nav-users').classList.remove('d-none');
+    const dropNav = document.getElementById('nav-item-dropdowns');
+    if (dropNav) dropNav.classList.remove('d-none');
   } else {
     document.getElementById('nav-users').classList.add('d-none');
+    const dropNav = document.getElementById('nav-item-dropdowns');
+    if (dropNav) dropNav.classList.add('d-none');
   }
 }
 
@@ -245,7 +255,8 @@ function navigateToView(viewName) {
     'import': 'Batch Excel / CSV Import',
     'delete-requests': 'Incoming Delete Requests',
     'my-requests': 'My Sent Delete Requests',
-    'users': 'Admin User Management'
+    'users': 'Admin User Management',
+    'dropdowns': 'Dropdown Options Settings'
   };
 
   document.getElementById('page-title-display').innerText = titleMap[viewName] || 'Data Portal';
@@ -268,6 +279,8 @@ function navigateToView(viewName) {
     loadMyRequestsList();
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
     loadUsersList();
+  } else if (viewName === 'dropdowns' && currentUserState.role === 'Admin') {
+    loadDropdownsView();
   }
 }
 
@@ -470,19 +483,58 @@ function clearFilters() {
   triggerFetchRecords();
 }
 
+/* Dynamic Remark Dropdown Helpers */
+
+async function loadRemarkOptions() {
+  try {
+    const res = await fetch('/api/records/remark-options');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      currentRemarkOptions = data.data;
+    }
+  } catch (err) {
+    console.error('Error fetching remark options:', err);
+  }
+}
+
+function populateRemarkDropdown(selectedValue = '') {
+  const selectEl = document.getElementById('modal-record-remark');
+  if (!selectEl) return;
+
+  let html = '<option value="">-- Select Remark --</option>';
+  const optionsList = [...currentRemarkOptions];
+  
+  if (selectedValue && !optionsList.includes(selectedValue)) {
+    optionsList.unshift(selectedValue);
+  }
+
+  optionsList.forEach(opt => {
+    const isSelected = opt === selectedValue ? 'selected' : '';
+    html += `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+  });
+
+  selectEl.innerHTML = html;
+  if (selectedValue) {
+    selectEl.value = selectedValue;
+  }
+}
+
 /* Record Modals */
 
-function showAddRecordModal() {
+async function showAddRecordModal() {
+  await loadRemarkOptions();
   document.getElementById('recordModalTitle').innerText = 'Add New Data Record';
   document.getElementById('recordForm').reset();
   document.getElementById('record-edit-mode').value = 'add';
   document.getElementById('record-id').value = '';
   document.getElementById('modal-record-pid').disabled = false;
   document.getElementById('modal-record-date').value = new Date().toISOString().split('T')[0];
+  populateRemarkDropdown('');
   recordModalInstance.show();
 }
 
-function showEditRecordModal(encodedRecJson) {
+async function showEditRecordModal(encodedRecJson) {
+  await loadRemarkOptions();
   const rec = JSON.parse(decodeURIComponent(encodedRecJson));
   document.getElementById('recordModalTitle').innerText = 'Edit Record (' + rec.pid + ')';
   document.getElementById('record-edit-mode').value = 'edit';
@@ -494,8 +546,8 @@ function showEditRecordModal(encodedRecJson) {
   document.getElementById('modal-record-ut').value = rec.utNo;
   document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : rec.aadharNo);
   document.getElementById('modal-record-date').value = rec.date;
-  document.getElementById('modal-record-remark').value = rec.remark;
 
+  populateRemarkDropdown(rec.remark || '');
   recordModalInstance.show();
 }
 
@@ -655,7 +707,10 @@ function resetImportSelection() {
   document.getElementById('import-summary-card').classList.add('d-none');
 }
 
-function downloadSampleTemplate() {
+async function downloadSampleTemplate() {
+  await loadRemarkOptions();
+  const options = currentRemarkOptions.length > 0 ? currentRemarkOptions : ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other'];
+
   const sampleData = [
     {
       "PID": "1001",
@@ -664,7 +719,7 @@ function downloadSampleTemplate() {
       "UT No": "UT-5001",
       "Aadhar No": "123456789012",
       "Date": new Date().toISOString().split('T')[0],
-      "Remark": "Sample record format"
+      "Remark": options[0] || "Completed"
     }
   ];
 
@@ -672,11 +727,16 @@ function downloadSampleTemplate() {
     header: ["PID", "Name", "Father", "UT No", "Aadhar No", "Date", "Remark"]
   });
 
+  // Create a second sheet 'Remark_Options' listing all dynamic dropdown options
+  const optionsRows = options.map(opt => ({ "Remark Options": opt }));
+  const optionsWorksheet = XLSX.utils.json_to_sheet(optionsRows);
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Template");
+  XLSX.utils.book_append_sheet(workbook, optionsWorksheet, "Remark_Options");
 
   XLSX.writeFile(workbook, "Data_Import_Template.xlsx");
-  showToast('success', 'Template Downloaded', 'Sample Excel template downloaded with required headers.');
+  showToast('success', 'Template Downloaded', 'Sample Excel template downloaded with dropdown Remark Options tab.');
 }
 
 function processSelectedImportFile() {
@@ -1156,7 +1216,10 @@ async function loadDeleteRequestsList() {
     hideLoader();
 
     if (data.success) {
-      renderDeleteRequestsTable(data.data);
+      rawPendingDeleteRequests = data.data || [];
+      const searchInput = document.getElementById('search-delete-requests-input');
+      if (searchInput) searchInput.value = '';
+      filterDeleteRequestsTable();
       fetchPendingDeleteRequestsCount();
     } else {
       showToast('danger', 'Error', data.message);
@@ -1165,6 +1228,21 @@ async function loadDeleteRequestsList() {
     hideLoader();
     showToast('danger', 'Error', err.message);
   }
+}
+
+function filterDeleteRequestsTable() {
+  const inputEl = document.getElementById('search-delete-requests-input');
+  const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
+  if (!q) {
+    renderDeleteRequestsTable(rawPendingDeleteRequests);
+    return;
+  }
+
+  const filtered = rawPendingDeleteRequests.filter(r => 
+    (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+  );
+
+  renderDeleteRequestsTable(filtered);
 }
 
 function renderDeleteRequestsTable(requests) {
@@ -1268,7 +1346,10 @@ async function loadMyRequestsList() {
     hideLoader();
 
     if (data.success) {
-      renderMyRequestsTable(data.data);
+      rawMyDeleteRequests = data.data || [];
+      const searchInput = document.getElementById('search-my-requests-input');
+      if (searchInput) searchInput.value = '';
+      filterMyRequestsTable();
     } else {
       showToast('danger', 'Error', data.message);
     }
@@ -1276,6 +1357,21 @@ async function loadMyRequestsList() {
     hideLoader();
     showToast('danger', 'Error', err.message);
   }
+}
+
+function filterMyRequestsTable() {
+  const inputEl = document.getElementById('search-my-requests-input');
+  const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
+  if (!q) {
+    renderMyRequestsTable(rawMyDeleteRequests);
+    return;
+  }
+
+  const filtered = rawMyDeleteRequests.filter(r => 
+    (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+  );
+
+  renderMyRequestsTable(filtered);
 }
 
 function renderMyRequestsTable(requests) {
@@ -1412,6 +1508,142 @@ function confirmDeleteUser(userId, username) {
         loadUsersList();
       } else {
         showToast('danger', 'Delete Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Server Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+/* Dropdown Options Management Module (Admin Only) */
+
+async function loadDropdownsView() {
+  showLoader('Loading remark options...');
+  try {
+    const res = await fetch('/api/records/remark-options');
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      currentRemarkOptions = data.data || [];
+      renderDropdownsTable(currentRemarkOptions);
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function renderDropdownsTable(options) {
+  const tbody = document.getElementById('dropdowns-table-body');
+  if (!options || options.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No remark dropdown options found. Click "Add New Remark Option" to create one.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  options.forEach((opt, idx) => {
+    html += `
+      <tr>
+        <td class="fw-bold text-secondary">${idx + 1}</td>
+        <td class="fw-semibold text-dark"><i class="bi bi-tag-fill text-primary me-2"></i>${escapeHtml(opt)}</td>
+        <td><span class="badge bg-success-subtle-custom text-success border border-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Synced (Google Sheet 'DropdownOptions')</span></td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-primary me-1" title="Edit Option" onclick="showEditRemarkOptionModal('${escapeHtml(opt)}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete Option" onclick="confirmDeleteRemarkOption('${escapeHtml(opt)}')"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function showAddRemarkOptionModal() {
+  document.getElementById('remarkOptionModalTitle').innerText = 'Add Remark Option';
+  document.getElementById('remarkOptionForm').reset();
+  document.getElementById('remark-option-mode').value = 'add';
+  document.getElementById('remark-option-old-value').value = '';
+  remarkOptionModalInstance.show();
+}
+
+function showEditRemarkOptionModal(val) {
+  document.getElementById('remarkOptionModalTitle').innerText = 'Edit Remark Option';
+  document.getElementById('remark-option-mode').value = 'edit';
+  document.getElementById('remark-option-old-value').value = val;
+  document.getElementById('modal-remark-option-name').value = val;
+  remarkOptionModalInstance.show();
+}
+
+async function handleRemarkOptionFormSubmit(event) {
+  event.preventDefault();
+  const mode = document.getElementById('remark-option-mode').value;
+  const oldValue = document.getElementById('remark-option-old-value').value;
+  const newValue = document.getElementById('modal-remark-option-name').value.trim();
+
+  if (!newValue) {
+    showToast('danger', 'Validation Error', 'Option name cannot be empty.');
+    return;
+  }
+
+  const endpoint = '/api/records/remark-options';
+  const method = mode === 'add' ? 'POST' : 'PUT';
+  const payload = mode === 'add' ? { optionValue: newValue } : { oldValue: oldValue, newValue: newValue };
+
+  showLoader(mode === 'add' ? 'Adding remark option...' : 'Updating remark option...');
+  try {
+    const res = await fetch(endpoint, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      remarkOptionModalInstance.hide();
+      showToast('success', 'Option Saved', data.message);
+      loadDropdownsView();
+      loadRemarkOptions();
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+  }
+}
+
+function confirmDeleteRemarkOption(val) {
+  document.getElementById('confirmModalTitle').innerText = 'Delete Remark Option?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to remove option "${val}" from Google Sheet 'DropdownOptions'?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Delete Option';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Deleting remark option...');
+    try {
+      const res = await fetch('/api/records/remark-options', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ optionValue: val })
+      });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Option Deleted', data.message);
+        loadDropdownsView();
+        loadRemarkOptions();
+      } else {
+        showToast('danger', 'Error', data.message);
       }
     } catch (err) {
       hideLoader();

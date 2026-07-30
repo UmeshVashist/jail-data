@@ -87,6 +87,22 @@ async function initDatabase() {
       )
     `);
 
+    // Create Remark Options table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS remark_options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        option_value TEXT UNIQUE NOT NULL
+      )
+    `);
+
+    const remarkCount = await dbGet('SELECT COUNT(*) as count FROM remark_options');
+    if (remarkCount.count === 0) {
+      const defaults = ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other'];
+      for (const opt of defaults) {
+        await dbRun('INSERT OR IGNORE INTO remark_options (option_value) VALUES (?)', [opt]);
+      }
+    }
+
     // Create Records table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS records (

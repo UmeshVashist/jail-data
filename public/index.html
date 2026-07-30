@@ -130,6 +130,12 @@
             <span>User Management</span>
           </a>
         </li>
+        <li class="nav-item d-none" id="nav-item-dropdowns">
+          <a class="nav-link" id="nav-dropdowns" href="#" onclick="navigateToView('dropdowns'); return false;">
+            <i class="bi bi-list-stars text-primary"></i>
+            <span>Dropdown Settings</span>
+          </a>
+        </li>
       </ul>
 
       <div class="mt-auto p-3 border-top border-secondary border-opacity-25">
@@ -540,6 +546,21 @@
             </div>
           </div>
 
+          <!-- Search Bar (PID and UT No Only) -->
+          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="search-delete-requests-input" placeholder="Search by PID or UT No..." oninput="filterDeleteRequestsTable()" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-6 text-md-end">
+                <span class="small text-muted"><i class="bi bi-funnel me-1"></i>Search filter: PID & UT No only</span>
+              </div>
+            </div>
+          </div>
+
           <div class="custom-table-card">
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
@@ -581,6 +602,21 @@
             </div>
           </div>
 
+          <!-- Search Bar (PID and UT No Only) -->
+          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="search-my-requests-input" placeholder="Search by PID or UT No..." oninput="filterMyRequestsTable()" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-6 text-md-end">
+                <span class="small text-muted"><i class="bi bi-funnel me-1"></i>Search filter: PID & UT No only</span>
+              </div>
+            </div>
+          </div>
+
           <div class="custom-table-card">
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
@@ -599,6 +635,43 @@
                 <tbody id="my-requests-table-body">
                   <tr>
                     <td colspan="8" class="text-center py-4 text-muted">Loading your delete requests...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- End of my-requests-view -->
+
+        <!-- Dropdown Options Management Section (Admin Only) -->
+        <div id="dropdowns-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">Dropdown Options Settings</h3>
+              <p class="text-muted small mb-0">Manage Remark dropdown options synced directly with Google Sheet 'DropdownOptions' tab</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-primary btn-sm rounded-2 shadow-sm" onclick="showAddRemarkOptionModal()">
+                <i class="bi bi-plus-circle-fill me-1"></i> Add New Remark Option
+              </button>
+            </div>
+          </div>
+
+          <div class="custom-table-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">#</th>
+                    <th>Remark Option Name</th>
+                    <th>Google Sheet Tab Sync</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="dropdowns-table-body">
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">Loading dropdown options...</td>
                   </tr>
                 </tbody>
               </table>
@@ -651,8 +724,10 @@
                 <input type="date" class="form-control" id="modal-record-date" autocomplete="off">
               </div>
               <div class="col-12">
-                <label for="modal-record-remark" class="form-label small fw-semibold text-secondary">Remark</label>
-                <textarea class="form-control" id="modal-record-remark" rows="2" placeholder="Comments or remarks" autocomplete="off"></textarea>
+                <label for="modal-record-remark" class="form-label small fw-semibold text-secondary">Remark <span class="text-primary">(Select from List)</span></label>
+                <select class="form-select" id="modal-record-remark" autocomplete="off">
+                  <option value="">-- Select Remark --</option>
+                </select>
               </div>
             </div>
           </div>
@@ -827,6 +902,33 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Remark Option Modal (Admin Only) -->
+  <div class="modal fade" id="remarkOptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="remarkOptionModalTitle">Add Remark Option</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="remarkOptionForm" onsubmit="handleRemarkOptionFormSubmit(event)" autocomplete="off">
+          <div class="modal-body">
+            <input type="hidden" id="remark-option-mode" value="add">
+            <input type="hidden" id="remark-option-old-value">
+
+            <div class="mb-3">
+              <label for="modal-remark-option-name" class="form-label small fw-semibold text-secondary">Option Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="modal-remark-option-name" placeholder="e.g. Completed, Urgent, etc." autocomplete="off" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary px-3">Save Option</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

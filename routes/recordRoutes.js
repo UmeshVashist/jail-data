@@ -4,8 +4,61 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests } = require('../config/googleSheets');
-const { requireAuth, canModifyRecord } = require('../middleware/auth');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption } = require('../config/googleSheets');
+const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
+
+// GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab
+router.get('/remark-options', requireAuth, async (req, res) => {
+  try {
+    const options = await getRemarkOptions();
+    res.json({ success: true, data: options });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch remark options error: ' + err.message });
+  }
+});
+
+// POST /api/records/remark-options - Add new remark option (Admin Only)
+router.post('/remark-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { optionValue } = req.body;
+    const cleanVal = (optionValue || '').trim();
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
+
+    await addRemarkOption(cleanVal);
+    res.json({ success: true, message: `Remark option "${cleanVal}" added successfully.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Add remark option error: ' + err.message });
+  }
+});
+
+// PUT /api/records/remark-options - Update existing remark option (Admin Only)
+router.put('/remark-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { oldValue, newValue } = req.body;
+    const cleanOld = (oldValue || '').trim();
+    const cleanNew = (newValue || '').trim();
+    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'Old and New option values are required.' });
+
+    await updateRemarkOption(cleanOld, cleanNew);
+    res.json({ success: true, message: `Remark option updated from "${cleanOld}" to "${cleanNew}".` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Update remark option error: ' + err.message });
+  }
+});
+
+// DELETE /api/records/remark-options - Delete remark option (Admin Only)
+router.delete('/remark-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { optionValue } = req.body;
+    const cleanVal = (optionValue || '').trim();
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
+
+    await deleteRemarkOption(cleanVal);
+    res.json({ success: true, message: `Remark option "${cleanVal}" deleted.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Delete remark option error: ' + err.message });
+  }
+});
 
 function getFormattedDate(d = new Date()) {
   const year = d.getFullYear();

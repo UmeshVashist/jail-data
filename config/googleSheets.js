@@ -17,6 +17,7 @@ let doc = null;
 let dataSheet = null;
 let usersSheet = null;
 let deleteRequestsSheet = null;
+let dropdownSheet = null;
 let isConnected = false;
 let connectionError = null;
 
@@ -27,7 +28,8 @@ const inMemoryData = {
     { rowIndex: 4, username: 'View', password: 'View@123', role: 'View', importPermission: false, fullAccess: false, deleteRequestPermission: false, status: 'Active' }
   ],
   records: [],
-  deleteRequests: []
+  deleteRequests: [],
+  remarkOptions: ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other']
 };
 
 /**
@@ -137,6 +139,40 @@ async function initGoogleSheets() {
         title: 'DeleteRequests',
         headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Requested By', 'Requested Date', 'Requested Time', 'Status', 'Action By', 'Action Date']
       });
+    }
+
+    // Ensure 'DropdownOptions' sheet exists
+    dropdownSheet = doc.sheetsByTitle['DropdownOptions'];
+    if (!dropdownSheet) {
+      console.log('Creating "DropdownOptions" sheet in Google Sheet...');
+      dropdownSheet = await doc.addSheet({
+        title: 'DropdownOptions',
+        headerValues: ['Remark Options']
+      });
+      await dropdownSheet.addRows([
+        { 'Remark Options': 'Completed' },
+        { 'Remark Options': 'Pending' },
+        { 'Remark Options': 'In Progress' },
+        { 'Remark Options': 'Verified' },
+        { 'Remark Options': 'Rejected' },
+        { 'Remark Options': 'Imported' },
+        { 'Remark Options': 'Other' }
+      ]);
+      console.log('Default Remark Options seeded into "DropdownOptions" sheet.');
+    } else {
+      const existingRows = await dropdownSheet.getRows();
+      if (existingRows.length === 0) {
+        console.log('Seeding default Remark Options into empty "DropdownOptions" sheet...');
+        await dropdownSheet.addRows([
+          { 'Remark Options': 'Completed' },
+          { 'Remark Options': 'Pending' },
+          { 'Remark Options': 'In Progress' },
+          { 'Remark Options': 'Verified' },
+          { 'Remark Options': 'Rejected' },
+          { 'Remark Options': 'Imported' },
+          { 'Remark Options': 'Other' }
+        ]);
+      }
     }
 
     isConnected = true;
@@ -553,6 +589,103 @@ async function deleteDeleteRequest(requestId) {
   return true;
 }
 
+/* ==========================================================================
+   Dropdown Options Access Method
+   ========================================================================== */
+
+async function getRemarkOptions() {
+  if (!isConnected) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT option_value FROM remark_options ORDER BY id ASC');
+      if (rows && rows.length > 0) {
+        return rows.map(r => r.option_value);
+      }
+    } catch (e) {}
+    return inMemoryData.remarkOptions;
+  }
+
+  try {
+    const rows = await dropdownSheet.getRows();
+    const options = rows
+      .map(row => (row.get('Remark Options') || '').toString().trim())
+      .filter(val => val !== '');
+    
+    if (options.length > 0) return options;
+  } catch (err) {
+    console.error('getRemarkOptions error:', err.message);
+  }
+  return inMemoryData.remarkOptions;
+}
+
+async function addRemarkOption(optionValue) {
+  const cleanVal = (optionValue || '').toString().trim();
+  if (!cleanVal) return false;
+
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('INSERT OR IGNORE INTO remark_options (option_value) VALUES (?)', [cleanVal]);
+    } catch (e) {}
+    if (!inMemoryData.remarkOptions.includes(cleanVal)) {
+      inMemoryData.remarkOptions.push(cleanVal);
+    }
+    return true;
+  }
+
+  const rows = await dropdownSheet.getRows();
+  const exists = rows.some(r => (r.get('Remark Options') || '').toString().trim().toLowerCase() === cleanVal.toLowerCase());
+  if (!exists) {
+    await dropdownSheet.addRow({ 'Remark Options': cleanVal });
+  }
+  return true;
+}
+
+async function updateRemarkOption(oldValue, newValue) {
+  const cleanOld = (oldValue || '').toString().trim();
+  const cleanNew = (newValue || '').toString().trim();
+  if (!cleanOld || !cleanNew) return false;
+
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('UPDATE remark_options SET option_value = ? WHERE option_value = ?', [cleanNew, cleanOld]);
+    } catch (e) {}
+    const idx = inMemoryData.remarkOptions.indexOf(cleanOld);
+    if (idx !== -1) inMemoryData.remarkOptions[idx] = cleanNew;
+    return true;
+  }
+
+  const rows = await dropdownSheet.getRows();
+  const targetRow = rows.find(r => (r.get('Remark Options') || '').toString().trim().toLowerCase() === cleanOld.toLowerCase());
+  if (targetRow) {
+    targetRow.set('Remark Options', cleanNew);
+    await targetRow.save();
+  }
+  return true;
+}
+
+async function deleteRemarkOption(optionValue) {
+  const cleanVal = (optionValue || '').toString().trim();
+  if (!cleanVal) return false;
+
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('DELETE FROM remark_options WHERE option_value = ?', [cleanVal]);
+    } catch (e) {}
+    inMemoryData.remarkOptions = inMemoryData.remarkOptions.filter(opt => opt !== cleanVal);
+    return true;
+  }
+
+  const rows = await dropdownSheet.getRows();
+  const targetRow = rows.find(r => (r.get('Remark Options') || '').toString().trim().toLowerCase() === cleanVal.toLowerCase());
+  if (targetRow) {
+    await targetRow.delete();
+  }
+  return true;
+}
+
 module.exports = {
   initGoogleSheets,
   getUsers,
@@ -569,6 +702,10 @@ module.exports = {
   createDeleteRequest,
   updateDeleteRequestStatus,
   deleteDeleteRequest,
+  getRemarkOptions,
+  addRemarkOption,
+  updateRemarkOption,
+  deleteRemarkOption,
   getIsConnected: () => isConnected,
   getConnectionError: () => connectionError
 };
