@@ -16,16 +16,18 @@ const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
 let doc = null;
 let dataSheet = null;
 let usersSheet = null;
+let deleteRequestsSheet = null;
 let isConnected = false;
 let connectionError = null;
 
 const inMemoryData = {
   users: [
-    { rowIndex: 2, username: 'Admin', password: bcrypt.hashSync('Admin@123', 10), role: 'Admin', importPermission: true, fullAccess: true, status: 'Active' },
-    { rowIndex: 3, username: 'Add', password: bcrypt.hashSync('Add@123', 10), role: 'Add', importPermission: false, fullAccess: false, status: 'Active' },
-    { rowIndex: 4, username: 'View', password: bcrypt.hashSync('View@123', 10), role: 'View', importPermission: false, fullAccess: false, status: 'Active' }
+    { rowIndex: 2, username: 'Admin', password: 'Admin@123', role: 'Admin', importPermission: true, fullAccess: true, deleteRequestPermission: true, status: 'Active' },
+    { rowIndex: 3, username: 'Add', password: 'Add@123', role: 'Add', importPermission: false, fullAccess: false, deleteRequestPermission: false, status: 'Active' },
+    { rowIndex: 4, username: 'View', password: 'View@123', role: 'View', importPermission: false, fullAccess: false, deleteRequestPermission: false, status: 'Active' }
   ],
-  records: []
+  records: [],
+  deleteRequests: []
 };
 
 /**
@@ -105,33 +107,36 @@ async function initGoogleSheets() {
       console.log('Creating "Users" sheet in Google Sheet...');
       usersSheet = await doc.addSheet({
         title: 'Users',
-        headerValues: ['Username', 'Password', 'Role', 'Import Permission', 'Full Access', 'Status']
+        headerValues: ['Username', 'Password', 'Role', 'Import Permission', 'Full Access', 'Delete Request Permission', 'Status']
       });
 
-      const adminPass = bcrypt.hashSync('Admin@123', 10);
-      const addPass = bcrypt.hashSync('Add@123', 10);
-      const viewPass = bcrypt.hashSync('View@123', 10);
-
       await usersSheet.addRows([
-        { Username: 'Admin', Password: adminPass, Role: 'Admin', 'Import Permission': 'Yes', 'Full Access': 'Yes', Status: 'Active' },
-        { Username: 'Add', Password: addPass, Role: 'Add', 'Import Permission': 'No', 'Full Access': 'No', Status: 'Active' },
-        { Username: 'View', Password: viewPass, Role: 'View', 'Import Permission': 'No', 'Full Access': 'No', Status: 'Active' }
+        { Username: 'Admin', Password: 'Admin@123', Role: 'Admin', 'Import Permission': 'Yes', 'Full Access': 'Yes', 'Delete Request Permission': 'Yes', Status: 'Active' },
+        { Username: 'Add', Password: 'Add@123', Role: 'Add', 'Import Permission': 'No', 'Full Access': 'No', 'Delete Request Permission': 'No', Status: 'Active' },
+        { Username: 'View', Password: 'View@123', Role: 'View', 'Import Permission': 'No', 'Full Access': 'No', 'Delete Request Permission': 'No', Status: 'Active' }
       ]);
       console.log('Default user accounts seeded into Google Sheet.');
     } else {
       const existingUserRows = await usersSheet.getRows();
       if (existingUserRows.length === 0) {
         console.log('Seeding default user accounts into empty "Users" sheet...');
-        const adminPass = bcrypt.hashSync('Admin@123', 10);
-        const addPass = bcrypt.hashSync('Add@123', 10);
-        const viewPass = bcrypt.hashSync('View@123', 10);
 
         await usersSheet.addRows([
-          { Username: 'Admin', Password: adminPass, Role: 'Admin', 'Import Permission': 'Yes', 'Full Access': 'Yes', Status: 'Active' },
-          { Username: 'Add', Password: addPass, Role: 'Add', 'Import Permission': 'No', 'Full Access': 'No', Status: 'Active' },
-          { Username: 'View', Password: viewPass, Role: 'View', 'Import Permission': 'No', 'Full Access': 'No', Status: 'Active' }
+          { Username: 'Admin', Password: 'Admin@123', Role: 'Admin', 'Import Permission': 'Yes', 'Full Access': 'Yes', 'Delete Request Permission': 'Yes', Status: 'Active' },
+          { Username: 'Add', Password: 'Add@123', Role: 'Add', 'Import Permission': 'No', 'Full Access': 'No', 'Delete Request Permission': 'No', Status: 'Active' },
+          { Username: 'View', Password: 'View@123', Role: 'View', 'Import Permission': 'No', 'Full Access': 'No', 'Delete Request Permission': 'No', Status: 'Active' }
         ]);
       }
+    }
+
+    // Ensure 'DeleteRequests' sheet exists
+    deleteRequestsSheet = doc.sheetsByTitle['DeleteRequests'];
+    if (!deleteRequestsSheet) {
+      console.log('Creating "DeleteRequests" sheet in Google Sheet...');
+      deleteRequestsSheet = await doc.addSheet({
+        title: 'DeleteRequests',
+        headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Requested By', 'Requested Date', 'Requested Time', 'Status', 'Action By', 'Action Date']
+      });
     }
 
     isConnected = true;
@@ -194,6 +199,7 @@ async function getUsers() {
       role: (row.get('Role') || 'View').toString().trim(),
       importPermission: (row.get('Import Permission') || '').toString().trim().toLowerCase() === 'yes',
       fullAccess: (row.get('Full Access') || '').toString().trim().toLowerCase() === 'yes',
+      deleteRequestPermission: (row.get('Delete Request Permission') || '').toString().trim().toLowerCase() === 'yes',
       status: (row.get('Status') || 'Active').toString().trim()
     }));
   } catch (err) {
@@ -214,23 +220,24 @@ async function createUser(userObj) {
     const newUser = {
       rowIndex: newId,
       username: userObj.username,
-      password: bcrypt.hashSync(userObj.password, 10),
+      password: userObj.password,
       role: userObj.role || 'View',
       importPermission: userObj.importPermission || false,
       fullAccess: userObj.fullAccess || false,
+      deleteRequestPermission: userObj.deleteRequestPermission || false,
       status: userObj.status || 'Active'
     };
     inMemoryData.users.push(newUser);
     return true;
   }
 
-  const hashedPassword = bcrypt.hashSync(userObj.password, 10);
   await usersSheet.addRow({
     Username: userObj.username,
-    Password: hashedPassword,
+    Password: userObj.password,
     Role: userObj.role || 'View',
     'Import Permission': userObj.importPermission ? 'Yes' : 'No',
     'Full Access': userObj.fullAccess ? 'Yes' : 'No',
+    'Delete Request Permission': userObj.deleteRequestPermission ? 'Yes' : 'No',
     Status: userObj.status || 'Active'
   });
   return true;
@@ -240,10 +247,11 @@ async function updateUser(rowIndex, userObj) {
   if (!isConnected) {
     const target = inMemoryData.users.find(u => u.rowIndex === parseInt(rowIndex, 10));
     if (target) {
-      if (userObj.password) target.password = bcrypt.hashSync(userObj.password, 10);
+      if (userObj.password) target.password = userObj.password;
       if (userObj.role) target.role = userObj.role;
       if (userObj.importPermission !== undefined) target.importPermission = userObj.importPermission;
       if (userObj.fullAccess !== undefined) target.fullAccess = userObj.fullAccess;
+      if (userObj.deleteRequestPermission !== undefined) target.deleteRequestPermission = userObj.deleteRequestPermission;
       if (userObj.status) target.status = userObj.status;
     }
     return true;
@@ -255,8 +263,9 @@ async function updateUser(rowIndex, userObj) {
     if (userObj.role) targetRow.set('Role', userObj.role);
     if (userObj.importPermission !== undefined) targetRow.set('Import Permission', userObj.importPermission ? 'Yes' : 'No');
     if (userObj.fullAccess !== undefined) targetRow.set('Full Access', userObj.fullAccess ? 'Yes' : 'No');
+    if (userObj.deleteRequestPermission !== undefined) targetRow.set('Delete Request Permission', userObj.deleteRequestPermission ? 'Yes' : 'No');
     if (userObj.status) targetRow.set('Status', userObj.status);
-    if (userObj.password) targetRow.set('Password', bcrypt.hashSync(userObj.password, 10));
+    if (userObj.password) targetRow.set('Password', userObj.password);
     await targetRow.save();
   }
   return true;
@@ -402,6 +411,148 @@ async function batchAddRecords(recordsArr) {
   return true;
 }
 
+/* ==========================================================================
+   Delete Requests Data Access Methods
+   ========================================================================== */
+
+async function getDeleteRequests() {
+  if (!isConnected) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT * FROM delete_requests ORDER BY id DESC');
+      if (rows && rows.length > 0) {
+        return rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          recordId: r.record_id,
+          pid: r.pid,
+          name: r.name,
+          father: r.father,
+          utNo: r.ut_no,
+          aadharNo: r.aadhar_no,
+          requestedBy: r.requested_by,
+          requestedDate: r.requested_date,
+          requestedTime: r.requested_time,
+          status: r.status,
+          actionBy: r.action_by,
+          actionDate: r.action_date
+        }));
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return inMemoryData.deleteRequests;
+  }
+
+  try {
+    const rows = await deleteRequestsSheet.getRows();
+    return rows.map(row => ({
+      id: row.rowNumber,
+      rowIndex: row.rowNumber,
+      recordId: (row.get('ID') || row.rowNumber).toString().trim(),
+      pid: (row.get('Record PID') || '').toString().trim(),
+      name: (row.get('Record Name') || '').toString().trim(),
+      father: (row.get('Father') || '').toString().trim(),
+      utNo: (row.get('UT No') || '').toString().trim(),
+      aadharNo: (row.get('Aadhar No') || '').toString().trim(),
+      requestedBy: (row.get('Requested By') || '').toString().trim(),
+      requestedDate: (row.get('Requested Date') || '').toString().trim(),
+      requestedTime: (row.get('Requested Time') || '').toString().trim(),
+      status: (row.get('Status') || 'Pending').toString().trim(),
+      actionBy: (row.get('Action By') || '').toString().trim(),
+      actionDate: (row.get('Action Date') || '').toString().trim()
+    }));
+  } catch (err) {
+    console.error('getDeleteRequests error:', err.message);
+    return inMemoryData.deleteRequests;
+  }
+}
+
+async function createDeleteRequest(reqObj) {
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      const res = await dbRun(
+        `INSERT INTO delete_requests (record_id, pid, name, father, ut_no, aadhar_no, requested_by, requested_date, requested_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [reqObj.recordId, reqObj.pid, reqObj.name, reqObj.father || '', reqObj.utNo || '', reqObj.aadharNo || '', reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, 'Pending']
+      );
+      reqObj.id = res.lastID;
+      reqObj.rowIndex = res.lastID;
+    } catch (e) {
+      const newId = inMemoryData.deleteRequests.length + 1;
+      reqObj.id = newId;
+      reqObj.rowIndex = newId;
+    }
+    inMemoryData.deleteRequests.push({ ...reqObj, status: 'Pending' });
+    return true;
+  }
+
+  await deleteRequestsSheet.addRow({
+    'ID': reqObj.recordId,
+    'Record PID': reqObj.pid,
+    'Record Name': reqObj.name,
+    'Father': reqObj.father || '',
+    'UT No': reqObj.utNo || '',
+    'Aadhar No': reqObj.aadharNo || '',
+    'Requested By': reqObj.requestedBy,
+    'Requested Date': reqObj.requestedDate,
+    'Requested Time': reqObj.requestedTime,
+    'Status': 'Pending',
+    'Action By': '',
+    'Action Date': ''
+  });
+  return true;
+}
+
+async function updateDeleteRequestStatus(requestId, status, actionBy) {
+  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(
+        `UPDATE delete_requests SET status = ?, action_by = ?, action_date = ? WHERE id = ?`,
+        [status, actionBy, actionDate, requestId]
+      );
+    } catch (e) {}
+    const item = inMemoryData.deleteRequests.find(r => r.id === parseInt(requestId, 10));
+    if (item) {
+      item.status = status;
+      item.actionBy = actionBy;
+      item.actionDate = actionDate;
+    }
+    return true;
+  }
+
+  const rows = await deleteRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    targetRow.set('Status', status);
+    targetRow.set('Action By', actionBy);
+    targetRow.set('Action Date', actionDate);
+    await targetRow.save();
+  }
+  return true;
+}
+
+async function deleteDeleteRequest(requestId) {
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(`DELETE FROM delete_requests WHERE id = ?`, [requestId]);
+    } catch (e) {}
+    inMemoryData.deleteRequests = inMemoryData.deleteRequests.filter(r => r.id !== parseInt(requestId, 10));
+    return true;
+  }
+
+  const rows = await deleteRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    await targetRow.delete();
+  }
+  return true;
+}
+
 module.exports = {
   initGoogleSheets,
   getUsers,
@@ -414,6 +565,10 @@ module.exports = {
   updateRecord,
   deleteRecord,
   batchAddRecords,
+  getDeleteRequests,
+  createDeleteRequest,
+  updateDeleteRequestStatus,
+  deleteDeleteRequest,
   getIsConnected: () => isConnected,
   getConnectionError: () => connectionError
 };

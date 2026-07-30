@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 // POST /api/users - Create User
 router.post('/', async (req, res) => {
   try {
-    const { newUsername, password, role, importPermission, fullAccess, status } = req.body;
+    const { newUsername, password, role, importPermission, fullAccess, deleteRequestPermission, status } = req.body;
     const cleanUsername = (newUsername || '').trim();
 
     if (!cleanUsername) return res.status(400).json({ success: false, message: 'Username is required.' });
@@ -40,6 +40,7 @@ router.post('/', async (req, res) => {
       role: role || 'View',
       importPermission: !!importPermission,
       fullAccess: !!fullAccess,
+      deleteRequestPermission: !!deleteRequestPermission,
       status: status || 'Active'
     });
 
@@ -58,12 +59,13 @@ router.put('/:id', async (req, res) => {
 
     if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
 
-    const { role, importPermission, fullAccess, status } = req.body;
+    const { role, importPermission, fullAccess, deleteRequestPermission, status } = req.body;
 
     await updateUser(rowIndex, {
       role: role || targetUser.role,
       importPermission: importPermission !== undefined ? !!importPermission : targetUser.importPermission,
       fullAccess: fullAccess !== undefined ? !!fullAccess : targetUser.fullAccess,
+      deleteRequestPermission: deleteRequestPermission !== undefined ? !!deleteRequestPermission : targetUser.deleteRequestPermission,
       status: status || targetUser.status
     });
 
@@ -114,6 +116,19 @@ router.patch('/:id/full-access', async (req, res) => {
     res.json({ success: true, message: 'Full access updated.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Toggle full access error: ' + err.message });
+  }
+});
+
+// PATCH /api/users/:id/delete-request-permission - Toggle Delete Request Permission
+router.patch('/:id/delete-request-permission', async (req, res) => {
+  try {
+    const rowIndex = parseInt(req.params.id, 10);
+    const { enabled } = req.body;
+
+    await updateUser(rowIndex, { deleteRequestPermission: !!enabled });
+    res.json({ success: true, message: 'Delete request permission updated.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Toggle delete request permission error: ' + err.message });
   }
 });
 

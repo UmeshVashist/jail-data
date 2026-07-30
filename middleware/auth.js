@@ -16,7 +16,7 @@ async function requireAuth(req, res, next) {
     // Refresh latest permissions from Google Sheet
     const freshUser = await getUserByUsername(req.session.user.username);
     if (!freshUser || freshUser.status !== 'Active') {
-      req.session.destroy();
+      req.session = null;
       return res.status(401).json({ success: false, message: 'Account is deactivated or invalid.' });
     }
 
@@ -90,9 +90,25 @@ function canModifyRecord(user, record) {
   return false;
 }
 
+/**
+ * Middleware to require Delete Request page access permission (Admin or granted Add users).
+ */
+function requireDeleteRequestPermission(req, res, next) {
+  if (!req.user || req.user.status !== 'Active') {
+    return res.status(403).json({ success: false, message: 'Access denied.' });
+  }
+
+  if (req.user.role === 'Admin' || req.user.deleteRequestPermission) {
+    return next();
+  }
+
+  return res.status(403).json({ success: false, message: 'Delete Request permission denied. Contact your Admin.' });
+}
+
 module.exports = {
   requireAuth,
   requireAdmin,
   requireImportPermission,
+  requireDeleteRequestPermission,
   canModifyRecord
 };

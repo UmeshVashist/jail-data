@@ -15,20 +15,26 @@ const { requireAuth } = require('../middleware/auth');
 function verifyPassword(inputPassword, storedPassword) {
   if (!inputPassword || !storedPassword) return false;
   
-  const cleanInput = inputPassword.trim();
-  const cleanStored = storedPassword.trim();
+  const cleanInput = String(inputPassword).trim();
+  const cleanStored = String(storedPassword).trim();
 
-  // If stored password is a bcrypt hash
-  if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$')) {
+  // 1. Direct plaintext match (Primary check for readable Google Sheets passwords)
+  if (cleanInput === cleanStored) {
+    return true;
+  }
+
+  // 2. If stored password is a bcrypt hash ($2a$, $2b$, $2y$)
+  if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
     try {
-      if (bcrypt.compareSync(cleanInput, cleanStored)) return true;
+      if (bcrypt.compareSync(cleanInput, cleanStored)) {
+        return true;
+      }
     } catch (e) {
-      // Fallback if bcrypt parsing fails
+      console.error('Bcrypt comparison warning:', e.message);
     }
   }
 
-  // Direct plaintext match (for passwords typed directly into Google Sheet)
-  return cleanInput === cleanStored;
+  return false;
 }
 
 // Login user
@@ -41,11 +47,13 @@ router.post('/login', async (req, res) => {
 
     const user = await getUserByUsername(username.trim());
     if (!user) {
+      console.warn(`[LOGIN FAIL] User "${username.trim()}" not found in sheet.`);
       return res.status(401).json({ success: false, message: 'Invalid Username or Password.' });
     }
 
     const passwordMatch = verifyPassword(password, user.password);
     if (!passwordMatch) {
+      console.warn(`[LOGIN FAIL] Password mismatch for user "${username.trim()}". Stored in sheet: "${user.password}"`);
       return res.status(401).json({ success: false, message: 'Invalid Username or Password.' });
     }
 
@@ -88,13 +96,8 @@ router.get('/session', requireAuth, (req, res) => {
 
 // Logout user
 router.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: 'Failed to destroy session.' });
-    }
-    res.clearCookie('connect.sid');
-    return res.json({ success: true, message: 'Logged out successfully.' });
-  });
+  req.session = null;
+  return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
 module.exports = router;

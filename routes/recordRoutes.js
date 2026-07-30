@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers } = require('../config/googleSheets');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests } = require('../config/googleSheets');
 const { requireAuth, canModifyRecord } = require('../middleware/auth');
 
 function getFormattedDate(d = new Date()) {
@@ -102,6 +102,10 @@ router.get('/', requireAuth, async (req, res) => {
     const sortDirection = req.query.sortDirection || 'desc';
 
     const allRecords = await getRecords();
+    const allRequests = await getDeleteRequests();
+    const pendingRequestRecordIds = new Set(
+      allRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
+    );
     const filteredRecords = [];
 
     for (let i = 0; i < allRecords.length; i++) {
@@ -124,6 +128,7 @@ router.get('/', requireAuth, async (req, res) => {
       // Add permission flags
       rec.canEdit = canModifyRecord(req.user, rec);
       rec.canDelete = canModifyRecord(req.user, rec);
+      rec.hasPendingDeleteRequest = pendingRequestRecordIds.has(String(rec.id)) || pendingRequestRecordIds.has(String(rec.rowIndex)) || pendingRequestRecordIds.has(String(rec.pid));
 
       filteredRecords.push(rec);
     }

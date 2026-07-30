@@ -55,8 +55,35 @@ async function initDatabase() {
         role TEXT NOT NULL DEFAULT 'View',
         import_permission INTEGER DEFAULT 0,
         full_access INTEGER DEFAULT 0,
+        delete_request_permission INTEGER DEFAULT 0,
         status TEXT DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Ensure delete_request_permission column exists in existing DB
+    try {
+      await dbRun(`ALTER TABLE users ADD COLUMN delete_request_permission INTEGER DEFAULT 0`);
+    } catch (e) {
+      // Column already exists
+    }
+
+    // Create Delete Requests table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS delete_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id INTEGER NOT NULL,
+        pid TEXT NOT NULL,
+        name TEXT NOT NULL,
+        father TEXT,
+        ut_no TEXT,
+        aadhar_no TEXT,
+        requested_by TEXT NOT NULL,
+        requested_date TEXT NOT NULL,
+        requested_time TEXT NOT NULL,
+        status TEXT DEFAULT 'Pending',
+        action_by TEXT,
+        action_date TEXT
       )
     `);
 

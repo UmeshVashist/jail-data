@@ -17,6 +17,7 @@ const recordRoutes = require('./routes/recordRoutes');
 const importRoutes = require('./routes/importRoutes');
 const userRoutes = require('./routes/userRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const deleteRequestRoutes = require('./routes/deleteRequestRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,7 @@ app.use('/api/records', recordRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/delete-requests', deleteRequestRoutes);
 
 // Fallback Route to serve Single Page Application
 app.get('*', (req, res) => {

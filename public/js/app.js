@@ -195,6 +195,7 @@ function updateUIForRolePermissions() {
   const role = currentUserState.role;
   const canImport = role === 'Admin' || (role === 'Add' && (currentUserState.importPermission || currentUserState.fullAccess));
   const canAddRecords = role === 'Admin' || role === 'Add';
+  const canAccessDeleteRequests = role === 'Admin' || currentUserState.deleteRequestPermission;
 
   if (canAddRecords) {
     document.getElementById('dash-btn-add-record').classList.remove('d-none');
@@ -208,6 +209,23 @@ function updateUIForRolePermissions() {
     document.getElementById('nav-import').classList.remove('d-none');
   } else {
     document.getElementById('nav-import').classList.add('d-none');
+  }
+
+  if (canAccessDeleteRequests) {
+    const el = document.getElementById('nav-item-delete-requests');
+    if (el) el.classList.remove('d-none');
+    fetchPendingDeleteRequestsCount();
+  } else {
+    const el = document.getElementById('nav-item-delete-requests');
+    if (el) el.classList.add('d-none');
+  }
+
+  if (role === 'View') {
+    const el = document.getElementById('nav-item-my-requests');
+    if (el) el.classList.add('d-none');
+  } else {
+    const el = document.getElementById('nav-item-my-requests');
+    if (el) el.classList.remove('d-none');
   }
 
   if (role === 'Admin') {
@@ -225,6 +243,8 @@ function navigateToView(viewName) {
     'dashboard': 'Dashboard Overview',
     'records': 'Data Records & Operations',
     'import': 'Batch Excel / CSV Import',
+    'delete-requests': 'Incoming Delete Requests',
+    'my-requests': 'My Sent Delete Requests',
     'users': 'Admin User Management'
   };
 
@@ -242,6 +262,10 @@ function navigateToView(viewName) {
     loadDashboardData();
   } else if (viewName === 'records') {
     triggerFetchRecords();
+  } else if (viewName === 'delete-requests') {
+    loadDeleteRequestsList();
+  } else if (viewName === 'my-requests') {
+    loadMyRequestsList();
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
     loadUsersList();
   }
@@ -360,6 +384,12 @@ function renderRecordsTable(records) {
     }
     if (rec.canDelete) {
       actionButtons += `<button class="btn btn-sm btn-outline-danger" title="Delete Record" onclick="confirmDeleteRecord(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-trash"></i></button>`;
+    } else if (currentUserState && (currentUserState.role === 'Add' || currentUserState.role === 'Admin')) {
+      if (rec.hasPendingDeleteRequest) {
+        actionButtons += `<span class="badge bg-warning text-dark me-1" title="Delete Request Pending"><i class="bi bi-clock-history me-1"></i>Requested</span>`;
+      } else {
+        actionButtons += `<button class="btn btn-sm btn-outline-warning" title="Send Delete Request" onclick="sendDeleteRequest(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-send me-1"></i>Request Delete</button>`;
+      }
     }
 
     html += `
@@ -906,6 +936,12 @@ function renderUsersTable(usersList) {
         </td>
         <td>
           <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" ${u.deleteRequestPermission ? 'checked' : ''} onchange="toggleDeleteRequestPermissionServer(${u.id}, this.checked)">
+            <span class="small ${u.deleteRequestPermission ? 'text-warning fw-semibold' : 'text-muted'}">${u.deleteRequestPermission ? 'Granted' : 'None'}</span>
+          </div>
+        </td>
+        <td>
+          <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" ${u.status === 'Active' ? 'checked' : ''} onchange="toggleUserStatusServer(${u.id}, this.checked)">
             <span class="badge ${statusBadge}">${escapeHtml(u.status)}</span>
           </div>
@@ -930,6 +966,7 @@ function showAddUserModal() {
   document.getElementById('modal-user-username').disabled = false;
   document.getElementById('modal-user-password-container').classList.remove('d-none');
   document.getElementById('modal-user-password').required = true;
+  document.getElementById('modal-user-deleterequest').checked = false;
   userModalInstance.show();
 }
 
@@ -948,6 +985,7 @@ function showEditUserModal(encodedUserJson) {
   document.getElementById('modal-user-role').value = u.role;
   document.getElementById('modal-user-import').checked = u.importPermission;
   document.getElementById('modal-user-fullaccess').checked = u.fullAccess;
+  document.getElementById('modal-user-deleterequest').checked = !!u.deleteRequestPermission;
   document.getElementById('modal-user-status').value = u.status;
 
   userModalInstance.show();
@@ -971,6 +1009,7 @@ async function handleUserFormSubmit(event) {
     role: document.getElementById('modal-user-role').value,
     importPermission: document.getElementById('modal-user-import').checked,
     fullAccess: document.getElementById('modal-user-fullaccess').checked,
+    deleteRequestPermission: document.getElementById('modal-user-deleterequest').checked,
     status: document.getElementById('modal-user-status').value
   };
 
@@ -1036,6 +1075,270 @@ async function toggleFullAccessServer(userId, enabled) {
   } catch (err) {
     showToast('danger', 'Error', err.message);
   }
+}
+
+async function toggleDeleteRequestPermissionServer(userId, enabled) {
+  try {
+    const res = await fetch(`/api/users/${userId}/delete-request-permission`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', 'Permission Updated', data.message);
+    } else {
+      showToast('danger', 'Error', data.message);
+      loadUsersList();
+    }
+  } catch (err) {
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+/* Delete Requests Module */
+
+async function fetchPendingDeleteRequestsCount() {
+  try {
+    const res = await fetch('/api/delete-requests/pending');
+    const data = await res.json();
+    if (data.success) {
+      const count = data.data ? data.data.length : 0;
+      const badge = document.getElementById('nav-delete-requests-badge');
+      if (badge) {
+        badge.innerText = count;
+        if (count > 0) badge.classList.remove('d-none');
+        else badge.classList.add('d-none');
+      }
+    }
+  } catch (err) {}
+}
+
+async function sendDeleteRequest(recordId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Request Data Deletion?';
+  document.getElementById('confirmModalMessage').innerText = `Send a delete request to Admin for record PID "${pid}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Send Request';
+  executeBtn.className = 'btn btn-warning btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Sending delete request...');
+    try {
+      const res = await fetch('/api/delete-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordId })
+      });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Request Sent', data.message);
+        triggerFetchRecords();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function loadDeleteRequestsList() {
+  showLoader('Loading delete requests...');
+  try {
+    const res = await fetch('/api/delete-requests/pending');
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      renderDeleteRequestsTable(data.data);
+      fetchPendingDeleteRequestsCount();
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function renderDeleteRequestsTable(requests) {
+  const tbody = document.getElementById('delete-requests-table-body');
+  if (!requests || requests.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle fs-3 d-block mb-2 text-success opacity-50"></i>No pending delete requests.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  requests.forEach(req => {
+    html += `
+      <tr>
+        <td class="fw-bold text-primary">${escapeHtml(req.pid)}</td>
+        <td class="fw-semibold">${escapeHtml(req.name)}</td>
+        <td>${escapeHtml(req.father || '-')}</td>
+        <td>${escapeHtml(req.utNo || '-')}</td>
+        <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
+        <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
+        <td><span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span></td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-danger me-1" title="Approve and Delete Data" onclick="approveDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-check-circle me-1"></i>Delete Data
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" title="Cancel Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-x-circle me-1"></i>Cancel Request
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+async function approveDeleteRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Approve & Delete Data?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve delete request and PERMANENTLY delete record PID "${pid}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Delete Record';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Deleting record and resolving request...');
+    try {
+      const res = await fetch(`/api/delete-requests/${requestId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Approved & Deleted', data.message);
+        loadDeleteRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function rejectDeleteRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Reject Delete Request?';
+  document.getElementById('confirmModalMessage').innerText = `Reject delete request for record PID "${pid}"? Record will NOT be deleted.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Reject Request';
+  executeBtn.className = 'btn btn-secondary btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Rejecting request...');
+    try {
+      const res = await fetch(`/api/delete-requests/${requestId}/reject`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('info', 'Request Rejected', data.message);
+        loadDeleteRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function loadMyRequestsList() {
+  showLoader('Loading your requests...');
+  try {
+    const res = await fetch('/api/delete-requests/my-requests');
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      renderMyRequestsTable(data.data);
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function renderMyRequestsTable(requests) {
+  const tbody = document.getElementById('my-requests-table-body');
+  if (!requests || requests.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any delete requests.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  requests.forEach(req => {
+    const statusBadge = req.status === 'Approved' ? 'bg-success' : req.status === 'Rejected' ? 'bg-secondary' : 'bg-warning text-dark';
+    
+    let actionCol = '-';
+    if (req.status === 'Pending') {
+      actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
+    }
+
+    html += `
+      <tr>
+        <td class="fw-bold text-primary">${escapeHtml(req.pid)}</td>
+        <td class="fw-semibold">${escapeHtml(req.name)}</td>
+        <td>${escapeHtml(req.father || '-')}</td>
+        <td>${escapeHtml(req.utNo || '-')}</td>
+        <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
+        <td><span class="badge ${statusBadge}">${escapeHtml(req.status)}</span></td>
+        <td>${escapeHtml(req.actionBy || '-')}</td>
+        <td class="text-end">${actionCol}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+async function cancelMyDeleteRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Cancel Your Delete Request?';
+  document.getElementById('confirmModalMessage').innerText = `Withdraw your delete request for record PID "${pid}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Withdraw Request';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Canceling request...');
+    try {
+      const res = await fetch(`/api/delete-requests/${requestId}/cancel`, { method: 'DELETE' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Request Canceled', data.message);
+        loadMyRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
 }
 
 async function toggleUserStatusServer(userId, enabled) {

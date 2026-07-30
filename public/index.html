@@ -111,6 +111,19 @@
             <span>Import Data</span>
           </a>
         </li>
+        <li class="nav-item d-none" id="nav-item-delete-requests">
+          <a class="nav-link" id="nav-delete-requests" href="#" onclick="navigateToView('delete-requests'); return false;">
+            <i class="bi bi-trash-fill text-warning"></i>
+            <span>Delete Requests</span>
+            <span class="badge bg-danger rounded-pill ms-auto d-none" id="nav-delete-requests-badge">0</span>
+          </a>
+        </li>
+        <li class="nav-item" id="nav-item-my-requests">
+          <a class="nav-link" id="nav-my-requests" href="#" onclick="navigateToView('my-requests'); return false;">
+            <i class="bi bi-send-fill text-info"></i>
+            <span>My Requests</span>
+          </a>
+        </li>
         <li class="nav-item">
           <a class="nav-link" id="nav-users" href="#" onclick="navigateToView('users'); return false;">
             <i class="bi bi-people-fill"></i>
@@ -478,7 +491,7 @@
           <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
             <div>
               <h3 class="fw-bold text-dark mb-1">User Management</h3>
-              <p class="text-muted small mb-0">Manage portal user accounts, assign roles, grant import permissions, and configure full access</p>
+              <p class="text-muted small mb-0">Manage portal user accounts, assign roles, grant permissions, and configure delete request access</p>
             </div>
             <div class="mt-3 mt-md-0">
               <button class="btn btn-primary btn-sm rounded-2 shadow-sm" onclick="showAddUserModal()">
@@ -496,13 +509,96 @@
                     <th>Role</th>
                     <th>Import Permission</th>
                     <th>Full Access</th>
+                    <th>Delete Request Access</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="users-table-body">
                   <tr>
-                    <td colspan="6" class="text-center py-4 text-muted">Loading users list...</td>
+                    <td colspan="7" class="text-center py-4 text-muted">Loading users list...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Delete Requests Section (Admin / Delete Request Access) -->
+        <div id="delete-requests-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">Incoming Delete Requests</h3>
+              <p class="text-muted small mb-0">Review and action data deletion requests submitted by users</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadDeleteRequestsList()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Requests
+              </button>
+            </div>
+          </div>
+
+          <div class="custom-table-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>PID</th>
+                    <th>Name</th>
+                    <th>Father</th>
+                    <th>UT No</th>
+                    <th>Requested By</th>
+                    <th>Request Date/Time</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="delete-requests-table-body">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading delete requests...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- My Requests Section (Sent Delete Requests) -->
+        <div id="my-requests-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">My Delete Requests</h3>
+              <p class="text-muted small mb-0">Track all deletion requests you have submitted to Admin</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadMyRequestsList()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh My Requests
+              </button>
+            </div>
+          </div>
+
+          <div class="custom-table-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>PID</th>
+                    <th>Name</th>
+                    <th>Father</th>
+                    <th>UT No</th>
+                    <th>Request Date/Time</th>
+                    <th>Status</th>
+                    <th>Action By</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="my-requests-table-body">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading your delete requests...</td>
                   </tr>
                 </tbody>
               </table>
@@ -635,16 +731,22 @@
             </div>
 
             <div class="row g-2 mb-3">
-              <div class="col-6">
+              <div class="col-4">
                 <div class="form-check form-switch card p-2 bg-light border-0">
                   <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-import">
-                  <label class="form-check-label small fw-semibold text-dark" for="modal-user-import">Import Permission</label>
+                  <label class="form-check-label small fw-semibold text-dark" for="modal-user-import">Import</label>
                 </div>
               </div>
-              <div class="col-6">
+              <div class="col-4">
                 <div class="form-check form-switch card p-2 bg-light border-0">
                   <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-fullaccess">
                   <label class="form-check-label small fw-semibold text-dark" for="modal-user-fullaccess">Full Access</label>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="form-check form-switch card p-2 bg-light border-0">
+                  <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-deleterequest">
+                  <label class="form-check-label small fw-semibold text-dark" for="modal-user-deleterequest" title="Grant access to view and manage delete requests">Delete Access</label>
                 </div>
               </div>
             </div>
