@@ -21,6 +21,7 @@ let searchState = {
   query: '',
   startDate: '',
   endDate: '',
+  remark: '',
   page: 1,
   pageSize: 25,
   sortColumn: 'createdDate',
@@ -276,6 +277,7 @@ function initializeAuthenticatedApp() {
   document.getElementById('header-avatar').innerText = currentUserState.username.charAt(0).toUpperCase();
 
   updateUIForRolePermissions();
+  loadRemarkOptions();
   navigateToView('dashboard');
   startInactivityMonitor();
 }
@@ -364,6 +366,7 @@ function navigateToView(viewName) {
   if (viewName === 'dashboard') {
     loadDashboardData();
   } else if (viewName === 'records') {
+    loadRemarkOptions();
     triggerFetchRecords();
   } else if (viewName === 'delete-requests') {
     loadDeleteRequestsList();
@@ -441,13 +444,19 @@ function handleInstantSearch() {
 }
 
 async function triggerFetchRecords(highlightPid = null) {
+  if (!currentRemarkOptions || currentRemarkOptions.length === 0) {
+    await loadRemarkOptions();
+  }
   searchState.startDate = document.getElementById('filter-start-date').value;
   searchState.endDate = document.getElementById('filter-end-date').value;
+  const filterRemarkEl = document.getElementById('filter-remark');
+  searchState.remark = filterRemarkEl ? filterRemarkEl.value : '';
 
   const queryParams = new URLSearchParams({
     query: searchState.query,
     startDate: searchState.startDate,
     endDate: searchState.endDate,
+    remark: searchState.remark,
     page: searchState.page,
     pageSize: searchState.pageSize,
     sortColumn: searchState.sortColumn,
@@ -539,6 +548,10 @@ function changePageSize(size) {
 
 function renderPagination(total, page, pageSize) {
   document.getElementById('pagination-total-count').innerText = total;
+  const foundCountEl = document.getElementById('records-found-count');
+  if (foundCountEl) {
+    foundCountEl.innerText = total;
+  }
   const paginationList = document.getElementById('pagination-list');
 
   if (pageSize === 'All' || total <= pageSize) {
@@ -573,9 +586,12 @@ function clearFilters() {
   document.getElementById('search-query-input').value = '';
   document.getElementById('filter-start-date').value = '';
   document.getElementById('filter-end-date').value = '';
+  const filterRemarkEl = document.getElementById('filter-remark');
+  if (filterRemarkEl) filterRemarkEl.value = '';
   searchState.query = '';
   searchState.startDate = '';
   searchState.endDate = '';
+  searchState.remark = '';
   searchState.page = 1;
   triggerFetchRecords();
 }
@@ -588,9 +604,29 @@ async function loadRemarkOptions() {
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
       currentRemarkOptions = data.data;
+      populateFilterRemarkDropdown();
     }
   } catch (err) {
     console.error('Error fetching remark options:', err);
+  }
+}
+
+function populateFilterRemarkDropdown() {
+  const selectEl = document.getElementById('filter-remark');
+  if (!selectEl) return;
+  const currentVal = selectEl.value;
+
+  let html = '<option value="">All</option>';
+  const cleanOptions = currentRemarkOptions.filter(opt => opt && opt.toString().trim().toLowerCase() !== 'remark options');
+
+  cleanOptions.forEach(opt => {
+    const isSelected = opt === currentVal ? 'selected' : '';
+    html += `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+  });
+
+  selectEl.innerHTML = html;
+  if (currentVal) {
+    selectEl.value = currentVal;
   }
 }
 
@@ -1004,7 +1040,8 @@ async function exportDataToExcel() {
     const queryParams = new URLSearchParams({
       query: searchState.query,
       startDate: searchState.startDate,
-      endDate: searchState.endDate
+      endDate: searchState.endDate,
+      remark: searchState.remark
     });
 
     const res = await fetch(`/api/export?${queryParams.toString()}`);

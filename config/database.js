@@ -102,7 +102,7 @@ async function initDatabase() {
 
     const remarkCount = await dbGet('SELECT COUNT(*) as count FROM remark_options');
     if (remarkCount.count === 0) {
-      const defaults = ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other'];
+      const defaults = ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other'];
       for (const opt of defaults) {
         await dbRun('INSERT OR IGNORE INTO remark_options (option_value) VALUES (?)', [opt]);
       }

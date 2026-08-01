@@ -29,7 +29,7 @@ const inMemoryData = {
   ],
   records: [],
   deleteRequests: [],
-  remarkOptions: ['Completed', 'Pending', 'In Progress', 'Verified', 'Rejected', 'Imported', 'Other']
+  remarkOptions: ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other']
 };
 
 /**
@@ -639,7 +639,9 @@ async function getRemarkOptions() {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT option_value FROM remark_options ORDER BY id ASC');
       if (rows && rows.length > 0) {
-        return rows.map(r => r.option_value);
+        return rows
+          .map(r => r.option_value)
+          .filter(val => val && val.toString().trim().toLowerCase() !== 'remark options');
       }
     } catch (e) {}
     return inMemoryData.remarkOptions;
@@ -648,8 +650,11 @@ async function getRemarkOptions() {
   try {
     const rows = await dropdownSheet.getRows();
     const options = rows
-      .map(row => (row.get('Remark Options') || '').toString().trim())
-      .filter(val => val !== '');
+      .map(row => {
+        const val = row.get('Remark Options') || (row._rawData ? row._rawData[0] : '');
+        return (val || '').toString().trim();
+      })
+      .filter(val => val !== '' && val.toLowerCase() !== 'remark options');
     
     if (options.length > 0) return options;
   } catch (err) {

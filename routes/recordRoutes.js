@@ -149,6 +149,7 @@ router.get('/', requireAuth, async (req, res) => {
     const query = (req.query.query || '').trim().toLowerCase();
     const startDate = req.query.startDate || '';
     const endDate = req.query.endDate || '';
+    const remarkFilter = (req.query.remark || '').trim();
     const page = parseInt(req.query.page || 1, 10);
     const pageSize = req.query.pageSize === 'All' ? 'All' : parseInt(req.query.pageSize || 25, 10);
     const sortColumn = req.query.sortColumn || 'createdDate';
@@ -172,6 +173,11 @@ router.get('/', requireAuth, async (req, res) => {
         const utMatch = (rec.utNo || '').toLowerCase().includes(query);
         const aadharMatch = (rec.aadharNo || '').toLowerCase().includes(query);
         if (!pidMatch && !nameMatch && !fatherMatch && !utMatch && !aadharMatch) continue;
+      }
+
+      // Remark Filter
+      if (remarkFilter !== '' && remarkFilter.toLowerCase() !== 'all') {
+        if ((rec.remark || '').trim().toLowerCase() !== remarkFilter.toLowerCase()) continue;
       }
 
       // Date Range Filter
