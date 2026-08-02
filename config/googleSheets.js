@@ -17,6 +17,7 @@ let doc = null;
 let dataSheet = null;
 let usersSheet = null;
 let deleteRequestsSheet = null;
+let editRequestsSheet = null;
 let dropdownSheet = null;
 let isConnected = false;
 let connectionError = null;
@@ -29,6 +30,7 @@ const inMemoryData = {
   ],
   records: [],
   deleteRequests: [],
+  editRequests: [],
   remarkOptions: ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other']
 };
 
@@ -157,6 +159,16 @@ async function initGoogleSheets() {
       } catch (e) {
         console.error('Error checking DeleteRequests header row:', e.message);
       }
+    }
+
+    // Ensure 'EditRequests' sheet exists
+    editRequestsSheet = doc.sheetsByTitle['EditRequests'];
+    if (!editRequestsSheet) {
+      console.log('Creating "EditRequests" sheet in Google Sheet...');
+      editRequestsSheet = await doc.addSheet({
+        title: 'EditRequests',
+        headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Proposed Data', 'Requested By', 'Requested Date', 'Requested Time', 'Reason', 'Status', 'Action By', 'Action Date']
+      });
     }
 
     // Ensure 'DropdownOptions' sheet exists
@@ -630,6 +642,167 @@ async function deleteDeleteRequest(requestId) {
 }
 
 /* ==========================================================================
+   Edit Requests Data Access Methods
+   ========================================================================== */
+
+async function getEditRequests() {
+  if (!isConnected) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT * FROM edit_requests ORDER BY id DESC');
+      if (rows && rows.length > 0) {
+        return rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          recordId: r.record_id,
+          pid: r.pid,
+          name: r.name,
+          father: r.father,
+          utNo: r.ut_no,
+          aadharNo: r.aadhar_no,
+          date: r.date,
+          remark: r.remark,
+          proposedData: r.proposed_data ? (typeof r.proposed_data === 'string' ? JSON.parse(r.proposed_data) : r.proposed_data) : {},
+          requestedBy: r.requested_by,
+          requestedDate: r.requested_date,
+          requestedTime: r.requested_time,
+          reason: r.reason,
+          status: r.status,
+          actionBy: r.action_by,
+          actionDate: r.action_date
+        }));
+      }
+    } catch (e) {}
+    return inMemoryData.editRequests;
+  }
+
+  try {
+    const rows = await editRequestsSheet.getRows();
+    return rows.map(row => {
+      let propData = {};
+      try {
+        propData = JSON.parse(row.get('Proposed Data') || '{}');
+      } catch (e) {}
+      const reasonVal = (row.get('Reason') || row.get('Remark') || '').toString().trim();
+      return {
+        id: row.rowNumber,
+        rowIndex: row.rowNumber,
+        recordId: (row.get('ID') || row.rowNumber).toString().trim(),
+        pid: (row.get('Record PID') || '').toString().trim(),
+        name: (row.get('Record Name') || '').toString().trim(),
+        father: (row.get('Father') || '').toString().trim(),
+        utNo: (row.get('UT No') || '').toString().trim(),
+        aadharNo: (row.get('Aadhar No') || '').toString().trim(),
+        proposedData: propData,
+        requestedBy: (row.get('Requested By') || '').toString().trim(),
+        requestedDate: (row.get('Requested Date') || '').toString().trim(),
+        requestedTime: (row.get('Requested Time') || '').toString().trim(),
+        reason: reasonVal,
+        status: (row.get('Status') || 'Pending').toString().trim(),
+        actionBy: (row.get('Action By') || '').toString().trim(),
+        actionDate: (row.get('Action Date') || '').toString().trim()
+      };
+    });
+  } catch (err) {
+    console.error('getEditRequests error:', err.message);
+    return inMemoryData.editRequests;
+  }
+}
+
+async function createEditRequest(reqObj) {
+  const reasonVal = (reqObj.reason || '').toString().trim();
+  const proposedStr = typeof reqObj.proposedData === 'string' ? reqObj.proposedData : JSON.stringify(reqObj.proposedData || {});
+
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      const res = await dbRun(
+        `INSERT INTO edit_requests (record_id, pid, name, father, ut_no, aadhar_no, date, remark, proposed_data, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          reqObj.recordId, reqObj.pid, reqObj.name, reqObj.father || '', reqObj.utNo || '', reqObj.aadharNo || '',
+          reqObj.date || '', reqObj.remark || '', proposedStr, reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, reasonVal, 'Pending'
+        ]
+      );
+      reqObj.id = res.lastID;
+      reqObj.rowIndex = res.lastID;
+    } catch (e) {
+      const newId = inMemoryData.editRequests.length + 1;
+      reqObj.id = newId;
+      reqObj.rowIndex = newId;
+    }
+    inMemoryData.editRequests.push({ ...reqObj, proposedData: reqObj.proposedData, reason: reasonVal, status: 'Pending' });
+    return true;
+  }
+
+  await editRequestsSheet.addRow({
+    'ID': reqObj.recordId,
+    'Record PID': reqObj.pid,
+    'Record Name': reqObj.name,
+    'Father': reqObj.father || '',
+    'UT No': reqObj.utNo || '',
+    'Aadhar No': reqObj.aadharNo || '',
+    'Proposed Data': proposedStr,
+    'Requested By': reqObj.requestedBy,
+    'Requested Date': reqObj.requestedDate,
+    'Requested Time': reqObj.requestedTime,
+    'Reason': reasonVal,
+    'Status': 'Pending',
+    'Action By': '',
+    'Action Date': ''
+  });
+  return true;
+}
+
+async function updateEditRequestStatus(requestId, status, actionBy) {
+  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(
+        `UPDATE edit_requests SET status = ?, action_by = ?, action_date = ? WHERE id = ?`,
+        [status, actionBy, actionDate, requestId]
+      );
+    } catch (e) {}
+    const item = inMemoryData.editRequests.find(r => r.id === parseInt(requestId, 10));
+    if (item) {
+      item.status = status;
+      item.actionBy = actionBy;
+      item.actionDate = actionDate;
+    }
+    return true;
+  }
+
+  const rows = await editRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    targetRow.set('Status', status);
+    targetRow.set('Action By', actionBy);
+    targetRow.set('Action Date', actionDate);
+    await targetRow.save();
+  }
+  return true;
+}
+
+async function deleteEditRequest(requestId) {
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(`DELETE FROM edit_requests WHERE id = ?`, [requestId]);
+    } catch (e) {}
+    inMemoryData.editRequests = inMemoryData.editRequests.filter(r => r.id !== parseInt(requestId, 10));
+    return true;
+  }
+
+  const rows = await editRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    await targetRow.delete();
+  }
+  return true;
+}
+
+/* ==========================================================================
    Dropdown Options Access Method
    ========================================================================== */
 
@@ -747,6 +920,10 @@ module.exports = {
   createDeleteRequest,
   updateDeleteRequestStatus,
   deleteDeleteRequest,
+  getEditRequests,
+  createEditRequest,
+  updateEditRequestStatus,
+  deleteEditRequest,
   getRemarkOptions,
   addRemarkOption,
   updateRemarkOption,

@@ -118,6 +118,13 @@
             <span class="badge bg-danger rounded-pill ms-auto d-none" id="nav-delete-requests-badge">0</span>
           </a>
         </li>
+        <li class="nav-item d-none" id="nav-item-edit-requests">
+          <a class="nav-link" id="nav-edit-requests" href="#" onclick="navigateToView('edit-requests'); return false;">
+            <i class="bi bi-pencil-square text-info"></i>
+            <span>Edit Requests</span>
+            <span class="badge bg-info text-dark rounded-pill ms-auto d-none" id="nav-edit-requests-badge">0</span>
+          </a>
+        </li>
         <li class="nav-item" id="nav-item-my-requests">
           <a class="nav-link" id="nav-my-requests" href="#" onclick="navigateToView('my-requests'); return false;">
             <i class="bi bi-send-fill text-info"></i>
@@ -640,32 +647,43 @@
 
         </div>
 
-        <!-- My Requests Section (Sent Delete Requests) -->
-        <div id="my-requests-view" class="view-section d-none">
+        <!-- Admin Incoming Edit Requests Section -->
+        <div id="edit-requests-view" class="view-section d-none">
           
           <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
             <div>
-              <h3 class="fw-bold text-dark mb-1">My Delete Requests</h3>
-              <p class="text-muted small mb-0">Track all deletion requests you have submitted to Admin</p>
+              <h3 class="fw-bold text-dark mb-1">Incoming Edit Requests</h3>
+              <p class="text-muted small mb-0">Review and action data edit requests submitted by users</p>
             </div>
             <div class="mt-3 mt-md-0">
-              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadMyRequestsList()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh My Requests
+              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadEditRequestsList()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Requests
               </button>
             </div>
           </div>
 
-          <!-- Search Bar (PID and UT No Only) -->
+          <!-- Search Bar & Filters -->
           <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
             <div class="row g-2 align-items-center">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-5">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
-                  <input type="text" class="form-control border-start-0 ps-0" id="search-my-requests-input" placeholder="Search by PID or UT No..." oninput="filterMyRequestsTable()" autocomplete="off">
+                  <input type="text" class="form-control border-start-0 ps-0" id="search-edit-requests-input" placeholder="Search by PID or UT No..." oninput="filterEditRequestsTable()" autocomplete="off">
                 </div>
               </div>
-              <div class="col-12 col-md-6 text-md-end">
-                <span class="small text-muted"><i class="bi bi-funnel me-1"></i>Search filter: PID & UT No only</span>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center">
+                  <label for="filter-edit-requests-status" class="small text-muted me-2 mb-0 fw-semibold">Status:</label>
+                  <select class="form-select form-select-sm" id="filter-edit-requests-status" onchange="filterEditRequestsTable()">
+                    <option value="Pending" selected>Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="All">All Statuses</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-12 col-md-3 text-md-end">
+                <span class="small text-muted"><i class="bi bi-funnel me-1"></i>PID & UT No filter</span>
               </div>
             </div>
           </div>
@@ -675,6 +693,81 @@
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
+                    <th>PID</th>
+                    <th>Original Name</th>
+                    <th>Proposed Changes</th>
+                    <th>Requested By</th>
+                    <th>Reason / Remark</th>
+                    <th>Request Date/Time</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions / Details</th>
+                  </tr>
+                </thead>
+                <tbody id="edit-requests-table-body">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading edit requests...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- My Requests Section (Sent Delete & Edit Requests) -->
+        <div id="my-requests-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">My Requests</h3>
+              <p class="text-muted small mb-0">Track all deletion and edit requests you have submitted to Admin</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadMyRequestsList()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh My Requests
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Bar & Filters -->
+          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-4">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="search-my-requests-input" placeholder="Search by PID or UT No..." oninput="filterMyRequestsTable()" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center">
+                  <label for="filter-my-requests-type" class="small text-muted me-2 mb-0 fw-semibold">Type:</label>
+                  <select class="form-select form-select-sm" id="filter-my-requests-type" onchange="filterMyRequestsTable()">
+                    <option value="All" selected>All Types (Edit & Delete)</option>
+                    <option value="Delete">Delete Requests</option>
+                    <option value="Edit">Edit Requests</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center">
+                  <label for="filter-my-requests-status" class="small text-muted me-2 mb-0 fw-semibold">Status:</label>
+                  <select class="form-select form-select-sm" id="filter-my-requests-status" onchange="filterMyRequestsTable()">
+                    <option value="All" selected>All Statuses</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="custom-table-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Type</th>
                     <th>PID</th>
                     <th>Name</th>
                     <th>Father</th>
@@ -688,7 +781,7 @@
                 </thead>
                 <tbody id="my-requests-table-body">
                   <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">Loading your delete requests...</td>
+                    <td colspan="10" class="text-center py-4 text-muted">Loading your requests...</td>
                   </tr>
                 </tbody>
               </table>
@@ -989,6 +1082,103 @@
             <button type="submit" class="btn btn-warning px-4 fw-semibold"><i class="bi bi-send-fill me-1"></i>Send Delete Request</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Edit Request Modal -->
+  <div class="modal fade" id="sendEditRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info bg-opacity-10">
+          <h5 class="modal-title fw-bold text-dark" id="sendEditRequestModalTitle"><i class="bi bi-pencil-square text-info me-2"></i>Send Edit Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="sendEditRequestForm" onsubmit="handleSendEditRequestSubmit(event)" autocomplete="off">
+          <div class="modal-body">
+            <input type="hidden" id="send-edit-record-id">
+            <div class="p-3 bg-light rounded-3 mb-3 border">
+              <div class="row g-2 small">
+                <div class="col-12"><strong>PID:</strong> <span id="send-edit-pid" class="text-primary fw-bold"></span></div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="send-edit-name" class="form-label small fw-semibold text-secondary">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="send-edit-name" placeholder="Enter updated name" required autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label for="send-edit-father" class="form-label small fw-semibold text-secondary">Father Name</label>
+                <input type="text" class="form-control" id="send-edit-father" placeholder="Enter updated father name" autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label for="send-edit-ut" class="form-label small fw-semibold text-secondary">UT No</label>
+                <input type="text" class="form-control" id="send-edit-ut" placeholder="e.g. 1234/2026-UT" autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label for="send-edit-aadhar" class="form-label small fw-semibold text-secondary">Aadhar No</label>
+                <input type="text" class="form-control" id="send-edit-aadhar" placeholder="12 digit Aadhar number" maxlength="14" autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label for="send-edit-date" class="form-label small fw-semibold text-secondary">Record Date</label>
+                <input type="date" class="form-control" id="send-edit-date">
+              </div>
+              <div class="col-md-6">
+                <label for="send-edit-remark" class="form-label small fw-semibold text-secondary">Remark</label>
+                <select class="form-select" id="send-edit-remark">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label for="send-edit-reason" class="form-label small fw-semibold text-secondary">Reason for Edit Request <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="send-edit-reason" rows="3" placeholder="Specify why this record modification is needed..." required autocomplete="off"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-info text-dark px-4 fw-semibold"><i class="bi bi-send-fill me-1"></i>Send Edit Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Edit Request Comparison Modal (Admin Review) -->
+  <div class="modal fade" id="viewEditComparisonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary bg-opacity-10">
+          <h5 class="modal-title fw-bold text-dark" id="viewEditComparisonModalTitle"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Review Edit Request Comparison</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3 p-2 bg-light rounded border text-secondary small">
+            <strong>Requested By:</strong> <span id="comp-requested-by" class="badge bg-secondary"></span> | 
+            <strong>Request Date:</strong> <span id="comp-requested-date"></span> | 
+            <strong>Reason:</strong> <span id="comp-reason" class="fst-italic text-dark"></span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle small mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 25%;">Field</th>
+                  <th style="width: 37.5%;">Original Value</th>
+                  <th style="width: 37.5%;">Proposed Value</th>
+                </tr>
+              </thead>
+              <tbody id="comp-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer" id="comp-modal-footer">
+          <!-- Action buttons injected dynamically -->
+        </div>
       </div>
     </div>
   </div>

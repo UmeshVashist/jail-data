@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption } = require('../config/googleSheets');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption } = require('../config/googleSheets');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
 // GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab
@@ -96,6 +96,21 @@ function processAadharInput(inputStr) {
   return { valid: true, value: formatted, cleanDigits: cleanDigits };
 }
 
+// GET /api/records/by-pid/:pid - Get single record details by PID
+router.get('/by-pid/:pid', requireAuth, async (req, res) => {
+  try {
+    const pidParam = (req.params.pid || '').trim();
+    const records = await getRecords();
+    const record = records.find(r => String(r.pid).toLowerCase() === pidParam.toLowerCase());
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Record not found for PID ' + pidParam });
+    }
+    res.json({ success: true, data: record });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching record: ' + err.message });
+  }
+});
+
 // GET /api/records/dashboard - Dashboard Analytics
 router.get('/dashboard', requireAuth, async (req, res) => {
   try {
@@ -156,9 +171,14 @@ router.get('/', requireAuth, async (req, res) => {
     const sortDirection = req.query.sortDirection || 'desc';
 
     const allRecords = await getRecords();
-    const allRequests = await getDeleteRequests();
-    const pendingRequestRecordIds = new Set(
-      allRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
+    const allDeleteRequests = await getDeleteRequests();
+    const allEditRequests = await getEditRequests();
+
+    const pendingDeleteRecordIds = new Set(
+      allDeleteRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
+    );
+    const pendingEditRecordIds = new Set(
+      allEditRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
     );
     const filteredRecords = [];
 
@@ -187,7 +207,8 @@ router.get('/', requireAuth, async (req, res) => {
       // Add permission flags
       rec.canEdit = canModifyRecord(req.user, rec);
       rec.canDelete = canModifyRecord(req.user, rec);
-      rec.hasPendingDeleteRequest = pendingRequestRecordIds.has(String(rec.id)) || pendingRequestRecordIds.has(String(rec.rowIndex)) || pendingRequestRecordIds.has(String(rec.pid));
+      rec.hasPendingDeleteRequest = pendingDeleteRecordIds.has(String(rec.id)) || pendingDeleteRecordIds.has(String(rec.rowIndex)) || pendingDeleteRecordIds.has(String(rec.pid));
+      rec.hasPendingEditRequest = pendingEditRecordIds.has(String(rec.id)) || pendingEditRecordIds.has(String(rec.rowIndex)) || pendingEditRecordIds.has(String(rec.pid));
 
       filteredRecords.push(rec);
     }

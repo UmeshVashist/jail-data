@@ -33,8 +33,11 @@ let searchDebounceTimer = null;
 let currentRemarkOptions = [];
 let remarkOptionModalInstance = null;
 let sendDeleteRequestModalInstance = null;
+let sendEditRequestModalInstance = null;
+let viewEditComparisonModalInstance = null;
 let rawPendingDeleteRequests = [];
-let rawMyDeleteRequests = [];
+let rawPendingEditRequests = [];
+let rawMyRequests = [];
 let rawUsersList = [];
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -46,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function () {
   importDetailsModalInstance = new bootstrap.Modal(document.getElementById('importDetailsModal'));
   remarkOptionModalInstance = new bootstrap.Modal(document.getElementById('remarkOptionModal'));
   sendDeleteRequestModalInstance = new bootstrap.Modal(document.getElementById('sendDeleteRequestModal'));
+  sendEditRequestModalInstance = new bootstrap.Modal(document.getElementById('sendEditRequestModal'));
+  viewEditComparisonModalInstance = new bootstrap.Modal(document.getElementById('viewEditComparisonModal'));
 
   checkSessionOnLoad();
   setupDropzone();
@@ -312,12 +317,17 @@ function updateUIForRolePermissions() {
   }
 
   if (canAccessDeleteRequests) {
-    const el = document.getElementById('nav-item-delete-requests');
-    if (el) el.classList.remove('d-none');
+    const delEl = document.getElementById('nav-item-delete-requests');
+    if (delEl) delEl.classList.remove('d-none');
+    const editEl = document.getElementById('nav-item-edit-requests');
+    if (editEl) editEl.classList.remove('d-none');
     fetchPendingDeleteRequestsCount();
+    fetchPendingEditRequestsCount();
   } else {
-    const el = document.getElementById('nav-item-delete-requests');
-    if (el) el.classList.add('d-none');
+    const delEl = document.getElementById('nav-item-delete-requests');
+    if (delEl) delEl.classList.add('d-none');
+    const editEl = document.getElementById('nav-item-edit-requests');
+    if (editEl) editEl.classList.add('d-none');
   }
 
   if (role === 'View') {
@@ -348,7 +358,8 @@ function navigateToView(viewName) {
     'records': 'Data Records & Operations',
     'import': 'Batch Excel / CSV Import',
     'delete-requests': 'Incoming Delete Requests',
-    'my-requests': 'My Sent Delete Requests',
+    'edit-requests': 'Incoming Edit Requests',
+    'my-requests': 'My Sent Requests',
     'users': 'Admin User Management',
     'dropdowns': 'Dropdown Options Settings'
   };
@@ -370,6 +381,8 @@ function navigateToView(viewName) {
     triggerFetchRecords();
   } else if (viewName === 'delete-requests') {
     loadDeleteRequestsList();
+  } else if (viewName === 'edit-requests') {
+    loadEditRequestsList();
   } else if (viewName === 'my-requests') {
     loadMyRequestsList();
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
@@ -407,12 +420,13 @@ async function loadDashboardData(highlightPid = null) {
 
       let html = '';
       stats.recentActivities.forEach(rec => {
+        const recJson = encodeURIComponent(JSON.stringify(rec));
         const isHighlighted = (highlightPid && (String(rec.pid) === String(highlightPid) || String(rec.id) === String(highlightPid)));
         const highlightClass = isHighlighted ? 'highlight-new-row' : '';
 
         html += `
           <tr class="${highlightClass}">
-            <td class="fw-bold text-primary">${escapeHtml(rec.pid)}</td>
+            <td><a href="#" onclick="viewRecordByPid('${escapeHtml(rec.pid)}', '${recJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(rec.pid)}</a></td>
             <td>${escapeHtml(rec.name)}</td>
             <td>${escapeHtml(rec.father || '-')}</td>
             <td>${escapeHtml(rec.utNo || rec.ut_no || '-')}</td>
@@ -496,24 +510,85 @@ function renderRecordsTable(records, highlightPid = null) {
     const isHighlighted = (highlightPid && (String(rec.pid) === String(highlightPid) || String(rec.id) === String(highlightPid)));
     const highlightClass = isHighlighted ? 'highlight-new-row' : '';
     
-    let actionButtons = `<button class="btn btn-sm btn-outline-info me-1" title="View Details" onclick="viewRecordDetails('${recJson}')"><i class="bi bi-eye"></i></button>`;
+    let menuItems = [];
 
+    // Edit option
     if (rec.canEdit) {
-      actionButtons += `<button class="btn btn-sm btn-outline-primary me-1" title="Edit Record" onclick="showEditRecordModal('${recJson}')"><i class="bi bi-pencil"></i></button>`;
+      menuItems.push(`
+        <li>
+          <a class="dropdown-item text-primary d-flex align-items-center py-2" href="#" onclick="showEditRecordModal('${recJson}'); return false;">
+            <i class="bi bi-pencil me-2 text-primary"></i><span>Edit Record</span>
+          </a>
+        </li>
+      `);
+    } else if (currentUserState && (currentUserState.role === 'Add' || currentUserState.role === 'Admin')) {
+      if (rec.hasPendingEditRequest) {
+        menuItems.push(`
+          <li>
+            <span class="dropdown-item disabled text-info d-flex align-items-center py-2">
+              <i class="bi bi-clock-history me-2 text-info"></i><span>Requested Edit</span>
+            </span>
+          </li>
+        `);
+      } else {
+        menuItems.push(`
+          <li>
+            <a class="dropdown-item text-info d-flex align-items-center py-2" href="#" onclick="openSendEditRequestModal('${recJson}'); return false;">
+              <i class="bi bi-pencil-square me-2 text-info"></i><span>Request Edit</span>
+            </a>
+          </li>
+        `);
+      }
     }
+
+    // Delete option
     if (rec.canDelete) {
-      actionButtons += `<button class="btn btn-sm btn-outline-danger" title="Delete Record" onclick="confirmDeleteRecord(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-trash"></i></button>`;
+      menuItems.push(`
+        <li>
+          <a class="dropdown-item text-danger d-flex align-items-center py-2" href="#" onclick="confirmDeleteRecord(${rec.id}, '${escapeHtml(rec.pid)}'); return false;">
+            <i class="bi bi-trash me-2 text-danger"></i><span>Delete Record</span>
+          </a>
+        </li>
+      `);
     } else if (currentUserState && (currentUserState.role === 'Add' || currentUserState.role === 'Admin')) {
       if (rec.hasPendingDeleteRequest) {
-        actionButtons += `<span class="badge bg-warning text-dark me-1" title="Delete Request Pending"><i class="bi bi-clock-history me-1"></i>Requested</span>`;
+        menuItems.push(`
+          <li>
+            <span class="dropdown-item disabled text-warning d-flex align-items-center py-2">
+              <i class="bi bi-clock-history me-2 text-warning"></i><span>Delete Requested</span>
+            </span>
+          </li>
+        `);
       } else {
-        actionButtons += `<button class="btn btn-sm btn-outline-warning" title="Send Delete Request" onclick="openSendDeleteRequestModal(${rec.id}, '${escapeHtml(rec.pid)}')"><i class="bi bi-send me-1"></i>Request Delete</button>`;
+        menuItems.push(`
+          <li>
+            <a class="dropdown-item text-warning d-flex align-items-center py-2" href="#" onclick="openSendDeleteRequestModal(${rec.id}, '${escapeHtml(rec.pid)}'); return false;">
+              <i class="bi bi-send me-2 text-warning"></i><span>Request Delete</span>
+            </a>
+          </li>
+        `);
       }
+    }
+
+    let actionButtons = '';
+    if (menuItems.length > 0) {
+      actionButtons = `
+        <div class="dropdown d-inline-block">
+          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+            <i class="bi bi-three-dots-vertical fs-6 text-secondary"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 170px; border-radius: 10px; font-size: 0.85rem; z-index: 1060;">
+            ${menuItems.join('')}
+          </ul>
+        </div>
+      `;
+    } else {
+      actionButtons = '<span class="text-muted small">-</span>';
     }
 
     html += `
       <tr class="${highlightClass}">
-        <td class="fw-bold text-primary">${escapeHtml(rec.pid)}</td>
+        <td><a href="#" onclick="viewRecordDetails('${recJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(rec.pid)}</a></td>
         <td class="fw-semibold">${escapeHtml(rec.name)}</td>
         <td>${escapeHtml(rec.father || '-')}</td>
         <td>${escapeHtml(rec.utNo || '-')}</td>
@@ -766,20 +841,86 @@ async function handleRecordFormSubmit(event) {
   }
 }
 
-function viewRecordDetails(encodedRecJson) {
-  const rec = JSON.parse(decodeURIComponent(encodedRecJson));
-  document.getElementById('view-pid').innerText = rec.pid;
-  document.getElementById('view-name').innerText = rec.name;
+function viewRecordDetails(recInput) {
+  let rec = recInput;
+  if (typeof recInput === 'string') {
+    try {
+      rec = JSON.parse(decodeURIComponent(recInput));
+    } catch (e) {
+      try {
+        rec = JSON.parse(recInput);
+      } catch (e2) {
+        console.error('Invalid record JSON:', e2);
+        return;
+      }
+    }
+  }
+  if (!rec) return;
+
+  document.getElementById('view-pid').innerText = rec.pid || '-';
+  document.getElementById('view-name').innerText = rec.name || '-';
   document.getElementById('view-father').innerText = rec.father || '-';
-  document.getElementById('view-ut').innerText = rec.utNo || '-';
-  document.getElementById('view-aadhar').innerHTML = formatAadharDisplay(rec.aadharNo);
+  document.getElementById('view-ut').innerText = rec.utNo || rec.ut_no || '-';
+  document.getElementById('view-aadhar').innerHTML = formatAadharDisplay(rec.aadharNo || rec.aadhar_no || '');
   document.getElementById('view-date').innerText = rec.date || '-';
   document.getElementById('view-remark').innerText = rec.remark || '-';
-  document.getElementById('view-created-by').innerText = rec.createdBy;
-  document.getElementById('view-created-at').innerText = rec.createdDate + ' ' + rec.createdTime;
-  document.getElementById('view-updated-at').innerText = rec.updatedDate ? rec.updatedDate + ' ' + rec.updatedTime : 'Never updated';
+  document.getElementById('view-created-by').innerText = rec.createdBy || rec.created_by || rec.requestedBy || '-';
+
+  const createdDate = rec.createdDate || rec.created_date || rec.requestedDate || '';
+  const createdTime = rec.createdTime || rec.created_time || rec.requestedTime || '';
+  document.getElementById('view-created-at').innerText = (createdDate || createdTime) ? `${createdDate} ${createdTime}`.trim() : '-';
+
+  const updatedDate = rec.updatedDate || rec.updated_date || '';
+  const updatedTime = rec.updatedTime || rec.updated_time || '';
+  document.getElementById('view-updated-at').innerText = (updatedDate || updatedTime) ? `${updatedDate} ${updatedTime}`.trim() : 'Never updated';
 
   viewRecordModalInstance.show();
+}
+
+async function viewRecordByPid(pid, fallbackInput = null) {
+  if (!pid) return;
+
+  let fallbackObj = fallbackInput;
+  if (typeof fallbackInput === 'string') {
+    try {
+      fallbackObj = JSON.parse(decodeURIComponent(fallbackInput));
+    } catch (e) {
+      try { fallbackObj = JSON.parse(fallbackInput); } catch (e2) {}
+    }
+  }
+
+  // 1. Check if PID exists in current loaded records array
+  if (window.currentRecordsData && Array.isArray(window.currentRecordsData)) {
+    const found = window.currentRecordsData.find(r => String(r.pid).toLowerCase() === String(pid).toLowerCase());
+    if (found) {
+      viewRecordDetails(found);
+      return;
+    }
+  }
+
+  // 2. Show fallback details immediately if available
+  if (fallbackObj) {
+    viewRecordDetails(fallbackObj);
+  } else {
+    showLoader('Fetching record details...');
+  }
+
+  // 3. Fetch latest full details from backend by PID
+  try {
+    const res = await fetch(`/api/records/by-pid/${encodeURIComponent(pid)}`);
+    const data = await res.json();
+    hideLoader();
+    if (data.success && data.data) {
+      viewRecordDetails(data.data);
+    } else if (!fallbackObj) {
+      showToast('warning', 'Notice', data.message || `Details for PID ${pid} could not be loaded.`);
+    }
+  } catch (err) {
+    hideLoader();
+    if (!fallbackObj) {
+      showToast('danger', 'Error', err.message);
+    }
+  }
 }
 
 function confirmDeleteRecord(recordId, pid) {
@@ -967,7 +1108,7 @@ function showDuplicateItemsModal() {
       html += `
         <tr>
           <td class="fw-bold text-secondary">Row ${item.row}</td>
-          <td class="fw-bold text-primary">${escapeHtml(item.pid)}</td>
+          <td><a href="#" onclick="viewRecordByPid('${escapeHtml(item.pid)}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(item.pid)}</a></td>
           <td>${escapeHtml(item.name || '-')}</td>
           <td><span class="badge bg-warning text-dark">${escapeHtml(item.reason)}</span></td>
         </tr>
@@ -992,10 +1133,11 @@ function showFailedItemsModal() {
   } else {
     let html = '';
     items.forEach(item => {
+      const pidDisplay = item.pid ? `<a href="#" onclick="viewRecordByPid('${escapeHtml(item.pid)}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(item.pid)}</a>` : '-';
       html += `
         <tr>
           <td class="fw-bold text-secondary">Row ${item.row}</td>
-          <td class="fw-bold text-primary">${escapeHtml(item.pid || '-')}</td>
+          <td>${pidDisplay}</td>
           <td>${escapeHtml(item.name || '-')}</td>
           <td><span class="badge bg-danger text-white">${escapeHtml(item.reason)}</span></td>
         </tr>
@@ -1417,6 +1559,7 @@ function renderDeleteRequestsTable(requests) {
 
   let html = '';
   requests.forEach(req => {
+    const reqJson = encodeURIComponent(JSON.stringify(req));
     const statusBadge = req.status === 'Approved' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>' : req.status === 'Rejected' ? '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Rejected</span>' : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>';
 
     let actionCol = '';
@@ -1435,7 +1578,7 @@ function renderDeleteRequestsTable(requests) {
 
     html += `
       <tr>
-        <td class="fw-bold text-primary">${escapeHtml(req.pid)}</td>
+        <td><a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a></td>
         <td class="fw-semibold">${escapeHtml(req.name)}</td>
         <td>${escapeHtml(req.father || '-')}</td>
         <td>${escapeHtml(req.utNo || '-')}</td>
@@ -1511,18 +1654,117 @@ async function rejectDeleteRequest(requestId, pid) {
   confirmModalInstance.show();
 }
 
-async function loadMyRequestsList() {
-  showLoader('Loading your requests...');
+async function fetchPendingDeleteRequestsCount() {
   try {
-    const res = await fetch('/api/delete-requests/my-requests');
+    const res = await fetch('/api/delete-requests/pending');
+    const data = await res.json();
+    if (data.success) {
+      const count = (data.data || []).length;
+      const badge = document.getElementById('nav-delete-requests-badge');
+      if (badge) {
+        badge.innerText = count;
+        if (count > 0) badge.classList.remove('d-none');
+        else badge.classList.add('d-none');
+      }
+    }
+  } catch (e) {}
+}
+
+async function fetchPendingEditRequestsCount() {
+  try {
+    const res = await fetch('/api/edit-requests/pending');
+    const data = await res.json();
+    if (data.success) {
+      const count = (data.data || []).length;
+      const badge = document.getElementById('nav-edit-requests-badge');
+      if (badge) {
+        badge.innerText = count;
+        if (count > 0) badge.classList.remove('d-none');
+        else badge.classList.add('d-none');
+      }
+    }
+  } catch (e) {}
+}
+
+function openSendEditRequestModal(encodedRecJson) {
+  const rec = JSON.parse(decodeURIComponent(encodedRecJson));
+  document.getElementById('send-edit-record-id').value = rec.id || rec.rowIndex;
+  document.getElementById('send-edit-pid').innerText = rec.pid;
+  document.getElementById('send-edit-name').value = rec.name;
+  document.getElementById('send-edit-father').value = rec.father || '';
+  document.getElementById('send-edit-ut').value = rec.utNo || rec.ut_no || '';
+  document.getElementById('send-edit-aadhar').value = rec.aadharNo || rec.aadhar_no || '';
+  document.getElementById('send-edit-date').value = rec.date || '';
+  document.getElementById('send-edit-reason').value = '';
+
+  const remarkSelect = document.getElementById('send-edit-remark');
+  remarkSelect.innerHTML = '<option value="">Select Remark</option>';
+  currentRemarkOptions.forEach(opt => {
+    const selected = opt.toLowerCase() === (rec.remark || '').toLowerCase() ? 'selected' : '';
+    remarkSelect.innerHTML += `<option value="${escapeHtml(opt)}" ${selected}>${escapeHtml(opt)}</option>`;
+  });
+
+  sendEditRequestModalInstance.show();
+}
+
+async function handleSendEditRequestSubmit(event) {
+  event.preventDefault();
+  const recordId = document.getElementById('send-edit-record-id').value;
+  const name = document.getElementById('send-edit-name').value.trim();
+  const father = document.getElementById('send-edit-father').value.trim();
+  const utNo = document.getElementById('send-edit-ut').value.trim();
+  const aadharNo = document.getElementById('send-edit-aadhar').value.trim();
+  const date = document.getElementById('send-edit-date').value;
+  const remark = document.getElementById('send-edit-remark').value;
+  const reason = document.getElementById('send-edit-reason').value.trim();
+
+  if (!reason) {
+    showToast('danger', 'Validation Error', 'Please provide a reason for requesting edit.');
+    return;
+  }
+
+  sendEditRequestModalInstance.hide();
+  showLoader('Submitting edit request...');
+  try {
+    const res = await fetch('/api/edit-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recordId,
+        proposedData: { name, father, utNo, aadharNo, date, remark },
+        reason
+      })
+    });
     const data = await res.json();
     hideLoader();
 
     if (data.success) {
-      rawMyDeleteRequests = data.data || [];
-      const searchInput = document.getElementById('search-my-requests-input');
+      showToast('success', 'Request Sent', data.message);
+      triggerFetchRecords();
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+  }
+}
+
+async function loadEditRequestsList() {
+  showLoader('Loading edit requests...');
+  try {
+    const res = await fetch('/api/edit-requests/all');
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      rawPendingEditRequests = data.data || [];
+      const searchInput = document.getElementById('search-edit-requests-input');
       if (searchInput) searchInput.value = '';
-      filterMyRequestsTable();
+      const statusSelect = document.getElementById('filter-edit-requests-status');
+      if (statusSelect) statusSelect.value = 'Pending';
+      filterEditRequestsTable();
+      fetchPendingEditRequestsCount();
     } else {
       showToast('danger', 'Error', data.message);
     }
@@ -1532,17 +1774,249 @@ async function loadMyRequestsList() {
   }
 }
 
-function filterMyRequestsTable() {
-  const inputEl = document.getElementById('search-my-requests-input');
+function filterEditRequestsTable() {
+  const inputEl = document.getElementById('search-edit-requests-input');
+  const statusEl = document.getElementById('filter-edit-requests-status');
   const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
-  if (!q) {
-    renderMyRequestsTable(rawMyDeleteRequests);
+  const statusFilter = statusEl ? statusEl.value : 'Pending';
+
+  let filtered = [...rawPendingEditRequests];
+
+  if (statusFilter !== 'All') {
+    filtered = filtered.filter(r => (r.status || 'Pending').toLowerCase() === statusFilter.toLowerCase());
+  }
+
+  if (q) {
+    filtered = filtered.filter(r => 
+      (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+    );
+  }
+
+  renderEditRequestsTable(filtered);
+}
+
+function renderEditRequestsTable(requests) {
+  const tbody = document.getElementById('edit-requests-table-body');
+  if (!requests || requests.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>No edit requests match the criteria.</td></tr>';
     return;
   }
 
-  const filtered = rawMyDeleteRequests.filter(r => 
-    (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
-  );
+  let html = '';
+  requests.forEach(req => {
+    const reqJson = encodeURIComponent(JSON.stringify(req));
+    const statusBadge = req.status === 'Approved' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>' : req.status === 'Rejected' ? '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Rejected</span>' : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>';
+
+    let actionCol = '';
+    if (req.status === 'Pending') {
+      actionCol = `
+        <button class="btn btn-sm btn-info text-dark me-1" title="Review Proposed Changes" onclick="viewEditRequestComparison('${reqJson}')">
+          <i class="bi bi-eye me-1"></i>Review Changes
+        </button>
+        <button class="btn btn-sm btn-success me-1" title="Approve and Update Data" onclick="approveEditRequest(${req.id}, '${escapeHtml(req.pid)}')">
+          <i class="bi bi-check-circle me-1"></i>Approve
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+          <i class="bi bi-x-circle me-1"></i>Reject
+        </button>
+      `;
+    } else {
+      actionCol = `
+        <button class="btn btn-sm btn-outline-info me-1" title="View Comparison" onclick="viewEditRequestComparison('${reqJson}')"><i class="bi bi-eye me-1"></i>View</button>
+        <span class="small text-muted"><i class="bi bi-person-check me-1"></i>${escapeHtml(req.status)} by <strong>${escapeHtml(req.actionBy || 'Admin')}</strong></span>
+      `;
+    }
+
+    const prop = req.proposedData || {};
+    const changesSummary = `Name: ${escapeHtml(prop.name || req.name)} | UT: ${escapeHtml(prop.utNo || req.utNo || '-')}`;
+
+    html += `
+      <tr>
+        <td><a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a></td>
+        <td class="fw-semibold">${escapeHtml(req.name)}</td>
+        <td><span class="small text-muted text-truncate d-inline-block" style="max-width: 180px;" title="${changesSummary}">${changesSummary}</span></td>
+        <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
+        <td><span class="small text-dark fw-semibold text-truncate d-inline-block" style="max-width: 140px;" title="${escapeHtml(req.reason)}">${escapeHtml(req.reason || '-')}</span></td>
+        <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
+        <td>${statusBadge}</td>
+        <td class="text-end">${actionCol}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function viewEditRequestComparison(encodedReqJson) {
+  const req = JSON.parse(decodeURIComponent(encodedReqJson));
+  const prop = req.proposedData || {};
+
+  document.getElementById('comp-requested-by').innerText = req.requestedBy;
+  document.getElementById('comp-requested-date').innerText = (req.requestedDate || '') + ' ' + (req.requestedTime || '');
+  document.getElementById('comp-reason').innerText = req.reason || 'No reason provided';
+
+  const fields = [
+    { key: 'pid', label: 'PID', orig: req.pid, proposed: prop.pid || req.pid },
+    { key: 'name', label: 'Name', orig: req.name, proposed: prop.name || req.name },
+    { key: 'father', label: 'Father Name', orig: req.father || '-', proposed: prop.father || '-' },
+    { key: 'utNo', label: 'UT No', orig: req.utNo || '-', proposed: prop.utNo || '-' },
+    { key: 'aadharNo', label: 'Aadhar No', orig: req.aadharNo || '-', proposed: prop.aadharNo || '-' },
+    { key: 'date', label: 'Record Date', orig: req.date || '-', proposed: prop.date || '-' },
+    { key: 'remark', label: 'Remark', orig: req.remark || '-', proposed: prop.remark || '-' }
+  ];
+
+  let tbodyHtml = '';
+  fields.forEach(f => {
+    const isChanged = String(f.orig).trim() !== String(f.proposed).trim();
+    const highlightClass = isChanged ? 'bg-warning bg-opacity-10 fw-bold text-dark' : '';
+    const badge = isChanged ? '<span class="badge bg-warning text-dark ms-2">Changed</span>' : '';
+
+    tbodyHtml += `
+      <tr class="${highlightClass}">
+        <td class="fw-semibold">${f.label}</td>
+        <td class="text-secondary">${escapeHtml(f.orig)}</td>
+        <td class="text-dark">${escapeHtml(f.proposed)} ${badge}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById('comp-table-body').innerHTML = tbodyHtml;
+
+  const footer = document.getElementById('comp-modal-footer');
+  if (req.status === 'Pending') {
+    footer.innerHTML = `
+      <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-outline-secondary" onclick="viewEditComparisonModalInstance.hide(); rejectEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-x-circle me-1"></i>Reject</button>
+      <button type="button" class="btn btn-success fw-semibold" onclick="viewEditComparisonModalInstance.hide(); approveEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-check-circle me-1"></i>Approve & Update Data</button>
+    `;
+  } else {
+    footer.innerHTML = `
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    `;
+  }
+
+  viewEditComparisonModalInstance.show();
+}
+
+async function approveEditRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Approve & Update Data?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve edit request and update record PID "${pid}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Update Record';
+  executeBtn.className = 'btn btn-success btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Updating record and resolving request...');
+    try {
+      const res = await fetch(`/api/edit-requests/${requestId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Approved & Updated', data.message);
+        loadEditRequestsList();
+        fetchPendingEditRequestsCount();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function rejectEditRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Reject Edit Request?';
+  document.getElementById('confirmModalMessage').innerText = `Reject edit request for record PID "${pid}"? Record will NOT be updated.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Reject Request';
+  executeBtn.className = 'btn btn-secondary btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Rejecting request...');
+    try {
+      const res = await fetch(`/api/edit-requests/${requestId}/reject`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('info', 'Request Rejected', data.message);
+        loadEditRequestsList();
+        fetchPendingEditRequestsCount();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function loadMyRequestsList() {
+  showLoader('Loading your requests...');
+  try {
+    const [delRes, editRes] = await Promise.all([
+      fetch('/api/delete-requests/my-requests').then(r => r.json()),
+      fetch('/api/edit-requests/my-requests').then(r => r.json())
+    ]);
+    hideLoader();
+
+    const delList = (delRes.success ? delRes.data || [] : []).map(r => ({ ...r, requestType: 'Delete' }));
+    const editList = (editRes.success ? editRes.data || [] : []).map(r => ({ ...r, requestType: 'Edit' }));
+
+    rawMyRequests = [...delList, ...editList];
+    rawMyRequests.sort((a, b) => {
+      const dtA = (a.requestedDate || '') + ' ' + (a.requestedTime || '');
+      const dtB = (b.requestedDate || '') + ' ' + (b.requestedTime || '');
+      return dtB.localeCompare(dtA);
+    });
+
+    const searchInput = document.getElementById('search-my-requests-input');
+    if (searchInput) searchInput.value = '';
+    const typeFilterSelect = document.getElementById('filter-my-requests-type');
+    if (typeFilterSelect) typeFilterSelect.value = 'All';
+    const statusFilterSelect = document.getElementById('filter-my-requests-status');
+    if (statusFilterSelect) statusFilterSelect.value = 'All';
+
+    filterMyRequestsTable();
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function filterMyRequestsTable() {
+  const inputEl = document.getElementById('search-my-requests-input');
+  const typeEl = document.getElementById('filter-my-requests-type');
+  const statusEl = document.getElementById('filter-my-requests-status');
+
+  const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
+  const typeFilter = typeEl ? typeEl.value : 'All';
+  const statusFilter = statusEl ? statusEl.value : 'All';
+
+  let filtered = [...rawMyRequests];
+
+  if (typeFilter !== 'All') {
+    filtered = filtered.filter(r => r.requestType === typeFilter);
+  }
+
+  if (statusFilter !== 'All') {
+    filtered = filtered.filter(r => (r.status || '').toLowerCase() === statusFilter.toLowerCase());
+  }
+
+  if (q) {
+    filtered = filtered.filter(r => 
+      (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+    );
+  }
 
   renderMyRequestsTable(filtered);
 }
@@ -1550,22 +2024,29 @@ function filterMyRequestsTable() {
 function renderMyRequestsTable(requests) {
   const tbody = document.getElementById('my-requests-table-body');
   if (!requests || requests.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any delete requests.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any requests.</td></tr>';
     return;
   }
 
   let html = '';
   requests.forEach(req => {
+    const reqJson = encodeURIComponent(JSON.stringify(req));
     const statusBadge = req.status === 'Approved' ? 'bg-success' : req.status === 'Rejected' ? 'bg-secondary' : 'bg-warning text-dark';
-    
+    const typeBadge = req.requestType === 'Delete' ? '<span class="badge bg-danger"><i class="bi bi-trash-fill me-1"></i>Delete</span>' : '<span class="badge bg-info text-dark"><i class="bi bi-pencil-square me-1"></i>Edit</span>';
+
     let actionCol = '-';
     if (req.status === 'Pending') {
-      actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
+      if (req.requestType === 'Delete') {
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
+      } else {
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
+      }
     }
 
     html += `
       <tr>
-        <td class="fw-bold text-primary">${escapeHtml(req.pid)}</td>
+        <td>${typeBadge}</td>
+        <td><a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a></td>
         <td class="fw-semibold">${escapeHtml(req.name)}</td>
         <td>${escapeHtml(req.father || '-')}</td>
         <td>${escapeHtml(req.utNo || '-')}</td>
@@ -1579,6 +2060,36 @@ function renderMyRequestsTable(requests) {
   });
 
   tbody.innerHTML = html;
+}
+
+async function cancelMyEditRequest(requestId, pid) {
+  document.getElementById('confirmModalTitle').innerText = 'Cancel Your Edit Request?';
+  document.getElementById('confirmModalMessage').innerText = `Withdraw your edit request for record PID "${pid}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Withdraw Request';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Canceling request...');
+    try {
+      const res = await fetch(`/api/edit-requests/${requestId}/cancel`, { method: 'DELETE' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Request Canceled', data.message);
+        loadMyRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
 }
 
 async function cancelMyDeleteRequest(requestId, pid) {

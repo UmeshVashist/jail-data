@@ -92,6 +92,29 @@ async function initDatabase() {
       await dbRun(`ALTER TABLE delete_requests ADD COLUMN reason TEXT`);
     } catch (e) {}
 
+    // Create Edit Requests table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS edit_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id INTEGER NOT NULL,
+        pid TEXT NOT NULL,
+        name TEXT NOT NULL,
+        father TEXT,
+        ut_no TEXT,
+        aadhar_no TEXT,
+        date TEXT,
+        remark TEXT,
+        proposed_data TEXT NOT NULL,
+        requested_by TEXT NOT NULL,
+        requested_date TEXT NOT NULL,
+        requested_time TEXT NOT NULL,
+        reason TEXT,
+        status TEXT DEFAULT 'Pending',
+        action_by TEXT,
+        action_date TEXT
+      )
+    `);
+
     // Create Remark Options table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS remark_options (

@@ -224,3 +224,44 @@ body {
   animation: highlightRowFade 3s ease-out;
 }
 
+/* Clickable PID Link Styles */
+.pid-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.15s ease-in-out;
+}
+
+.pid-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+  text-shadow: 0 0 1px rgba(79, 70, 229, 0.2);
+}
+
+/* 3-Dots Table Action Button Styling */
+.action-dots-btn {
+  transition: all 0.2s ease-in-out;
+  background-color: #f8fafc;
+}
+.action-dots-btn:hover, .action-dots-btn:focus, .show > .action-dots-btn {
+  background-color: #e2e8f0 !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15) !important;
+}
+.action-dots-btn:hover i, .show > .action-dots-btn i {
+  color: var(--primary-color) !important;
+}
+.custom-table-card table td .dropdown-item {
+  font-weight: 500;
+  border-radius: 6px;
+  margin: 2px 4px;
+  width: calc(100% - 8px);
+  transition: background-color 0.15s ease;
+}
+.custom-table-card table td .dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+
+

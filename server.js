@@ -18,6 +18,7 @@ const importRoutes = require('./routes/importRoutes');
 const userRoutes = require('./routes/userRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const deleteRequestRoutes = require('./routes/deleteRequestRoutes');
+const editRequestRoutes = require('./routes/editRequestRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +59,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/delete-requests', deleteRequestRoutes);
+app.use('/api/edit-requests', editRequestRoutes);
 
 // Fallback Route to serve Single Page Application
 app.get('*', (req, res) => {
