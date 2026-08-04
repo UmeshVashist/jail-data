@@ -115,6 +115,22 @@ async function initDatabase() {
       )
     `);
 
+    // Create List Add Requests table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS list_add_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        option_value TEXT NOT NULL,
+        requested_by TEXT NOT NULL,
+        requested_date TEXT NOT NULL,
+        requested_time TEXT NOT NULL,
+        reason TEXT,
+        status TEXT DEFAULT 'Pending',
+        action_by TEXT,
+        action_date TEXT
+      )
+    `);
+
+
     // Create Remark Options table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS remark_options (

@@ -111,18 +111,11 @@
             <span>Import Data</span>
           </a>
         </li>
-        <li class="nav-item d-none" id="nav-item-delete-requests">
-          <a class="nav-link" id="nav-delete-requests" href="#" onclick="navigateToView('delete-requests'); return false;">
-            <i class="bi bi-trash-fill text-warning"></i>
-            <span>Delete Requests</span>
-            <span class="badge bg-danger rounded-pill ms-auto d-none" id="nav-delete-requests-badge">0</span>
-          </a>
-        </li>
-        <li class="nav-item d-none" id="nav-item-edit-requests">
-          <a class="nav-link" id="nav-edit-requests" href="#" onclick="navigateToView('edit-requests'); return false;">
-            <i class="bi bi-pencil-square text-info"></i>
-            <span>Edit Requests</span>
-            <span class="badge bg-info text-dark rounded-pill ms-auto d-none" id="nav-edit-requests-badge">0</span>
+        <li class="nav-item d-none" id="nav-item-all-requests">
+          <a class="nav-link" id="nav-all-requests" href="#" onclick="navigateToView('all-requests'); return false;">
+            <i class="bi bi-inbox-fill text-warning"></i>
+            <span>All Requests</span>
+            <span class="badge bg-danger rounded-pill ms-auto d-none" id="nav-all-requests-badge">0</span>
           </a>
         </li>
         <li class="nav-item" id="nav-item-my-requests">
@@ -720,11 +713,14 @@
           <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
             <div>
               <h3 class="fw-bold text-dark mb-1">My Requests</h3>
-              <p class="text-muted small mb-0">Track all deletion and edit requests you have submitted to Admin</p>
+              <p class="text-muted small mb-0">Track all deletion, edit, and dropdown list addition requests you have submitted to Admin</p>
             </div>
-            <div class="mt-3 mt-md-0">
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+              <button class="btn btn-success btn-sm rounded-2 shadow-sm" onclick="openSendListAddRequestModal()">
+                <i class="bi bi-plus-circle-fill me-1"></i> Request New Dropdown Option
+              </button>
               <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadMyRequestsList()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh My Requests
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
               </button>
             </div>
           </div>
@@ -742,9 +738,10 @@
                 <div class="d-flex align-items-center">
                   <label for="filter-my-requests-type" class="small text-muted me-2 mb-0 fw-semibold">Type:</label>
                   <select class="form-select form-select-sm" id="filter-my-requests-type" onchange="filterMyRequestsTable()">
-                    <option value="All" selected>All Types (Edit & Delete)</option>
+                    <option value="All" selected>All Types (Edit, Delete & List Add)</option>
                     <option value="Delete">Delete Requests</option>
                     <option value="Edit">Edit Requests</option>
+                    <option value="List Add">List Add Requests</option>
                   </select>
                 </div>
               </div>
@@ -789,6 +786,140 @@
           </div>
 
         </div><!-- End of my-requests-view -->
+
+        <!-- Unified Requests Management Section (Admin / Permitted Users) -->
+        <div id="all-requests-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">Requests Management Hub</h3>
+              <p class="text-muted small mb-0">Unified single page to review, approve, or reject Edit Requests, Delete Requests, and List Add Requests</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-outline-secondary btn-sm rounded-2" onclick="loadAllRequestsList()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Requests
+              </button>
+            </div>
+          </div>
+
+          <!-- Stat Cards Row for All Request Types -->
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-warning">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Total Pending</span>
+                    <h2 class="fw-bold text-dark mb-0 mt-1" id="admin-total-pending">0</h2>
+                  </div>
+                  <div class="stat-icon bg-warning-subtle-custom">
+                    <i class="bi bi-clock-history"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-info">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Edit Requests</span>
+                    <h2 class="fw-bold text-dark mb-0 mt-1" id="admin-pending-edit">0</h2>
+                  </div>
+                  <div class="stat-icon bg-info-subtle-custom">
+                    <i class="bi bi-pencil-square"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-danger">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Delete Requests</span>
+                    <h2 class="fw-bold text-dark mb-0 mt-1" id="admin-pending-delete">0</h2>
+                  </div>
+                  <div class="stat-icon bg-danger-subtle">
+                    <i class="bi bi-trash-fill"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="text-muted small fw-semibold text-uppercase">List Add Requests</span>
+                    <h2 class="fw-bold text-dark mb-0 mt-1" id="admin-pending-listadd">0</h2>
+                  </div>
+                  <div class="stat-icon bg-success-subtle-custom">
+                    <i class="bi bi-plus-circle-fill"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Bar & Filters -->
+          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-4">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="search-all-requests-input" placeholder="Search by PID, Name, User, Option..." oninput="filterAllRequestsTable()" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center">
+                  <label for="filter-all-requests-type" class="small text-muted me-2 mb-0 fw-semibold">Type:</label>
+                  <select class="form-select form-select-sm" id="filter-all-requests-type" onchange="filterAllRequestsTable()">
+                    <option value="All" selected>All Request Types</option>
+                    <option value="Edit">Edit Requests</option>
+                    <option value="Delete">Delete Requests</option>
+                    <option value="List Add">List Add Requests</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center">
+                  <label for="filter-all-requests-status" class="small text-muted me-2 mb-0 fw-semibold">Status:</label>
+                  <select class="form-select form-select-sm" id="filter-all-requests-status" onchange="filterAllRequestsTable()">
+                    <option value="Pending" selected>Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="All">All Statuses</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="custom-table-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>PID / Target</th>
+                    <th>Name / Option Value</th>
+                    <th>Requested By</th>
+                    <th>Reason / Remark</th>
+                    <th>Request Date/Time</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions / Review</th>
+                  </tr>
+                </thead>
+                <tbody id="all-requests-table-body">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading requests hub...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
 
         <!-- Dropdown Options Management Section (Admin Only) -->
         <div id="dropdowns-view" class="view-section d-none">
@@ -1179,6 +1310,35 @@
         <div class="modal-footer" id="comp-modal-footer">
           <!-- Action buttons injected dynamically -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send List Add Request Modal -->
+  <div class="modal fade" id="sendListAddRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success bg-opacity-10">
+          <h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle-fill text-success me-2"></i>Request New Dropdown Option</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="sendListAddRequestForm" onsubmit="handleSendListAddRequestSubmit(event); return false;" autocomplete="off">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="send-list-add-option" class="form-label small fw-semibold text-secondary">Option / List Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="send-list-add-option" placeholder="Enter option name (e.g. Under Investigation)" autocomplete="off" required>
+              <div class="form-text text-muted small">This option will be added to the Remark dropdown list once approved by Admin.</div>
+            </div>
+            <div class="mb-3">
+              <label for="send-list-add-reason" class="form-label small fw-semibold text-secondary">Reason / Note for Admin</label>
+              <textarea class="form-control" id="send-list-add-reason" rows="3" placeholder="Specify why this dropdown option is needed..." autocomplete="off"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success fw-semibold px-4"><i class="bi bi-send me-1"></i> Send Request</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

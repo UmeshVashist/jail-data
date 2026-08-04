@@ -221,8 +221,12 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
         continue;
       }
 
+      // If Remark is "Foreigner", ignore any provided Aadhar number and force it to blank / #N/A
+      const isForeigner = remark.toLowerCase() === 'foreigner';
+      const effectiveAadhar = isForeigner ? '' : rawAadhar;
+
       // Validate Aadhar No format
-      const aadharRes = processImportAadhar(rawAadhar);
+      const aadharRes = processImportAadhar(effectiveAadhar);
       if (!aadharRes.valid) {
         failedCount++;
         const msg = `Row ${rowNum} (PID ${pid}): ${aadharRes.error}`;

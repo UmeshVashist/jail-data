@@ -18,6 +18,7 @@ let dataSheet = null;
 let usersSheet = null;
 let deleteRequestsSheet = null;
 let editRequestsSheet = null;
+let listAddRequestsSheet = null;
 let dropdownSheet = null;
 let isConnected = false;
 let connectionError = null;
@@ -31,6 +32,7 @@ const inMemoryData = {
   records: [],
   deleteRequests: [],
   editRequests: [],
+  listAddRequests: [],
   remarkOptions: ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other']
 };
 
@@ -168,6 +170,16 @@ async function initGoogleSheets() {
       editRequestsSheet = await doc.addSheet({
         title: 'EditRequests',
         headerValues: ['ID', 'Record PID', 'Record Name', 'Father', 'UT No', 'Aadhar No', 'Proposed Data', 'Requested By', 'Requested Date', 'Requested Time', 'Reason', 'Status', 'Action By', 'Action Date']
+      });
+    }
+
+    // Ensure 'ListAddRequests' sheet exists
+    listAddRequestsSheet = doc.sheetsByTitle['ListAddRequests'];
+    if (!listAddRequestsSheet) {
+      console.log('Creating "ListAddRequests" sheet in Google Sheet...');
+      listAddRequestsSheet = await doc.addSheet({
+        title: 'ListAddRequests',
+        headerValues: ['ID', 'Option Value', 'Requested By', 'Requested Date', 'Requested Time', 'Reason', 'Status', 'Action By', 'Action Date']
       });
     }
 
@@ -803,6 +815,138 @@ async function deleteEditRequest(requestId) {
 }
 
 /* ==========================================================================
+   List Add Requests Data Access Methods
+   ========================================================================== */
+
+async function getListAddRequests() {
+  if (!isConnected) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
+      if (rows && rows.length > 0) {
+        return rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          optionValue: r.option_value,
+          requestedBy: r.requested_by,
+          requestedDate: r.requested_date,
+          requestedTime: r.requested_time,
+          reason: r.reason,
+          status: r.status,
+          actionBy: r.action_by,
+          actionDate: r.action_date
+        }));
+      }
+    } catch (e) {}
+    return inMemoryData.listAddRequests;
+  }
+
+  try {
+    const rows = await listAddRequestsSheet.getRows();
+    return rows.map(row => ({
+      id: row.rowNumber,
+      rowIndex: row.rowNumber,
+      optionValue: (row.get('Option Value') || '').toString().trim(),
+      requestedBy: (row.get('Requested By') || '').toString().trim(),
+      requestedDate: (row.get('Requested Date') || '').toString().trim(),
+      requestedTime: (row.get('Requested Time') || '').toString().trim(),
+      reason: (row.get('Reason') || '').toString().trim(),
+      status: (row.get('Status') || 'Pending').toString().trim(),
+      actionBy: (row.get('Action By') || '').toString().trim(),
+      actionDate: (row.get('Action Date') || '').toString().trim()
+    }));
+  } catch (err) {
+    console.error('getListAddRequests error:', err.message);
+    return inMemoryData.listAddRequests;
+  }
+}
+
+async function createListAddRequest(reqObj) {
+  const reasonVal = (reqObj.reason || '').toString().trim();
+  const optVal = (reqObj.optionValue || '').toString().trim();
+
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      const res = await dbRun(
+        `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?)`,
+        [optVal, reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, reasonVal, 'Pending']
+      );
+      reqObj.id = res.lastID;
+      reqObj.rowIndex = res.lastID;
+    } catch (e) {
+      const newId = inMemoryData.listAddRequests.length + 1;
+      reqObj.id = newId;
+      reqObj.rowIndex = newId;
+    }
+    inMemoryData.listAddRequests.push({ ...reqObj, optionValue: optVal, reason: reasonVal, status: 'Pending' });
+    return true;
+  }
+
+  await listAddRequestsSheet.addRow({
+    'ID': reqObj.id || Date.now(),
+    'Option Value': optVal,
+    'Requested By': reqObj.requestedBy,
+    'Requested Date': reqObj.requestedDate,
+    'Requested Time': reqObj.requestedTime,
+    'Reason': reasonVal,
+    'Status': 'Pending',
+    'Action By': '',
+    'Action Date': ''
+  });
+  return true;
+}
+
+async function updateListAddRequestStatus(requestId, status, actionBy) {
+  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(
+        `UPDATE list_add_requests SET status = ?, action_by = ?, action_date = ? WHERE id = ?`,
+        [status, actionBy, actionDate, requestId]
+      );
+    } catch (e) {}
+    const item = inMemoryData.listAddRequests.find(r => r.id === parseInt(requestId, 10));
+    if (item) {
+      item.status = status;
+      item.actionBy = actionBy;
+      item.actionDate = actionDate;
+    }
+    return true;
+  }
+
+  const rows = await listAddRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    targetRow.set('Status', status);
+    targetRow.set('Action By', actionBy);
+    targetRow.set('Action Date', actionDate);
+    await targetRow.save();
+  }
+  return true;
+}
+
+async function deleteListAddRequest(requestId) {
+  if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(`DELETE FROM list_add_requests WHERE id = ?`, [requestId]);
+    } catch (e) {}
+    inMemoryData.listAddRequests = inMemoryData.listAddRequests.filter(r => r.id !== parseInt(requestId, 10));
+    return true;
+  }
+
+  const rows = await listAddRequestsSheet.getRows();
+  const targetRow = rows.find(r => r.rowNumber === parseInt(requestId, 10));
+  if (targetRow) {
+    await targetRow.delete();
+  }
+  return true;
+}
+
+/* ==========================================================================
    Dropdown Options Access Method
    ========================================================================== */
 
@@ -924,6 +1068,10 @@ module.exports = {
   createEditRequest,
   updateEditRequestStatus,
   deleteEditRequest,
+  getListAddRequests,
+  createListAddRequest,
+  updateListAddRequestStatus,
+  deleteListAddRequest,
   getRemarkOptions,
   addRemarkOption,
   updateRemarkOption,

@@ -34,9 +34,12 @@ let currentRemarkOptions = [];
 let remarkOptionModalInstance = null;
 let sendDeleteRequestModalInstance = null;
 let sendEditRequestModalInstance = null;
+let sendListAddRequestModalInstance = null;
 let viewEditComparisonModalInstance = null;
 let rawPendingDeleteRequests = [];
 let rawPendingEditRequests = [];
+let rawPendingListAddRequests = [];
+let rawAllAdminRequests = [];
 let rawMyRequests = [];
 let rawUsersList = [];
 
@@ -50,7 +53,14 @@ document.addEventListener('DOMContentLoaded', function () {
   remarkOptionModalInstance = new bootstrap.Modal(document.getElementById('remarkOptionModal'));
   sendDeleteRequestModalInstance = new bootstrap.Modal(document.getElementById('sendDeleteRequestModal'));
   sendEditRequestModalInstance = new bootstrap.Modal(document.getElementById('sendEditRequestModal'));
+  sendListAddRequestModalInstance = new bootstrap.Modal(document.getElementById('sendListAddRequestModal'));
   viewEditComparisonModalInstance = new bootstrap.Modal(document.getElementById('viewEditComparisonModal'));
+
+  const recRemarkEl = document.getElementById('modal-record-remark');
+  if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
+
+  const editRemarkEl = document.getElementById('send-edit-remark');
+  if (editRemarkEl) editRemarkEl.addEventListener('change', handleSendEditRemarkChange);
 
   checkSessionOnLoad();
   setupDropzone();
@@ -317,17 +327,12 @@ function updateUIForRolePermissions() {
   }
 
   if (canAccessDeleteRequests) {
-    const delEl = document.getElementById('nav-item-delete-requests');
-    if (delEl) delEl.classList.remove('d-none');
-    const editEl = document.getElementById('nav-item-edit-requests');
-    if (editEl) editEl.classList.remove('d-none');
-    fetchPendingDeleteRequestsCount();
-    fetchPendingEditRequestsCount();
+    const allReqEl = document.getElementById('nav-item-all-requests');
+    if (allReqEl) allReqEl.classList.remove('d-none');
+    fetchAllPendingRequestsCounts();
   } else {
-    const delEl = document.getElementById('nav-item-delete-requests');
-    if (delEl) delEl.classList.add('d-none');
-    const editEl = document.getElementById('nav-item-edit-requests');
-    if (editEl) editEl.classList.add('d-none');
+    const allReqEl = document.getElementById('nav-item-all-requests');
+    if (allReqEl) allReqEl.classList.add('d-none');
   }
 
   if (role === 'View') {
@@ -357,8 +362,9 @@ function navigateToView(viewName) {
     'dashboard': 'Dashboard Overview',
     'records': 'Data Records & Operations',
     'import': 'Batch Excel / CSV Import',
-    'delete-requests': 'Incoming Delete Requests',
-    'edit-requests': 'Incoming Edit Requests',
+    'all-requests': 'Requests Management Hub',
+    'delete-requests': 'Requests Management Hub',
+    'edit-requests': 'Requests Management Hub',
     'my-requests': 'My Sent Requests',
     'users': 'Admin User Management',
     'dropdowns': 'Dropdown Options Settings'
@@ -366,7 +372,9 @@ function navigateToView(viewName) {
 
   document.getElementById('page-title-display').innerText = titleMap[viewName] || 'Data Portal';
 
-  const targetView = document.getElementById(viewName + '-view');
+  const targetViewName = (viewName === 'delete-requests' || viewName === 'edit-requests') ? 'all-requests' : viewName;
+
+  const targetView = document.getElementById(targetViewName + '-view');
   const targetNav = document.getElementById('nav-' + viewName);
 
   if (targetView) targetView.classList.remove('d-none');
@@ -379,10 +387,8 @@ function navigateToView(viewName) {
   } else if (viewName === 'records') {
     loadRemarkOptions();
     triggerFetchRecords();
-  } else if (viewName === 'delete-requests') {
-    loadDeleteRequestsList();
-  } else if (viewName === 'edit-requests') {
-    loadEditRequestsList();
+  } else if (viewName === 'all-requests' || viewName === 'delete-requests' || viewName === 'edit-requests') {
+    loadAllRequestsList();
   } else if (viewName === 'my-requests') {
     loadMyRequestsList();
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
@@ -727,6 +733,40 @@ function populateRemarkDropdown(selectedValue = '') {
   }
 }
 
+/* Foreigner Remark & Aadhar Disable Logic */
+
+function handleRecordRemarkChange() {
+  const remarkSelect = document.getElementById('modal-record-remark');
+  const aadharInput = document.getElementById('modal-record-aadhar');
+  if (!remarkSelect || !aadharInput) return;
+
+  const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
+  if (selectedVal === 'foreigner') {
+    aadharInput.value = '';
+    aadharInput.disabled = true;
+    aadharInput.placeholder = 'N/A (Foreigner selected)';
+  } else {
+    aadharInput.disabled = false;
+    aadharInput.placeholder = 'Min 12 digits or leave blank for #N/A';
+  }
+}
+
+function handleSendEditRemarkChange() {
+  const remarkSelect = document.getElementById('send-edit-remark');
+  const aadharInput = document.getElementById('send-edit-aadhar');
+  if (!remarkSelect || !aadharInput) return;
+
+  const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
+  if (selectedVal === 'foreigner') {
+    aadharInput.value = '';
+    aadharInput.disabled = true;
+    aadharInput.placeholder = 'N/A (Foreigner selected)';
+  } else {
+    aadharInput.disabled = false;
+    aadharInput.placeholder = '12 digit Aadhar number';
+  }
+}
+
 /* Record Modals */
 
 async function showAddRecordModal() {
@@ -738,6 +778,7 @@ async function showAddRecordModal() {
   document.getElementById('modal-record-pid').disabled = false;
   document.getElementById('modal-record-date').value = new Date().toISOString().split('T')[0];
   populateRemarkDropdown('');
+  handleRecordRemarkChange();
   recordModalInstance.show();
 }
 
@@ -756,6 +797,7 @@ async function showEditRecordModal(encodedRecJson) {
   document.getElementById('modal-record-date').value = rec.date;
 
   populateRemarkDropdown(rec.remark || '');
+  handleRecordRemarkChange();
   recordModalInstance.show();
 }
 
@@ -766,7 +808,12 @@ async function handleRecordFormSubmit(event) {
 
   const pid = document.getElementById('modal-record-pid').value.trim();
   const name = document.getElementById('modal-record-name').value.trim();
-  const aadharInput = document.getElementById('modal-record-aadhar').value.trim();
+  const remark = document.getElementById('modal-record-remark').value.trim();
+  let aadharInput = document.getElementById('modal-record-aadhar').value.trim();
+
+  if (remark.toLowerCase() === 'foreigner') {
+    aadharInput = '';
+  }
 
   // Validate numeric PID
   if (!/^\d+$/.test(pid)) {
@@ -774,7 +821,7 @@ async function handleRecordFormSubmit(event) {
     return;
   }
 
-  if (aadharInput !== '' && aadharInput !== '#N/A') {
+  if (remark.toLowerCase() !== 'foreigner' && aadharInput !== '' && aadharInput !== '#N/A') {
     const cleanDigits = aadharInput.replace(/\D/g, '');
     if (cleanDigits.length < 12) {
       showToast('danger', 'Validation Error', 'Aadhar No must contain at least 12 digits.');
@@ -1705,6 +1752,7 @@ function openSendEditRequestModal(encodedRecJson) {
   });
 
   sendEditRequestModalInstance.show();
+  handleSendEditRemarkChange();
 }
 
 async function handleSendEditRequestSubmit(event) {
@@ -1713,10 +1761,14 @@ async function handleSendEditRequestSubmit(event) {
   const name = document.getElementById('send-edit-name').value.trim();
   const father = document.getElementById('send-edit-father').value.trim();
   const utNo = document.getElementById('send-edit-ut').value.trim();
-  const aadharNo = document.getElementById('send-edit-aadhar').value.trim();
+  let aadharNo = document.getElementById('send-edit-aadhar').value.trim();
   const date = document.getElementById('send-edit-date').value;
   const remark = document.getElementById('send-edit-remark').value;
   const reason = document.getElementById('send-edit-reason').value.trim();
+
+  if ((remark || '').toLowerCase() === 'foreigner') {
+    aadharNo = '';
+  }
 
   if (!reason) {
     showToast('danger', 'Validation Error', 'Please provide a reason for requesting edit.');
@@ -1960,19 +2012,89 @@ async function rejectEditRequest(requestId, pid) {
   confirmModalInstance.show();
 }
 
+function openSendListAddRequestModal() {
+  document.getElementById('sendListAddRequestForm').reset();
+  sendListAddRequestModalInstance.show();
+}
+
+async function handleSendListAddRequestSubmit(event) {
+  event.preventDefault();
+  const optionValue = document.getElementById('send-list-add-option').value.trim();
+  const reason = document.getElementById('send-list-add-reason').value.trim();
+
+  if (!optionValue) {
+    showToast('danger', 'Validation Error', 'Option name is required.');
+    return;
+  }
+
+  sendListAddRequestModalInstance.hide();
+  showLoader('Submitting list add request...');
+  try {
+    const res = await fetch('/api/list-add-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optionValue, reason })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Request Sent', data.message);
+      loadMyRequestsList();
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+  }
+}
+
+async function cancelMyListAddRequest(requestId, optionValue) {
+  document.getElementById('confirmModalTitle').innerText = 'Cancel List Add Request?';
+  document.getElementById('confirmModalMessage').innerText = `Withdraw your request to add option "${optionValue}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Withdraw Request';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Canceling request...');
+    try {
+      const res = await fetch(`/api/list-add-requests/${requestId}/cancel`, { method: 'DELETE' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Request Canceled', data.message);
+        loadMyRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
 async function loadMyRequestsList() {
   showLoader('Loading your requests...');
   try {
-    const [delRes, editRes] = await Promise.all([
+    const [delRes, editRes, listAddRes] = await Promise.all([
       fetch('/api/delete-requests/my-requests').then(r => r.json()),
-      fetch('/api/edit-requests/my-requests').then(r => r.json())
+      fetch('/api/edit-requests/my-requests').then(r => r.json()),
+      fetch('/api/list-add-requests/my-requests').then(r => r.json())
     ]);
     hideLoader();
 
     const delList = (delRes.success ? delRes.data || [] : []).map(r => ({ ...r, requestType: 'Delete' }));
     const editList = (editRes.success ? editRes.data || [] : []).map(r => ({ ...r, requestType: 'Edit' }));
+    const listAddList = (listAddRes.success ? listAddRes.data || [] : []).map(r => ({ ...r, requestType: 'List Add' }));
 
-    rawMyRequests = [...delList, ...editList];
+    rawMyRequests = [...delList, ...editList, ...listAddList];
     rawMyRequests.sort((a, b) => {
       const dtA = (a.requestedDate || '') + ' ' + (a.requestedTime || '');
       const dtB = (b.requestedDate || '') + ' ' + (b.requestedTime || '');
@@ -2014,7 +2136,10 @@ function filterMyRequestsTable() {
 
   if (q) {
     filtered = filtered.filter(r => 
-      (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
+      (r.pid || '').toLowerCase().includes(q) || 
+      (r.utNo || '').toLowerCase().includes(q) ||
+      (r.optionValue || '').toLowerCase().includes(q) ||
+      (r.name || '').toLowerCase().includes(q)
     );
   }
 
@@ -2024,7 +2149,7 @@ function filterMyRequestsTable() {
 function renderMyRequestsTable(requests) {
   const tbody = document.getElementById('my-requests-table-body');
   if (!requests || requests.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any requests.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>You have not sent any requests matching criteria.</td></tr>';
     return;
   }
 
@@ -2032,22 +2157,41 @@ function renderMyRequestsTable(requests) {
   requests.forEach(req => {
     const reqJson = encodeURIComponent(JSON.stringify(req));
     const statusBadge = req.status === 'Approved' ? 'bg-success' : req.status === 'Rejected' ? 'bg-secondary' : 'bg-warning text-dark';
-    const typeBadge = req.requestType === 'Delete' ? '<span class="badge bg-danger"><i class="bi bi-trash-fill me-1"></i>Delete</span>' : '<span class="badge bg-info text-dark"><i class="bi bi-pencil-square me-1"></i>Edit</span>';
+    
+    let typeBadge = '';
+    let pidDisplay = '-';
+    let nameDisplay = '-';
+
+    if (req.requestType === 'Delete') {
+      typeBadge = '<span class="badge bg-danger"><i class="bi bi-trash-fill me-1"></i>Delete</span>';
+      pidDisplay = `<a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a>`;
+      nameDisplay = escapeHtml(req.name);
+    } else if (req.requestType === 'Edit') {
+      typeBadge = '<span class="badge bg-info text-dark"><i class="bi bi-pencil-square me-1"></i>Edit</span>';
+      pidDisplay = `<a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a>`;
+      nameDisplay = escapeHtml(req.name);
+    } else if (req.requestType === 'List Add') {
+      typeBadge = '<span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>List Add</span>';
+      pidDisplay = '<span class="text-muted small">N/A</span>';
+      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>`;
+    }
 
     let actionCol = '-';
     if (req.status === 'Pending') {
       if (req.requestType === 'Delete') {
-        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
-      } else {
-        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel Request</button>`;
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
+      } else if (req.requestType === 'Edit') {
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
+      } else if (req.requestType === 'List Add') {
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
       }
     }
 
     html += `
       <tr>
         <td>${typeBadge}</td>
-        <td><a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a></td>
-        <td class="fw-semibold">${escapeHtml(req.name)}</td>
+        <td>${pidDisplay}</td>
+        <td class="fw-semibold">${nameDisplay}</td>
         <td>${escapeHtml(req.father || '-')}</td>
         <td>${escapeHtml(req.utNo || '-')}</td>
         <td><span class="small text-dark fw-semibold text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(req.reason)}">${escapeHtml(req.reason || '-')}</span></td>
@@ -2060,6 +2204,279 @@ function renderMyRequestsTable(requests) {
   });
 
   tbody.innerHTML = html;
+}
+
+/* ==========================================================================
+   Admin Unified Requests Management Hub (Edit, Delete, List Add in 1 Page)
+   ========================================================================== */
+
+async function fetchAllPendingRequestsCounts() {
+  try {
+    const [delRes, editRes, listAddRes] = await Promise.all([
+      fetch('/api/delete-requests/pending').then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('/api/edit-requests/pending').then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('/api/list-add-requests/pending').then(r => r.json()).catch(() => ({ data: [] }))
+    ]);
+
+    const delCount = (delRes.success && delRes.data ? delRes.data : []).length;
+    const editCount = (editRes.success && editRes.data ? editRes.data : []).length;
+    const listAddCount = (listAddRes.success && listAddRes.data ? listAddRes.data : []).length;
+    const totalCount = delCount + editCount + listAddCount;
+
+    const allBadge = document.getElementById('nav-all-requests-badge');
+    if (allBadge) {
+      allBadge.innerText = totalCount;
+      if (totalCount > 0) allBadge.classList.remove('d-none');
+      else allBadge.classList.add('d-none');
+    }
+
+    const delBadge = document.getElementById('nav-delete-requests-badge');
+    if (delBadge) {
+      delBadge.innerText = delCount;
+      if (delCount > 0) delBadge.classList.remove('d-none');
+      else delBadge.classList.add('d-none');
+    }
+
+    const editBadge = document.getElementById('nav-edit-requests-badge');
+    if (editBadge) {
+      editBadge.innerText = editCount;
+      if (editCount > 0) editBadge.classList.remove('d-none');
+      else editBadge.classList.add('d-none');
+    }
+
+    const elTotal = document.getElementById('admin-total-pending');
+    if (elTotal) elTotal.innerText = totalCount;
+    const elEdit = document.getElementById('admin-pending-edit');
+    if (elEdit) elEdit.innerText = editCount;
+    const elDel = document.getElementById('admin-pending-delete');
+    if (elDel) elDel.innerText = delCount;
+    const elList = document.getElementById('admin-pending-listadd');
+    if (elList) elList.innerText = listAddCount;
+
+  } catch (e) {}
+}
+
+async function loadAllRequestsList() {
+  showLoader('Loading all incoming requests...');
+  try {
+    const [delRes, editRes, listAddRes] = await Promise.all([
+      fetch('/api/delete-requests/all').then(r => r.json()),
+      fetch('/api/edit-requests/all').then(r => r.json()),
+      fetch('/api/list-add-requests/all').then(r => r.json())
+    ]);
+    hideLoader();
+
+    const delList = (delRes.success ? delRes.data || [] : []).map(r => ({ ...r, requestType: 'Delete' }));
+    const editList = (editRes.success ? editRes.data || [] : []).map(r => ({ ...r, requestType: 'Edit' }));
+    const listAddList = (listAddRes.success ? listAddRes.data || [] : []).map(r => ({ ...r, requestType: 'List Add' }));
+
+    rawAllAdminRequests = [...delList, ...editList, ...listAddList];
+    rawAllAdminRequests.sort((a, b) => {
+      const dtA = (a.requestedDate || '') + ' ' + (a.requestedTime || '');
+      const dtB = (b.requestedDate || '') + ' ' + (b.requestedTime || '');
+      return dtB.localeCompare(dtA);
+    });
+
+    fetchAllPendingRequestsCounts();
+
+    const searchInput = document.getElementById('search-all-requests-input');
+    if (searchInput) searchInput.value = '';
+    const typeFilterSelect = document.getElementById('filter-all-requests-type');
+    if (typeFilterSelect) typeFilterSelect.value = 'All';
+    const statusFilterSelect = document.getElementById('filter-all-requests-status');
+    if (statusFilterSelect) statusFilterSelect.value = 'Pending';
+
+    filterAllRequestsTable();
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function filterAllRequestsTable() {
+  const inputEl = document.getElementById('search-all-requests-input');
+  const typeEl = document.getElementById('filter-all-requests-type');
+  const statusEl = document.getElementById('filter-all-requests-status');
+
+  const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
+  const typeFilter = typeEl ? typeEl.value : 'All';
+  const statusFilter = statusEl ? statusEl.value : 'Pending';
+
+  let filtered = [...rawAllAdminRequests];
+
+  if (typeFilter !== 'All') {
+    filtered = filtered.filter(r => r.requestType === typeFilter);
+  }
+
+  if (statusFilter !== 'All') {
+    filtered = filtered.filter(r => (r.status || 'Pending').toLowerCase() === statusFilter.toLowerCase());
+  }
+
+  if (q) {
+    filtered = filtered.filter(r => 
+      (r.pid || '').toLowerCase().includes(q) || 
+      (r.utNo || '').toLowerCase().includes(q) ||
+      (r.optionValue || '').toLowerCase().includes(q) ||
+      (r.name || '').toLowerCase().includes(q) ||
+      (r.requestedBy || '').toLowerCase().includes(q)
+    );
+  }
+
+  renderAllRequestsTable(filtered);
+}
+
+function renderAllRequestsTable(requests) {
+  const tbody = document.getElementById('all-requests-table-body');
+  if (!requests || requests.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>No requests match the current filters.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  requests.forEach(req => {
+    const reqJson = encodeURIComponent(JSON.stringify(req));
+    const statusBadge = req.status === 'Approved' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>' : req.status === 'Rejected' ? '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Rejected</span>' : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>';
+
+    let typeBadge = '';
+    let targetDisplay = '-';
+    let nameDisplay = '-';
+    let actionCol = '';
+
+    if (req.requestType === 'Delete') {
+      typeBadge = '<span class="badge bg-danger"><i class="bi bi-trash-fill me-1"></i>Delete</span>';
+      targetDisplay = `<a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a>`;
+      nameDisplay = escapeHtml(req.name);
+
+      if (req.status === 'Pending') {
+        actionCol = `
+          <button class="btn btn-sm btn-danger me-1" title="Approve and Delete Data" onclick="approveDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-check-circle me-1"></i>Delete Data
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-x-circle me-1"></i>Reject
+          </button>
+        `;
+      } else {
+        actionCol = `<span class="small text-muted"><i class="bi bi-person-check me-1"></i>${escapeHtml(req.status)} by <strong>${escapeHtml(req.actionBy || 'Admin')}</strong></span>`;
+      }
+    } else if (req.requestType === 'Edit') {
+      typeBadge = '<span class="badge bg-info text-dark"><i class="bi bi-pencil-square me-1"></i>Edit</span>';
+      targetDisplay = `<a href="#" onclick="viewRecordByPid('${escapeHtml(req.pid)}', '${reqJson}'); return false;" class="pid-link" title="Click to view record details">${escapeHtml(req.pid)}</a>`;
+      nameDisplay = escapeHtml(req.name);
+
+      if (req.status === 'Pending') {
+        actionCol = `
+          <button class="btn btn-sm btn-info text-dark me-1" title="Review Proposed Changes" onclick="viewEditRequestComparison('${reqJson}')">
+            <i class="bi bi-eye me-1"></i>Review
+          </button>
+          <button class="btn btn-sm btn-success me-1" title="Approve and Update Data" onclick="approveEditRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-check-circle me-1"></i>Approve
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectEditRequest(${req.id}, '${escapeHtml(req.pid)}')">
+            <i class="bi bi-x-circle me-1"></i>Reject
+          </button>
+        `;
+      } else {
+        actionCol = `
+          <button class="btn btn-sm btn-outline-info me-1" title="View Comparison" onclick="viewEditRequestComparison('${reqJson}')"><i class="bi bi-eye me-1"></i>View</button>
+          <span class="small text-muted"><i class="bi bi-person-check me-1"></i>${escapeHtml(req.status)} by <strong>${escapeHtml(req.actionBy || 'Admin')}</strong></span>
+        `;
+      }
+    } else if (req.requestType === 'List Add') {
+      typeBadge = '<span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>List Add</span>';
+      targetDisplay = '<span class="text-muted small">Dropdown List</span>';
+      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>`;
+
+      if (req.status === 'Pending') {
+        actionCol = `
+          <button class="btn btn-sm btn-success me-1" title="Approve & Add Option" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+            <i class="bi bi-check-circle me-1"></i>Add Option
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+            <i class="bi bi-x-circle me-1"></i>Reject
+          </button>
+        `;
+      } else {
+        actionCol = `<span class="small text-muted"><i class="bi bi-person-check me-1"></i>${escapeHtml(req.status)} by <strong>${escapeHtml(req.actionBy || 'Admin')}</strong></span>`;
+      }
+    }
+
+    html += `
+      <tr>
+        <td>${typeBadge}</td>
+        <td>${targetDisplay}</td>
+        <td class="fw-semibold">${nameDisplay}</td>
+        <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
+        <td><span class="small text-dark fw-semibold text-truncate d-inline-block" style="max-width: 160px;" title="${escapeHtml(req.reason)}">${escapeHtml(req.reason || '-')}</span></td>
+        <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime)}</td>
+        <td>${statusBadge}</td>
+        <td class="text-end">${actionCol}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+async function approveListAddRequest(requestId, optionValue) {
+  document.getElementById('confirmModalTitle').innerText = 'Approve & Add Dropdown Option?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve request and add option "${optionValue}" to Remark dropdown list?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Add Option';
+  executeBtn.className = 'btn btn-success btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Adding option to dropdown list...');
+    try {
+      const res = await fetch(`/api/list-add-requests/${requestId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Approved & Option Added', data.message);
+        loadAllRequestsList();
+        loadRemarkOptions();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+async function rejectListAddRequest(requestId, optionValue) {
+  document.getElementById('confirmModalTitle').innerText = 'Reject List Add Request?';
+  document.getElementById('confirmModalMessage').innerText = `Reject list add request for option "${optionValue}"? Option will NOT be added to dropdown list.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Reject Request';
+  executeBtn.className = 'btn btn-secondary btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Rejecting request...');
+    try {
+      const res = await fetch(`/api/list-add-requests/${requestId}/reject`, { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('info', 'Request Rejected', data.message);
+        loadAllRequestsList();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
 }
 
 async function cancelMyEditRequest(requestId, pid) {
