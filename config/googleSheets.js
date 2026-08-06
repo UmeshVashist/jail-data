@@ -382,6 +382,28 @@ async function deleteUser(rowIndex, targetUsername) {
 
 async function getRecords() {
   if (!isConnected) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT * FROM records ORDER BY id DESC');
+      if (rows && rows.length > 0) {
+        return rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          pid: r.pid,
+          name: r.name,
+          father: r.father,
+          utNo: r.ut_no,
+          aadharNo: r.aadhar_no,
+          date: r.date,
+          remark: r.remark,
+          createdBy: r.created_by,
+          createdDate: r.created_date,
+          createdTime: r.created_time,
+          updatedDate: r.updated_date,
+          updatedTime: r.updated_time
+        }));
+      }
+    } catch (e) {}
     return inMemoryData.records;
   }
 
@@ -411,10 +433,21 @@ async function getRecords() {
 
 async function addRecord(recObj) {
   if (!isConnected) {
-    const newId = inMemoryData.records.length + 2;
-    const newRec = { id: newId, rowIndex: newId, ...recObj };
-    inMemoryData.records.push(newRec);
-    return newRec;
+    try {
+      const { dbRun } = require('./database');
+      const res = await dbRun(
+        `INSERT INTO records (pid, name, father, ut_no, aadhar_no, date, remark, created_by, created_date, created_time, updated_date, updated_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [recObj.pid, recObj.name, recObj.father || '', recObj.utNo || '', recObj.aadharNo || '', recObj.date || '', recObj.remark || '', recObj.createdBy, recObj.createdDate, recObj.createdTime, '', '']
+      );
+      const newRec = { id: res.lastID, rowIndex: res.lastID, ...recObj };
+      inMemoryData.records.unshift(newRec);
+      return newRec;
+    } catch (e) {
+      const newId = inMemoryData.records.length + 2;
+      const newRec = { id: newId, rowIndex: newId, ...recObj };
+      inMemoryData.records.unshift(newRec);
+      return newRec;
+    }
   }
 
   const addedRow = await dataSheet.addRow({
@@ -436,6 +469,13 @@ async function addRecord(recObj) {
 
 async function updateRecord(rowIndex, recObj) {
   if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(
+        `UPDATE records SET pid = ?, name = ?, father = ?, ut_no = ?, aadhar_no = ?, date = ?, remark = ?, updated_date = ?, updated_time = ? WHERE id = ?`,
+        [recObj.pid, recObj.name, recObj.father || '', recObj.utNo || '', recObj.aadharNo || '', recObj.date || '', recObj.remark || '', recObj.updatedDate || '', recObj.updatedTime || '', rowIndex]
+      );
+    } catch (e) {}
     const target = inMemoryData.records.find(r => r.id === parseInt(rowIndex, 10));
     if (target) {
       Object.assign(target, recObj);
@@ -462,6 +502,10 @@ async function updateRecord(rowIndex, recObj) {
 
 async function deleteRecord(rowIndex) {
   if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(`DELETE FROM records WHERE id = ?`, [rowIndex]);
+    } catch (e) {}
     inMemoryData.records = inMemoryData.records.filter(r => r.id !== parseInt(rowIndex, 10));
     return true;
   }
@@ -476,9 +520,18 @@ async function deleteRecord(rowIndex) {
 
 async function batchAddRecords(recordsArr) {
   if (!isConnected) {
+    try {
+      const { dbRun } = require('./database');
+      for (const rec of recordsArr) {
+        await dbRun(
+          `INSERT INTO records (pid, name, father, ut_no, aadhar_no, date, remark, created_by, created_date, created_time, updated_date, updated_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [rec.pid, rec.name, rec.father || '', rec.utNo || '', rec.aadharNo || '', rec.date || '', rec.remark || '', rec.createdBy, rec.createdDate, rec.createdTime, '', '']
+        );
+      }
+    } catch (e) {}
     recordsArr.forEach(rec => {
       const newId = inMemoryData.records.length + 2;
-      inMemoryData.records.push({ id: newId, rowIndex: newId, ...rec });
+      inMemoryData.records.unshift({ id: newId, rowIndex: newId, ...rec });
     });
     return true;
   }
@@ -824,18 +877,27 @@ async function getListAddRequests() {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
       if (rows && rows.length > 0) {
-        return rows.map(r => ({
-          id: r.id,
-          rowIndex: r.id,
-          optionValue: r.option_value,
-          requestedBy: r.requested_by,
-          requestedDate: r.requested_date,
-          requestedTime: r.requested_time,
-          reason: r.reason,
-          status: r.status,
-          actionBy: r.action_by,
-          actionDate: r.action_date
-        }));
+        return rows.map(r => {
+          let reqMs = r.created_at;
+          if (!reqMs && r.requested_date) {
+            try {
+              reqMs = new Date(`${r.requested_date}T${r.requested_time || '00:00:00'}`).getTime();
+            } catch (e) {}
+          }
+          return {
+            id: r.id,
+            rowIndex: r.id,
+            optionValue: r.option_value,
+            requestedBy: r.requested_by,
+            requestedDate: r.requested_date,
+            requestedTime: r.requested_time,
+            reason: r.reason,
+            status: r.status,
+            actionBy: r.action_by,
+            actionDate: r.action_date,
+            createdAt: reqMs || Date.now()
+          };
+        });
       }
     } catch (e) {}
     return inMemoryData.listAddRequests;
@@ -843,18 +905,27 @@ async function getListAddRequests() {
 
   try {
     const rows = await listAddRequestsSheet.getRows();
-    return rows.map(row => ({
-      id: row.rowNumber,
-      rowIndex: row.rowNumber,
-      optionValue: (row.get('Option Value') || '').toString().trim(),
-      requestedBy: (row.get('Requested By') || '').toString().trim(),
-      requestedDate: (row.get('Requested Date') || '').toString().trim(),
-      requestedTime: (row.get('Requested Time') || '').toString().trim(),
-      reason: (row.get('Reason') || '').toString().trim(),
-      status: (row.get('Status') || 'Pending').toString().trim(),
-      actionBy: (row.get('Action By') || '').toString().trim(),
-      actionDate: (row.get('Action Date') || '').toString().trim()
-    }));
+    return rows.map(row => {
+      const rDate = (row.get('Requested Date') || '').toString().trim();
+      const rTime = (row.get('Requested Time') || '').toString().trim();
+      let reqMs = null;
+      if (rDate) {
+        try { reqMs = new Date(`${rDate}T${rTime || '00:00:00'}`).getTime(); } catch (e) {}
+      }
+      return {
+        id: row.rowNumber,
+        rowIndex: row.rowNumber,
+        optionValue: (row.get('Option Value') || '').toString().trim(),
+        requestedBy: (row.get('Requested By') || '').toString().trim(),
+        requestedDate: rDate,
+        requestedTime: rTime,
+        reason: (row.get('Reason') || '').toString().trim(),
+        status: (row.get('Status') || 'Pending').toString().trim(),
+        actionBy: (row.get('Action By') || '').toString().trim(),
+        actionDate: (row.get('Action Date') || '').toString().trim(),
+        createdAt: reqMs || Date.now()
+      };
+    });
   } catch (err) {
     console.error('getListAddRequests error:', err.message);
     return inMemoryData.listAddRequests;
@@ -864,13 +935,14 @@ async function getListAddRequests() {
 async function createListAddRequest(reqObj) {
   const reasonVal = (reqObj.reason || '').toString().trim();
   const optVal = (reqObj.optionValue || '').toString().trim();
+  const createdAtMs = reqObj.createdAt || Date.now();
 
   if (!isConnected) {
     try {
       const { dbRun } = require('./database');
       const res = await dbRun(
-        `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?)`,
-        [optVal, reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, reasonVal, 'Pending']
+        `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [optVal, reqObj.requestedBy, reqObj.requestedDate, reqObj.requestedTime, reasonVal, 'Pending', createdAtMs]
       );
       reqObj.id = res.lastID;
       reqObj.rowIndex = res.lastID;
@@ -879,7 +951,7 @@ async function createListAddRequest(reqObj) {
       reqObj.id = newId;
       reqObj.rowIndex = newId;
     }
-    inMemoryData.listAddRequests.push({ ...reqObj, optionValue: optVal, reason: reasonVal, status: 'Pending' });
+    inMemoryData.listAddRequests.push({ ...reqObj, optionValue: optVal, reason: reasonVal, status: 'Pending', createdAt: createdAtMs });
     return true;
   }
 
@@ -951,33 +1023,64 @@ async function deleteListAddRequest(requestId) {
    ========================================================================== */
 
 async function getRemarkOptions() {
+  let permanentOptions = [];
+
   if (!isConnected) {
     try {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT option_value FROM remark_options ORDER BY id ASC');
       if (rows && rows.length > 0) {
-        return rows
+        permanentOptions = rows
           .map(r => r.option_value)
           .filter(val => val && val.toString().trim().toLowerCase() !== 'remark options');
       }
     } catch (e) {}
-    return inMemoryData.remarkOptions;
+    if (permanentOptions.length === 0) permanentOptions = [...inMemoryData.remarkOptions];
+  } else {
+    try {
+      const rows = await dropdownSheet.getRows();
+      permanentOptions = rows
+        .map(row => {
+          const val = row.get('Remark Options') || (row._rawData ? row._rawData[0] : '');
+          return (val || '').toString().trim();
+        })
+        .filter(val => val !== '' && val.toLowerCase() !== 'remark options');
+    } catch (err) {
+      console.error('getRemarkOptions error:', err.message);
+    }
+    if (permanentOptions.length === 0) permanentOptions = [...inMemoryData.remarkOptions];
   }
 
+  // Combine permanent options with active 24-hour temporary pending list requests ("empery base list")
   try {
-    const rows = await dropdownSheet.getRows();
-    const options = rows
-      .map(row => {
-        const val = row.get('Remark Options') || (row._rawData ? row._rawData[0] : '');
-        return (val || '').toString().trim();
+    const allRequests = await getListAddRequests();
+    const now = Date.now();
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    const tempActiveOptions = allRequests
+      .filter(r => {
+        if (r.status !== 'Pending') return false;
+        let reqMs = r.createdAt;
+        if (!reqMs && r.requestedDate) {
+          try {
+            reqMs = new Date(`${r.requestedDate}T${r.requestedTime || '00:00:00'}`).getTime();
+          } catch (e) {}
+        }
+        if (!reqMs) return true; // fallback to include
+        return (now - reqMs) <= TWENTY_FOUR_HOURS_MS;
       })
-      .filter(val => val !== '' && val.toLowerCase() !== 'remark options');
-    
-    if (options.length > 0) return options;
-  } catch (err) {
-    console.error('getRemarkOptions error:', err.message);
+      .map(r => (r.optionValue || '').toString().trim());
+
+    for (const tempOpt of tempActiveOptions) {
+      if (tempOpt && !permanentOptions.some(opt => opt.toLowerCase() === tempOpt.toLowerCase())) {
+        permanentOptions.push(tempOpt);
+      }
+    }
+  } catch (e) {
+    console.error('Error merging temporary dropdown options:', e.message);
   }
-  return inMemoryData.remarkOptions;
+
+  return permanentOptions;
 }
 
 async function addRemarkOption(optionValue) {

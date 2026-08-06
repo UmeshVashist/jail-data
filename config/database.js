@@ -126,9 +126,14 @@ async function initDatabase() {
         reason TEXT,
         status TEXT DEFAULT 'Pending',
         action_by TEXT,
-        action_date TEXT
+        action_date TEXT,
+        created_at INTEGER
       )
     `);
+
+    try {
+      await dbRun(`ALTER TABLE list_add_requests ADD COLUMN created_at INTEGER`);
+    } catch (e) {}
 
 
     // Create Remark Options table

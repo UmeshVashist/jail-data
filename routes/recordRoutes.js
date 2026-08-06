@@ -334,6 +334,42 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+// PUT /api/records/:id/remark - Update record remark (Used in Reactive List page)
+router.put('/:id/remark', requireAuth, async (req, res) => {
+  try {
+    const recordId = parseInt(req.params.id, 10);
+    const { remark } = req.body;
+    const cleanRemark = (remark || '').toString().trim();
+
+    if (!cleanRemark) {
+      return res.status(400).json({ success: false, message: 'New remark value is required.' });
+    }
+
+    const records = await getRecords();
+    const targetRec = records.find(r => r.id === recordId || r.rowIndex === recordId);
+    if (!targetRec) {
+      return res.status(404).json({ success: false, message: 'Record not found.' });
+    }
+
+    const now = new Date();
+    const updatedDate = getFormattedDate(now);
+    const updatedTime = getFormattedTime(now);
+
+    const updatedData = {
+      ...targetRec,
+      remark: cleanRemark,
+      updatedDate,
+      updatedTime
+    };
+
+    await updateRecord(recordId, updatedData);
+
+    res.json({ success: true, message: `Record (PID: ${targetRec.pid}) remark updated to "${cleanRemark}" successfully!`, data: updatedData });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Update record remark error: ' + err.message });
+  }
+});
+
 // PUT /api/records/:id - Update Existing Record
 router.put('/:id', requireAuth, async (req, res) => {
   try {

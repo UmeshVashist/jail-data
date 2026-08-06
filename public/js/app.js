@@ -36,6 +36,7 @@ let sendDeleteRequestModalInstance = null;
 let sendEditRequestModalInstance = null;
 let sendListAddRequestModalInstance = null;
 let viewEditComparisonModalInstance = null;
+let updateRecordRemarkModalInstance = null;
 let rawPendingDeleteRequests = [];
 let rawPendingEditRequests = [];
 let rawPendingListAddRequests = [];
@@ -55,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
   sendEditRequestModalInstance = new bootstrap.Modal(document.getElementById('sendEditRequestModal'));
   sendListAddRequestModalInstance = new bootstrap.Modal(document.getElementById('sendListAddRequestModal'));
   viewEditComparisonModalInstance = new bootstrap.Modal(document.getElementById('viewEditComparisonModal'));
+  updateRecordRemarkModalInstance = new bootstrap.Modal(document.getElementById('updateRecordRemarkModal'));
 
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
@@ -366,6 +368,7 @@ function navigateToView(viewName) {
     'delete-requests': 'Requests Management Hub',
     'edit-requests': 'Requests Management Hub',
     'my-requests': 'My Sent Requests',
+    'reactive-list': 'Reactive Dropdown Requests',
     'users': 'Admin User Management',
     'dropdowns': 'Dropdown Options Settings'
   };
@@ -391,6 +394,8 @@ function navigateToView(viewName) {
     loadAllRequestsList();
   } else if (viewName === 'my-requests') {
     loadMyRequestsList();
+  } else if (viewName === 'reactive-list') {
+    loadReactiveList();
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
     loadUsersList();
   } else if (viewName === 'dropdowns' && currentUserState.role === 'Admin') {
@@ -2041,6 +2046,8 @@ async function handleSendListAddRequestSubmit(event) {
     if (data.success) {
       showToast('success', 'Request Sent', data.message);
       loadMyRequestsList();
+      loadReactiveList();
+      loadRemarkOptions();
     } else {
       showToast('danger', 'Error', data.message);
     }
@@ -2436,6 +2443,7 @@ async function approveListAddRequest(requestId, optionValue) {
       if (data.success) {
         showToast('success', 'Approved & Option Added', data.message);
         loadAllRequestsList();
+        loadReactiveList();
         loadRemarkOptions();
       } else {
         showToast('danger', 'Error', data.message);
@@ -2467,6 +2475,7 @@ async function rejectListAddRequest(requestId, optionValue) {
       if (data.success) {
         showToast('info', 'Request Rejected', data.message);
         loadAllRequestsList();
+        loadReactiveList();
       } else {
         showToast('danger', 'Error', data.message);
       }
@@ -2478,6 +2487,186 @@ async function rejectListAddRequest(requestId, optionValue) {
 
   confirmModalInstance.show();
 }
+
+async function loadReactiveList() {
+  showLoader('Loading reactive dropdown data...');
+  try {
+    const res = await fetch('/api/list-add-requests/reactive');
+    const data = await res.json();
+    hideLoader();
+
+    if (!data.success) {
+      showToast('danger', 'Error', data.message);
+      return;
+    }
+
+    const requests = data.requests || data.data || [];
+    const affectedRecords = data.affectedRecords || [];
+
+    // Update badges
+    const navBadgeEl = document.getElementById('nav-reactive-list-badge');
+    if (navBadgeEl) {
+      const totalCount = requests.length + affectedRecords.length;
+      navBadgeEl.innerText = totalCount;
+      if (totalCount > 0) navBadgeEl.classList.remove('d-none');
+      else navBadgeEl.classList.add('d-none');
+    }
+
+    const recBadgeEl = document.getElementById('reactive-records-count-badge');
+    if (recBadgeEl) recBadgeEl.innerText = affectedRecords.length;
+
+    const reqBadgeEl = document.getElementById('reactive-requests-count-badge');
+    if (reqBadgeEl) reqBadgeEl.innerText = requests.length;
+
+    // 1. Render Affected Records Table (Records with Unapproved Remarks)
+    const recTbody = document.getElementById('reactive-records-table-body');
+    if (recTbody) {
+      if (affectedRecords.length === 0) {
+        recTbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>No records with unapproved remarks! All records have valid approved remarks.</td></tr>';
+      } else {
+        let recHtml = '';
+        affectedRecords.forEach((rec, idx) => {
+          recHtml += `
+            <tr>
+              <td class="fw-semibold text-muted">${idx + 1}</td>
+              <td><span class="fw-bold text-primary">${escapeHtml(rec.pid)}</span></td>
+              <td><span class="fw-semibold text-dark">${escapeHtml(rec.name)}</span></td>
+              <td>${escapeHtml(rec.father || '-')}</td>
+              <td>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i>${escapeHtml(rec.remark)}</span>
+                <small class="text-muted d-block opacity-75 mt-0.5">Unapproved by Admin</small>
+              </td>
+              <td><span class="badge bg-light text-dark border">${escapeHtml(rec.requestedBy || '-')}</span></td>
+              <td><span class="badge bg-warning text-dark"><i class="bi bi-arrow-counterclockwise me-1"></i>${escapeHtml(rec.optionStatus || 'Pending')}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-warning text-dark fw-semibold rounded-2 shadow-sm" onclick="showUpdateRecordRemarkModal(${rec.id}, '${escapeHtml(rec.pid)}', '${escapeHtml(rec.name)}', '${escapeHtml(rec.remark)}')">
+                  <i class="bi bi-pencil-square me-1"></i>Update Remark
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        recTbody.innerHTML = recHtml;
+      }
+    }
+
+    // 2. Render Dropdown Requests Table
+    const reqTbody = document.getElementById('reactive-list-table-body');
+    if (reqTbody) {
+      if (requests.length === 0) {
+        reqTbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>No pending or reactive dropdown requests. All requests are approved!</td></tr>';
+      } else {
+        const canApprove = currentUserState && (currentUserState.role === 'Admin' || currentUserState.deleteRequestPermission);
+
+        let reqHtml = '';
+        requests.forEach((req, idx) => {
+          const tempBadge = req.isTempActive
+            ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-clock-history me-1"></i>Temp Active (${req.hoursLeft}h left)</span>`
+            : `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Temp Expired</span>`;
+
+          const statusBadge = req.status === 'Rejected'
+            ? `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>`
+            : `<span class="badge bg-warning text-dark"><i class="bi bi-arrow-counterclockwise me-1"></i>Reactive / Pending</span>`;
+
+          let actionButtons = '-';
+          if (canApprove) {
+            actionButtons = `
+              <button class="btn btn-sm btn-success fw-semibold rounded-2 me-1 shadow-sm" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                <i class="bi bi-check-lg me-1"></i>Approve & Add Permanent
+              </button>
+              <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                <i class="bi bi-x-lg me-1"></i>Reject
+              </button>
+            `;
+          } else if (String(req.requestedBy || '').toLowerCase() === String(currentUserState.username || '').toLowerCase()) {
+            actionButtons = `
+              <button class="btn btn-sm btn-outline-danger rounded-2" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                <i class="bi bi-trash me-1"></i>Withdraw
+              </button>
+            `;
+          }
+
+          reqHtml += `
+            <tr>
+              <td class="fw-semibold text-muted">${idx + 1}</td>
+              <td><span class="fw-bold text-dark"><i class="bi bi-tag-fill text-primary me-1"></i>${escapeHtml(req.optionValue)}</span></td>
+              <td><span class="fst-italic text-secondary">${escapeHtml(req.reason || '-')}</span></td>
+              <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
+              <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime || '')}</td>
+              <td>${tempBadge}</td>
+              <td>${statusBadge}</td>
+              <td class="text-end">${actionButtons}</td>
+            </tr>
+          `;
+        });
+        reqTbody.innerHTML = reqHtml;
+      }
+    }
+
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', 'Failed to load reactive list data: ' + err.message);
+  }
+}
+
+function showUpdateRecordRemarkModal(recordId, pid, name, oldRemark) {
+  document.getElementById('update-remark-record-id').value = recordId;
+  document.getElementById('update-remark-pid').innerText = pid;
+  document.getElementById('update-remark-name').innerText = name;
+  document.getElementById('update-remark-old').innerText = oldRemark;
+
+  const selectEl = document.getElementById('update-remark-select');
+  if (selectEl) {
+    let html = '<option value="">-- Select Approved Remark --</option>';
+    // Only show valid approved remark options
+    currentRemarkOptions.forEach(opt => {
+      if (opt && opt.toLowerCase() !== oldRemark.toLowerCase() && opt.toLowerCase() !== 'remark options') {
+        html += `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`;
+      }
+    });
+    selectEl.innerHTML = html;
+  }
+
+  updateRecordRemarkModalInstance.show();
+}
+
+async function handleUpdateRecordRemarkSubmit(event) {
+  event.preventDefault();
+  const recordId = document.getElementById('update-remark-record-id').value;
+  const newRemark = document.getElementById('update-remark-select').value.trim();
+
+  if (!newRemark) {
+    showToast('danger', 'Validation Error', 'Please select an approved remark from the list.');
+    return;
+  }
+
+  updateRecordRemarkModalInstance.hide();
+  showLoader('Updating record remark...');
+
+  try {
+    const res = await fetch(`/api/records/${recordId}/remark`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remark: newRemark })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Remark Updated', data.message);
+      loadReactiveList();
+      if (document.getElementById('records-view') && !document.getElementById('records-view').classList.contains('d-none')) {
+        triggerFetchRecords();
+      }
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+  }
+}
+
 
 async function cancelMyEditRequest(requestId, pid) {
   document.getElementById('confirmModalTitle').innerText = 'Cancel Your Edit Request?';

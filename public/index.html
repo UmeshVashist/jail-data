@@ -124,6 +124,13 @@
             <span>My Requests</span>
           </a>
         </li>
+        <li class="nav-item" id="nav-item-reactive-list">
+          <a class="nav-link" id="nav-reactive-list" href="#" onclick="navigateToView('reactive-list'); return false;">
+            <i class="bi bi-arrow-counterclockwise text-warning"></i>
+            <span>Reactive List</span>
+            <span class="badge bg-warning text-dark rounded-pill ms-auto d-none" id="nav-reactive-list-badge">0</span>
+          </a>
+        </li>
         <li class="nav-item">
           <a class="nav-link" id="nav-users" href="#" onclick="navigateToView('users'); return false;">
             <i class="bi bi-people-fill"></i>
@@ -958,6 +965,107 @@
 
         </div>
 
+        <!-- Reactive List Requests View -->
+        <div id="reactive-list-view" class="view-section d-none">
+          
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1">
+                <i class="bi bi-arrow-counterclockwise text-warning me-2"></i>Reactive List & Unapproved Remarks
+              </h3>
+              <p class="text-muted small mb-0">View records with unapproved temporary remarks and manage pending dropdown option requests.</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <button class="btn btn-primary btn-sm rounded-2 shadow-sm" onclick="showSendListAddRequestModal()">
+                <i class="bi bi-plus-circle-fill me-1"></i> Request New Option
+              </button>
+            </div>
+          </div>
+
+          <!-- Nav Tabs for Reactive Page -->
+          <ul class="nav nav-tabs mb-3" id="reactive-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold" id="tab-reactive-records-btn" data-bs-toggle="tab" data-bs-target="#tab-reactive-records" type="button" role="tab">
+                <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Records Needing Remark Update
+                <span class="badge bg-danger rounded-pill ms-2" id="reactive-records-count-badge">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold" id="tab-reactive-requests-btn" data-bs-toggle="tab" data-bs-target="#tab-reactive-requests" type="button" role="tab">
+                <i class="bi bi-tag-fill text-warning me-1"></i>Dropdown Option Requests
+                <span class="badge bg-warning text-dark rounded-pill ms-2" id="reactive-requests-count-badge">0</span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content" id="reactive-tab-content">
+            
+            <!-- Tab 1: Affected Data Records -->
+            <div class="tab-pane fade show active" id="tab-reactive-records" role="tabpanel">
+              <div class="alert alert-warning d-flex align-items-center mb-3 small py-2">
+                <i class="bi bi-info-circle-fill me-2 fs-5 text-warning"></i>
+                <div>
+                  <strong>Attention:</strong> These records were created using temporary dropdown options that have not been approved by the Admin. Update their remark to a valid permanent option to clear them from this list.
+                </div>
+              </div>
+
+              <div class="custom-table-card">
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>PID</th>
+                        <th>Name</th>
+                        <th>Father's Name</th>
+                        <th>Current Remark (Unapproved)</th>
+                        <th>Requested By</th>
+                        <th>Option Status</th>
+                        <th class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reactive-records-table-body">
+                      <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">Loading records needing remark update...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: Dropdown Option Requests -->
+            <div class="tab-pane fade" id="tab-reactive-requests" role="tabpanel">
+              <div class="custom-table-card">
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Dropdown Option Name</th>
+                        <th>Reason / Remark</th>
+                        <th>Requested By</th>
+                        <th>Date & Time</th>
+                        <th>24h Temp Status</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reactive-list-table-body">
+                      <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">Loading reactive requests...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
       </main>
     </div>
   </div>
@@ -1310,6 +1418,41 @@
         <div class="modal-footer" id="comp-modal-footer">
           <!-- Action buttons injected dynamically -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Record Remark Modal (For Reactive List Page) -->
+  <div class="modal fade" id="updateRecordRemarkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning bg-opacity-10">
+          <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-warning me-2"></i>Update Record Remark</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="updateRecordRemarkForm" onsubmit="handleUpdateRecordRemarkSubmit(event); return false;" autocomplete="off">
+          <div class="modal-body">
+            <input type="hidden" id="update-remark-record-id">
+            
+            <div class="mb-3 p-3 bg-light rounded border small">
+              <div><strong>PID:</strong> <span id="update-remark-pid" class="text-primary fw-bold"></span></div>
+              <div><strong>Name:</strong> <span id="update-remark-name" class="fw-semibold"></span></div>
+              <div class="mt-1 text-danger"><strong>Current Remark (Unapproved):</strong> <span id="update-remark-old" class="badge bg-danger bg-opacity-10 text-danger border border-danger"></span></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="update-remark-select" class="form-label small fw-semibold text-secondary">Select New Approved Remark <span class="text-danger">*</span></label>
+              <select class="form-select" id="update-remark-select" required>
+                <!-- Populated dynamically with approved permanent options -->
+              </select>
+              <div class="form-text text-muted small">Choose an approved remark from the list to update this record and clear it from the Reactive page.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning text-dark fw-semibold px-4"><i class="bi bi-check-circle me-1"></i>Update & Save Remark</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

@@ -10,7 +10,9 @@ const {
   updateListAddRequestStatus, 
   deleteListAddRequest,
   addRemarkOption,
-  getRemarkOptions
+  getRemarkOptions,
+  getRecords,
+  getIsConnected
 } = require('../config/googleSheets');
 const { requireAuth, requireDeleteRequestPermission } = require('../middleware/auth');
 
@@ -72,12 +74,107 @@ router.post('/', async (req, res) => {
       requestedBy: req.user.username,
       requestedDate: reqDate,
       requestedTime: reqTime,
+      createdAt: now.getTime(),
       reason: (reason || '').toString().trim()
     });
 
     res.json({ success: true, message: `Request to add "${cleanOption}" to dropdown list sent successfully!` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Send list add request error: ' + err.message });
+  }
+});
+
+// GET /api/list-add-requests/reactive - List all reactive / unapproved list add requests AND affected records
+router.get('/reactive', async (req, res) => {
+  try {
+    const [allRequests, allRecords] = await Promise.all([
+      getListAddRequests(),
+      getRecords()
+    ]);
+
+    const now = Date.now();
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    // Get permanent approved remark options
+    let permanentOptions = [];
+    if (!getIsConnected()) {
+      try {
+        const { dbAll } = require('../config/database');
+        const rows = await dbAll('SELECT option_value FROM remark_options ORDER BY id ASC');
+        if (rows && rows.length > 0) {
+          permanentOptions = rows.map(r => r.option_value).filter(Boolean);
+        }
+      } catch (e) {}
+    } else {
+      try {
+        permanentOptions = await getRemarkOptions();
+      } catch (e) {}
+    }
+    if (!permanentOptions || permanentOptions.length === 0) {
+      permanentOptions = ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other'];
+    }
+
+    const permSet = new Set(permanentOptions.map(opt => opt.trim().toLowerCase()));
+
+    // Filter requests that are NOT Approved (Pending or Rejected/Reactive)
+    const unapprovedRequests = allRequests.filter(r => r.status !== 'Approved');
+
+    const unapprovedMap = new Map();
+    unapprovedRequests.forEach(r => {
+      if (r.optionValue) {
+        unapprovedMap.set(r.optionValue.trim().toLowerCase(), r);
+      }
+    });
+
+    const formattedRequests = unapprovedRequests.map(r => {
+      let reqMs = r.createdAt;
+      if (!reqMs && r.requestedDate) {
+        try {
+          reqMs = new Date(`${r.requestedDate}T${r.requestedTime || '00:00:00'}`).getTime();
+        } catch (e) {}
+      }
+      reqMs = reqMs || now;
+      const elapsed = now - reqMs;
+      const isTempActive = elapsed <= TWENTY_FOUR_HOURS_MS && r.status === 'Pending';
+      const hoursLeft = Math.max(0, Math.ceil((TWENTY_FOUR_HOURS_MS - elapsed) / (1000 * 60 * 60)));
+
+      return {
+        ...r,
+        isTempActive,
+        hoursLeft,
+        tempStatusLabel: isTempActive ? `Temp Active (${hoursLeft}h left)` : (r.status === 'Pending' ? 'Temp Expired (Pending Approval)' : r.status)
+      };
+    });
+
+    // Find all data records whose remark is NOT a permanent approved option
+    const affectedRecords = [];
+    allRecords.forEach(rec => {
+      const recRemark = (rec.remark || '').trim();
+      if (recRemark && !permSet.has(recRemark.toLowerCase())) {
+        const matchingReq = unapprovedMap.get(recRemark.toLowerCase());
+        affectedRecords.push({
+          id: rec.id || rec.rowIndex,
+          pid: rec.pid,
+          name: rec.name,
+          father: rec.father || '-',
+          utNo: rec.utNo || rec.ut_no || '-',
+          date: rec.date || '-',
+          remark: rec.remark,
+          unapprovedOption: matchingReq ? matchingReq.optionValue : rec.remark,
+          requestedBy: matchingReq ? matchingReq.requestedBy : (rec.createdBy || '-'),
+          optionStatus: matchingReq ? matchingReq.status : 'Pending Approval'
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      data: formattedRequests,
+      requests: formattedRequests,
+      affectedRecords: affectedRecords
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch reactive list error: ' + err.message });
   }
 });
 
