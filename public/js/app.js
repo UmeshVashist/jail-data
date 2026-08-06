@@ -345,18 +345,29 @@ function updateUIForRolePermissions() {
     if (el) el.classList.remove('d-none');
   }
 
+  const reactiveNavEl = document.getElementById('nav-item-reactive-list');
+  const dashTotalUsersCard = document.getElementById('dash-card-total-users');
+
   if (role === 'Admin') {
     document.getElementById('nav-users').classList.remove('d-none');
     const dropNav = document.getElementById('nav-item-dropdowns');
     if (dropNav) dropNav.classList.remove('d-none');
+    if (reactiveNavEl) reactiveNavEl.classList.add('d-none');
+    if (dashTotalUsersCard) dashTotalUsersCard.classList.remove('d-none');
   } else {
     document.getElementById('nav-users').classList.add('d-none');
     const dropNav = document.getElementById('nav-item-dropdowns');
     if (dropNav) dropNav.classList.add('d-none');
+    if (reactiveNavEl) reactiveNavEl.classList.remove('d-none');
+    if (dashTotalUsersCard) dashTotalUsersCard.classList.add('d-none');
   }
 }
 
 function navigateToView(viewName) {
+  if (viewName === 'reactive-list' && currentUserState && currentUserState.role === 'Admin') {
+    viewName = 'dashboard';
+  }
+
   document.querySelectorAll('.view-section').forEach(el => el.classList.add('d-none'));
   document.querySelectorAll('#sidebar .nav-link').forEach(el => el.classList.remove('active'));
 
