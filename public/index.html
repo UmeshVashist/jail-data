@@ -1080,8 +1080,10 @@
 
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label for="modal-record-pid" class="form-label small fw-semibold text-secondary">PID <span class="text-danger">* (Numbers Only)</span></label>
-                <input type="text" class="form-control" id="modal-record-pid" placeholder="Numeric PID (e.g. 1001)" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                <label for="modal-record-pid" class="form-label small fw-semibold text-secondary">PID <span class="text-danger">* (Numbers Only)</span> <span id="pid-status-badge"></span></label>
+                <input type="text" class="form-control" id="modal-record-pid" placeholder="Numeric PID (e.g. 1001)" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkAddRecordPidExists();" onblur="checkAddRecordPidExists(true);" onkeydown="if(event.key==='Tab'||event.key==='Enter') checkAddRecordPidExists(true);" required>
+                <div id="pid-error-msg" class="text-danger small mt-1 d-none fw-semibold"><i class="bi bi-exclamation-circle me-1"></i>This PID already exists!</div>
+                <div id="pid-success-msg" class="text-success small mt-1 d-none fw-semibold"><i class="bi bi-check-circle me-1"></i>PID is available!</div>
               </div>
               <div class="col-12 col-md-6">
                 <label for="modal-record-name" class="form-label small fw-semibold text-secondary">Name <span class="text-danger">*</span></label>

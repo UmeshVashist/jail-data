@@ -19,17 +19,22 @@ const { requireAuth, requireDeleteRequestPermission } = require('../middleware/a
 router.use(requireAuth);
 
 function getFormattedDate(d = new Date()) {
-  const year = d.getFullYear();
-  const month = ('0' + (d.getMonth() + 1)).slice(-2);
-  const day = ('0' + d.getDate()).slice(-2);
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d);
+  const year = parts.find(p => p.type === 'year').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const day = parts.find(p => p.type === 'day').value;
   return `${year}-${month}-${day}`;
 }
 
 function getFormattedTime(d = new Date()) {
-  const hours = ('0' + d.getHours()).slice(-2);
-  const minutes = ('0' + d.getMinutes()).slice(-2);
-  const seconds = ('0' + d.getSeconds()).slice(-2);
-  return `${hours}:${minutes}:${seconds}`;
+  return d.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour12: true,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
 }
 
 // POST /api/list-add-requests - Send Request to Add New Dropdown Option

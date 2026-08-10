@@ -263,5 +263,33 @@ body {
   background-color: #f1f5f9;
 }
 
+/* Searchable Select Dropdown Styling */
+.searchable-select-wrapper {
+  position: relative;
+}
 
+.searchable-select-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2.25rem;
+}
 
+.searchable-select-menu {
+  z-index: 1060;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.searchable-select-menu .dropdown-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.searchable-select-menu .dropdown-item:hover,
+.searchable-select-menu .dropdown-item.active {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}

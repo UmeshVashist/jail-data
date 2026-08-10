@@ -74,9 +74,14 @@ function canModifyRecord(user, record) {
   if (user.role === 'Add') {
     const isOwnRecord = String(user.username).toLowerCase() === String(record.createdBy || '').toLowerCase();
     
-    let createdTimestamp = new Date((record.createdDate || '') + 'T' + (record.createdTime || '00:00:00')).getTime();
+    const dateStr = (record.createdDate || '').trim();
+    const timeStr = (record.createdTime || '00:00:00').trim();
+    let createdTimestamp = new Date(`${dateStr} ${timeStr}`).getTime();
     if (isNaN(createdTimestamp)) {
-      createdTimestamp = new Date(record.createdDate).getTime();
+      createdTimestamp = new Date(`${dateStr}T${timeStr}`).getTime();
+    }
+    if (isNaN(createdTimestamp)) {
+      createdTimestamp = new Date(dateStr).getTime();
     }
     
     if (isNaN(createdTimestamp)) return false;

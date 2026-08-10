@@ -227,6 +227,16 @@ async function initGoogleSheets() {
 }
 
 /* Helper to normalize Excel date serial numbers or date strings */
+function getFormattedDateTime(d = new Date()) {
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d);
+  const year = parts.find(p => p.type === 'year').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const day = parts.find(p => p.type === 'day').value;
+  const time = d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `${year}-${month}-${day} ${time}`;
+}
+
 function formatDateValue(val) {
   if (val === null || val === undefined || val === '') {
     return '';
@@ -658,7 +668,7 @@ async function createDeleteRequest(reqObj) {
 }
 
 async function updateDeleteRequestStatus(requestId, status, actionBy) {
-  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const actionDate = getFormattedDateTime();
   
   if (!isConnected) {
     try {
@@ -819,7 +829,7 @@ async function createEditRequest(reqObj) {
 }
 
 async function updateEditRequestStatus(requestId, status, actionBy) {
-  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const actionDate = getFormattedDateTime();
   
   if (!isConnected) {
     try {
@@ -970,7 +980,7 @@ async function createListAddRequest(reqObj) {
 }
 
 async function updateListAddRequestStatus(requestId, status, actionBy) {
-  const actionDate = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const actionDate = getFormattedDateTime();
   
   if (!isConnected) {
     try {

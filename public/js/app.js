@@ -684,7 +684,12 @@ function clearFilters() {
   document.getElementById('filter-start-date').value = '';
   document.getElementById('filter-end-date').value = '';
   const filterRemarkEl = document.getElementById('filter-remark');
-  if (filterRemarkEl) filterRemarkEl.value = '';
+  if (filterRemarkEl) {
+    filterRemarkEl.value = '';
+    if (filterRemarkEl.syncSearchableSelect) {
+      filterRemarkEl.syncSearchableSelect();
+    }
+  }
   searchState.query = '';
   searchState.startDate = '';
   searchState.endDate = '';
@@ -708,12 +713,181 @@ async function loadRemarkOptions() {
   }
 }
 
+function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. not, lock)...') {
+  const selectEl = document.getElementById(selectId);
+  if (!selectEl) return;
+
+  let wrapper = selectEl.parentElement.querySelector(`.searchable-select-wrapper[data-for="${selectId}"]`);
+  let input, menu;
+
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.className = 'searchable-select-wrapper position-relative w-100';
+    wrapper.setAttribute('data-for', selectId);
+
+    input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control searchable-select-input';
+    if (selectEl.classList.contains('form-select-sm')) {
+      input.classList.add('form-control-sm');
+    }
+    input.placeholder = placeholderText;
+    input.autocomplete = 'off';
+    input.id = `${selectId}-search-input`;
+
+    menu = document.createElement('div');
+    menu.className = 'dropdown-menu w-100 shadow-sm searchable-select-menu p-1';
+    menu.style.maxHeight = '220px';
+    menu.style.overflowY = 'auto';
+
+    wrapper.appendChild(input);
+    wrapper.appendChild(menu);
+
+    selectEl.parentNode.insertBefore(wrapper, selectEl.nextSibling);
+    selectEl.classList.add('d-none');
+
+    let activeIndex = -1;
+
+    const renderMenuItems = (filterText = '') => {
+      menu.innerHTML = '';
+      const options = Array.from(selectEl.options);
+      const search = filterText.trim().toLowerCase();
+      let matchCount = 0;
+      activeIndex = -1;
+
+      options.forEach((opt) => {
+        const text = opt.text;
+        const val = opt.value;
+
+        if (search && !text.toLowerCase().includes(search) && !val.toLowerCase().includes(search)) {
+          return;
+        }
+
+        matchCount++;
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'dropdown-item py-1.5 px-3 small rounded text-truncate w-100 text-start';
+        if (selectEl.value === val && val !== '') {
+          item.classList.add('active', 'fw-bold');
+        }
+
+        if (search && val !== '') {
+          const idx = text.toLowerCase().indexOf(search);
+          if (idx >= 0) {
+            const before = text.substring(0, idx);
+            const match = text.substring(idx, idx + search.length);
+            const after = text.substring(idx + search.length);
+            item.innerHTML = `${escapeHtml(before)}<strong class="text-primary bg-warning bg-opacity-25 px-1 rounded">${escapeHtml(match)}</strong>${escapeHtml(after)}`;
+          } else {
+            item.textContent = text;
+          }
+        } else {
+          item.textContent = text;
+        }
+
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          selectEl.value = val;
+          input.value = val ? text : '';
+          menu.classList.remove('show');
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        menu.appendChild(item);
+      });
+
+      if (matchCount === 0) {
+        const noRes = document.createElement('div');
+        noRes.className = 'px-3 py-2 text-muted small fst-italic';
+        noRes.innerHTML = '<i class="bi bi-search me-1 opacity-50"></i>No matching remarks found';
+        menu.appendChild(noRes);
+      }
+
+      menu.classList.add('show');
+    };
+
+    input.addEventListener('focus', () => {
+      renderMenuItems(input.value);
+    });
+
+    input.addEventListener('input', () => {
+      if (input.value.trim() === '' && selectEl.value !== '') {
+        selectEl.value = '';
+        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      renderMenuItems(input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      const items = menu.querySelectorAll('.dropdown-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length > 0) {
+          activeIndex = (activeIndex + 1) % items.length;
+          items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+          items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length > 0) {
+          activeIndex = (activeIndex - 1 + items.length) % items.length;
+          items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+          items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex >= 0 && items[activeIndex]) {
+          items[activeIndex].dispatchEvent(new Event('mousedown'));
+        } else if (items.length > 0) {
+          items[0].dispatchEvent(new Event('mousedown'));
+        }
+      } else if (e.key === 'Escape') {
+        menu.classList.remove('show');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+
+    const updateInputFromSelect = () => {
+      const selectedOpt = selectEl.options[selectEl.selectedIndex];
+      if (selectedOpt && selectedOpt.value !== '') {
+        input.value = selectedOpt.text;
+      } else {
+        input.value = '';
+      }
+    };
+
+    const parentForm = selectEl.closest('form');
+    if (parentForm) {
+      parentForm.addEventListener('reset', () => {
+        setTimeout(() => {
+          updateInputFromSelect();
+        }, 10);
+      });
+    }
+
+    selectEl.addEventListener('change', updateInputFromSelect);
+    selectEl.syncSearchableSelect = updateInputFromSelect;
+  } else {
+    input = wrapper.querySelector('.searchable-select-input');
+    if (placeholderText && input) input.placeholder = placeholderText;
+  }
+
+  if (selectEl.syncSearchableSelect) {
+    selectEl.syncSearchableSelect();
+  }
+}
+
 function populateFilterRemarkDropdown() {
   const selectEl = document.getElementById('filter-remark');
   if (!selectEl) return;
   const currentVal = selectEl.value;
 
-  let html = '<option value="">All</option>';
+  let html = '<option value="">All Remarks</option>';
   const cleanOptions = currentRemarkOptions.filter(opt => opt && opt.toString().trim().toLowerCase() !== 'remark options');
 
   cleanOptions.forEach(opt => {
@@ -725,6 +899,7 @@ function populateFilterRemarkDropdown() {
   if (currentVal) {
     selectEl.value = currentVal;
   }
+  setupSearchableSelect('filter-remark', 'Search remark filter...');
 }
 
 function populateRemarkDropdown(selectedValue = '') {
@@ -747,6 +922,7 @@ function populateRemarkDropdown(selectedValue = '') {
   if (selectedValue) {
     selectEl.value = selectedValue;
   }
+  setupSearchableSelect('modal-record-remark', 'Search or select Remark (e.g. not, lock)...');
 }
 
 /* Foreigner Remark & Aadhar Disable Logic */
@@ -757,10 +933,12 @@ function handleRecordRemarkChange() {
   if (!remarkSelect || !aadharInput) return;
 
   const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
-  if (selectedVal === 'foreigner') {
+  const isDisableRemark = (selectedVal === 'foreigner' || selectedVal === 'not available' || selectedVal === 'notavailable' || selectedVal === 'n/a' || selectedVal === 'na');
+
+  if (isDisableRemark) {
     aadharInput.value = '';
     aadharInput.disabled = true;
-    aadharInput.placeholder = 'N/A (Foreigner selected)';
+    aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
     aadharInput.placeholder = 'Min 12 digits or leave blank for #N/A';
@@ -773,13 +951,91 @@ function handleSendEditRemarkChange() {
   if (!remarkSelect || !aadharInput) return;
 
   const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
-  if (selectedVal === 'foreigner') {
+  const isDisableRemark = (selectedVal === 'foreigner' || selectedVal === 'not available' || selectedVal === 'notavailable' || selectedVal === 'n/a' || selectedVal === 'na');
+
+  if (isDisableRemark) {
     aadharInput.value = '';
     aadharInput.disabled = true;
-    aadharInput.placeholder = 'N/A (Foreigner selected)';
+    aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
     aadharInput.placeholder = '12 digit Aadhar number';
+  }
+}
+
+let pidCheckDebounceTimer = null;
+
+async function checkAddRecordPidExists(forceServerCheck = false) {
+  const pidInput = document.getElementById('modal-record-pid');
+  const errorMsg = document.getElementById('pid-error-msg');
+  const successMsg = document.getElementById('pid-success-msg');
+  const badge = document.getElementById('pid-status-badge');
+  if (!pidInput) return false;
+
+  const mode = document.getElementById('record-edit-mode').value;
+  const currentRecordId = document.getElementById('record-id').value;
+  const val = pidInput.value.trim();
+
+  if (!val) {
+    if (errorMsg) errorMsg.classList.add('d-none');
+    if (successMsg) successMsg.classList.add('d-none');
+    if (badge) badge.innerHTML = '';
+    pidInput.classList.remove('is-invalid', 'is-valid');
+    return false;
+  }
+
+  // 1. Instant check against in-memory records
+  const records = window.currentRecordsData || [];
+  let exists = records.some(r => {
+    if (mode === 'edit' && (String(r.id) === String(currentRecordId) || String(r.rowIndex) === String(currentRecordId))) {
+      return false;
+    }
+    return String(r.pid).toLowerCase() === val.toLowerCase();
+  });
+
+  if (exists) {
+    if (errorMsg) errorMsg.classList.remove('d-none');
+    if (successMsg) successMsg.classList.add('d-none');
+    if (badge) badge.innerHTML = '<span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Already Saved</span>';
+    pidInput.classList.add('is-invalid');
+    pidInput.classList.remove('is-valid');
+    return true;
+  }
+
+  // 2. Query database backend to ensure PID is unique across full database
+  const performServerCheck = async () => {
+    try {
+      const excludeQuery = mode === 'edit' && currentRecordId ? `?excludeId=${currentRecordId}` : '';
+      const res = await fetch(`/api/records/check-pid/${encodeURIComponent(val)}${excludeQuery}`);
+      const data = await res.json();
+      if (data.success && data.exists) {
+        if (errorMsg) errorMsg.classList.remove('d-none');
+        if (successMsg) successMsg.classList.add('d-none');
+        if (badge) badge.innerHTML = '<span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Already Saved</span>';
+        pidInput.classList.add('is-invalid');
+        pidInput.classList.remove('is-valid');
+        return true;
+      } else {
+        if (errorMsg) errorMsg.classList.add('d-none');
+        if (successMsg) successMsg.classList.remove('d-none');
+        if (badge) badge.innerHTML = '<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Available</span>';
+        pidInput.classList.remove('is-invalid');
+        pidInput.classList.add('is-valid');
+        return false;
+      }
+    } catch (e) {
+      if (errorMsg) errorMsg.classList.add('d-none');
+      pidInput.classList.remove('is-invalid');
+      return false;
+    }
+  };
+
+  clearTimeout(pidCheckDebounceTimer);
+  if (forceServerCheck) {
+    return await performServerCheck();
+  } else {
+    pidCheckDebounceTimer = setTimeout(performServerCheck, 300);
+    return false;
   }
 }
 
@@ -791,7 +1047,15 @@ async function showAddRecordModal() {
   document.getElementById('recordForm').reset();
   document.getElementById('record-edit-mode').value = 'add';
   document.getElementById('record-id').value = '';
-  document.getElementById('modal-record-pid').disabled = false;
+  const pidInput = document.getElementById('modal-record-pid');
+  pidInput.disabled = false;
+  pidInput.classList.remove('is-invalid', 'is-valid');
+  const errorMsg = document.getElementById('pid-error-msg');
+  if (errorMsg) errorMsg.classList.add('d-none');
+  const successMsg = document.getElementById('pid-success-msg');
+  if (successMsg) successMsg.classList.add('d-none');
+  const badge = document.getElementById('pid-status-badge');
+  if (badge) badge.innerHTML = '';
   document.getElementById('modal-record-date').value = new Date().toISOString().split('T')[0];
   populateRemarkDropdown('');
   handleRecordRemarkChange();
@@ -834,6 +1098,12 @@ async function handleRecordFormSubmit(event) {
   // Validate numeric PID
   if (!/^\d+$/.test(pid)) {
     showToast('danger', 'Validation Error', 'PID must contain numbers only.');
+    return;
+  }
+
+  const isDup = await checkAddRecordPidExists(true);
+  if (isDup) {
+    showToast('danger', 'Validation Error', 'This PID already exists! Please enter a unique PID.');
     return;
   }
 
@@ -1766,6 +2036,7 @@ function openSendEditRequestModal(encodedRecJson) {
     const selected = opt.toLowerCase() === (rec.remark || '').toLowerCase() ? 'selected' : '';
     remarkSelect.innerHTML += `<option value="${escapeHtml(opt)}" ${selected}>${escapeHtml(opt)}</option>`;
   });
+  setupSearchableSelect('send-edit-remark', 'Search or select Remark (e.g. not, lock)...');
 
   sendEditRequestModalInstance.show();
   handleSendEditRemarkChange();
@@ -1884,7 +2155,7 @@ function renderEditRequestsTable(requests) {
         <button class="btn btn-sm btn-success me-1" title="Approve and Update Data" onclick="approveEditRequest(${req.id}, '${escapeHtml(req.pid)}')">
           <i class="bi bi-check-circle me-1"></i>Approve
         </button>
-        <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')">
+        <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectEditRequest(${req.id}, '${escapeHtml(req.pid)}')">
           <i class="bi bi-x-circle me-1"></i>Reject
         </button>
       `;
@@ -1967,65 +2238,80 @@ function viewEditRequestComparison(encodedReqJson) {
 }
 
 async function approveEditRequest(requestId, pid) {
-  document.getElementById('confirmModalTitle').innerText = 'Approve & Update Data?';
-  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve edit request and update record PID "${pid}"?`;
-  const executeBtn = document.getElementById('confirmModalExecuteBtn');
-  executeBtn.innerText = 'Yes, Update Record';
-  executeBtn.className = 'btn btn-success btn-sm px-3';
+  if (viewEditComparisonModalInstance) {
+    viewEditComparisonModalInstance.hide();
+  }
 
-  executeBtn.onclick = async function () {
-    confirmModalInstance.hide();
-    showLoader('Updating record and resolving request...');
-    try {
-      const res = await fetch(`/api/edit-requests/${requestId}/approve`, { method: 'POST' });
-      const data = await res.json();
-      hideLoader();
+  setTimeout(() => {
+    document.getElementById('confirmModalTitle').innerText = 'Approve & Update Data?';
+    document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve edit request and update record PID "${pid}"?`;
+    const executeBtn = document.getElementById('confirmModalExecuteBtn');
+    executeBtn.innerText = 'Yes, Update Record';
+    executeBtn.className = 'btn btn-success btn-sm px-3';
 
-      if (data.success) {
-        showToast('success', 'Approved & Updated', data.message);
-        loadEditRequestsList();
-        fetchPendingEditRequestsCount();
-      } else {
-        showToast('danger', 'Error', data.message);
+    executeBtn.onclick = async function () {
+      confirmModalInstance.hide();
+      showLoader('Updating record and resolving request...');
+      try {
+        const res = await fetch(`/api/edit-requests/${requestId}/approve`, { method: 'POST' });
+        const data = await res.json();
+        hideLoader();
+
+        if (data.success) {
+          showToast('success', 'Approved & Updated', data.message);
+          loadEditRequestsList();
+          loadAllRequestsList();
+          fetchPendingEditRequestsCount();
+          loadRecordsData();
+        } else {
+          showToast('danger', 'Error', data.message);
+        }
+      } catch (err) {
+        hideLoader();
+        showToast('danger', 'Error', err.message);
       }
-    } catch (err) {
-      hideLoader();
-      showToast('danger', 'Error', err.message);
-    }
-  };
+    };
 
-  confirmModalInstance.show();
+    confirmModalInstance.show();
+  }, 200);
 }
 
 async function rejectEditRequest(requestId, pid) {
-  document.getElementById('confirmModalTitle').innerText = 'Reject Edit Request?';
-  document.getElementById('confirmModalMessage').innerText = `Reject edit request for record PID "${pid}"? Record will NOT be updated.`;
-  const executeBtn = document.getElementById('confirmModalExecuteBtn');
-  executeBtn.innerText = 'Yes, Reject Request';
-  executeBtn.className = 'btn btn-secondary btn-sm px-3';
+  if (viewEditComparisonModalInstance) {
+    viewEditComparisonModalInstance.hide();
+  }
 
-  executeBtn.onclick = async function () {
-    confirmModalInstance.hide();
-    showLoader('Rejecting request...');
-    try {
-      const res = await fetch(`/api/edit-requests/${requestId}/reject`, { method: 'POST' });
-      const data = await res.json();
-      hideLoader();
+  setTimeout(() => {
+    document.getElementById('confirmModalTitle').innerText = 'Reject Edit Request?';
+    document.getElementById('confirmModalMessage').innerText = `Reject edit request for record PID "${pid}"? Record will NOT be updated.`;
+    const executeBtn = document.getElementById('confirmModalExecuteBtn');
+    executeBtn.innerText = 'Yes, Reject Request';
+    executeBtn.className = 'btn btn-secondary btn-sm px-3';
 
-      if (data.success) {
-        showToast('info', 'Request Rejected', data.message);
-        loadEditRequestsList();
-        fetchPendingEditRequestsCount();
-      } else {
-        showToast('danger', 'Error', data.message);
+    executeBtn.onclick = async function () {
+      confirmModalInstance.hide();
+      showLoader('Rejecting request...');
+      try {
+        const res = await fetch(`/api/edit-requests/${requestId}/reject`, { method: 'POST' });
+        const data = await res.json();
+        hideLoader();
+
+        if (data.success) {
+          showToast('info', 'Request Rejected', data.message);
+          loadEditRequestsList();
+          loadAllRequestsList();
+          fetchPendingEditRequestsCount();
+        } else {
+          showToast('danger', 'Error', data.message);
+        }
+      } catch (err) {
+        hideLoader();
+        showToast('danger', 'Error', err.message);
       }
-    } catch (err) {
-      hideLoader();
-      showToast('danger', 'Error', err.message);
-    }
-  };
+    };
 
-  confirmModalInstance.show();
+    confirmModalInstance.show();
+  }, 200);
 }
 
 function openSendListAddRequestModal() {
@@ -2636,6 +2922,7 @@ function showUpdateRecordRemarkModal(recordId, pid, name, oldRemark) {
       }
     });
     selectEl.innerHTML = html;
+    setupSearchableSelect('update-remark-select', 'Search approved remark...');
   }
 
   updateRecordRemarkModalInstance.show();
