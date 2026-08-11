@@ -20,6 +20,7 @@ let deleteRequestsSheet = null;
 let editRequestsSheet = null;
 let listAddRequestsSheet = null;
 let dropdownSheet = null;
+let systemSettingsSheet = null;
 let isConnected = false;
 let connectionError = null;
 
@@ -214,6 +215,48 @@ async function initGoogleSheets() {
           { 'Remark Options': 'Imported' },
           { 'Remark Options': 'Other' }
         ]);
+      }
+    }
+
+    // Ensure 'SystemSettings' sheet exists
+    systemSettingsSheet = doc.sheetsByTitle['SystemSettings'];
+    if (!systemSettingsSheet) {
+      console.log('Creating "SystemSettings" sheet in Google Sheet...');
+      systemSettingsSheet = await doc.addSheet({
+        title: 'SystemSettings',
+        headerValues: ['Setting Key', 'Setting Value']
+      });
+      await systemSettingsSheet.addRows([
+        { 'Setting Key': 'aadhar_mandatory', 'Setting Value': 'false' }
+      ]);
+      console.log('Default System Settings seeded into "SystemSettings" sheet.');
+    } else {
+      try {
+        const rows = await systemSettingsSheet.getRows();
+        if (rows.length === 0) {
+          await systemSettingsSheet.addRows([
+            { 'Setting Key': 'aadhar_mandatory', 'Setting Value': 'false' }
+          ]);
+        } else {
+          // Sync settings from Google Sheet to memory and SQLite DB
+          for (const row of rows) {
+            const k = row.get('Setting Key') || (row._rawData ? row._rawData[0] : '');
+            const v = row.get('Setting Value') || (row._rawData ? row._rawData[1] : '');
+            if (k) {
+              const cleanK = String(k).trim();
+              const cleanV = String(v).trim();
+              if (!inMemoryData.settings) inMemoryData.settings = {};
+              inMemoryData.settings[cleanK] = cleanV;
+
+              try {
+                const { dbRun } = require('./database');
+                await dbRun('INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)', [cleanK, cleanV]);
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error loading SystemSettings sheet:', e.message);
       }
     }
 
@@ -1165,16 +1208,38 @@ async function deleteRemarkOption(optionValue) {
 async function getSystemSettings() {
   let aadharMandatory = false;
 
+  // 1. Try reading from SQLite DB
   try {
     const { dbGet } = require('./database');
     const row = await dbGet('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['aadhar_mandatory']);
     if (row && row.setting_value) {
       aadharMandatory = row.setting_value === 'true' || row.setting_value === '1';
     }
-  } catch (e) {
-    if (inMemoryData.settings && inMemoryData.settings.aadhar_mandatory) {
-      aadharMandatory = inMemoryData.settings.aadhar_mandatory === 'true' || inMemoryData.settings.aadhar_mandatory === '1';
-    }
+  } catch (e) {}
+
+  // 2. Check Google Sheets sheet if connected
+  if (isConnected && systemSettingsSheet) {
+    try {
+      const rows = await systemSettingsSheet.getRows();
+      const row = rows.find(r => (r.get('Setting Key') || (r._rawData ? r._rawData[0] : '')).toString().trim() === 'aadhar_mandatory');
+      if (row) {
+        const val = row.get('Setting Value') || (row._rawData ? row._rawData[1] : '');
+        if (val !== undefined && val !== null && val !== '') {
+          aadharMandatory = String(val).toLowerCase() === 'true' || String(val) === '1';
+
+          // Keep SQLite and inMemory in sync
+          if (!inMemoryData.settings) inMemoryData.settings = {};
+          inMemoryData.settings['aadhar_mandatory'] = aadharMandatory ? 'true' : 'false';
+
+          try {
+            const { dbRun } = require('./database');
+            await dbRun('INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)', ['aadhar_mandatory', aadharMandatory ? 'true' : 'false']);
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  } else if (inMemoryData.settings && inMemoryData.settings.aadhar_mandatory !== undefined) {
+    aadharMandatory = inMemoryData.settings.aadhar_mandatory === 'true' || inMemoryData.settings.aadhar_mandatory === '1';
   }
 
   return { aadharMandatory };
@@ -1183,13 +1248,31 @@ async function getSystemSettings() {
 async function updateSystemSetting(key, value) {
   const strVal = (String(value).toLowerCase() === 'true' || String(value) === '1') ? 'true' : 'false';
 
+  // 1. Update SQLite DB
   try {
     const { dbRun } = require('./database');
     await dbRun('INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)', [key, strVal]);
   } catch (e) {}
 
+  // 2. Update inMemoryData
   if (!inMemoryData.settings) inMemoryData.settings = {};
   inMemoryData.settings[key] = strVal;
+
+  // 3. Update Google Sheet if connected
+  if (isConnected && systemSettingsSheet) {
+    try {
+      const rows = await systemSettingsSheet.getRows();
+      const targetRow = rows.find(r => (r.get('Setting Key') || (r._rawData ? r._rawData[0] : '')).toString().trim() === key);
+      if (targetRow) {
+        targetRow.set('Setting Value', strVal);
+        await targetRow.save();
+      } else {
+        await systemSettingsSheet.addRow({ 'Setting Key': key, 'Setting Value': strVal });
+      }
+    } catch (e) {
+      console.error('Error saving system setting to Google Sheet:', e.message);
+    }
+  }
 
   return await getSystemSettings();
 }
