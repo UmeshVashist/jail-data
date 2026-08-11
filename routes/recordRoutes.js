@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption } = require('../config/googleSheets');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, getSystemSettings, updateSystemSetting } = require('../config/googleSheets');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
 // GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab
@@ -119,6 +119,44 @@ function processAadharInput(inputStr) {
   const formatted = cleanDigits.replace(/^(\d{4})(\d{4})(\d{4})(.*)$/, '$1 $2 $3$4').trim();
   return { valid: true, value: formatted, cleanDigits: cleanDigits };
 }
+
+// Helper to check if Remark indicates Aadhar is not applicable or not made
+function isAadharDisabledRemark(remarkValue) {
+  if (!remarkValue) return false;
+  const val = remarkValue.toString().trim().toLowerCase();
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade' ||
+    val.includes('aadhar not made') ||
+    val.includes('not made')
+  );
+}
+
+// GET /api/records/settings - Fetch system settings
+router.get('/settings', requireAuth, async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch settings error: ' + err.message });
+  }
+});
+
+// PUT /api/records/settings - Update system settings (Admin Only)
+router.put('/settings', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { aadharMandatory } = req.body;
+    const settings = await updateSystemSetting('aadhar_mandatory', aadharMandatory);
+    res.json({ success: true, settings, message: 'System settings updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Update settings error: ' + err.message });
+  }
+});
 
 // GET /api/records/by-pid/:pid - Get single record details by PID
 router.get('/by-pid/:pid', requireAuth, async (req, res) => {
@@ -299,6 +337,7 @@ router.post('/', requireAuth, async (req, res) => {
     const { pid, name, father, utNo, aadharNo, date, remark } = req.body;
     const cleanPid = (pid || '').toString().trim();
     const cleanName = (name || '').toString().trim();
+    const cleanRemark = (remark || '').trim();
 
     if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
@@ -306,8 +345,20 @@ router.post('/', requireAuth, async (req, res) => {
     }
     if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
+    // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
+    const isDisabledRemark = isAadharDisabledRemark(cleanRemark);
+    const effectiveAadharNo = isDisabledRemark ? '' : aadharNo;
+
+    // Fetch system settings to check mandatory Aadhar requirement
+    const sysSettings = await getSystemSettings();
+    if (sysSettings.aadharMandatory && !isDisabledRemark) {
+      if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A') {
+        return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
+      }
+    }
+
     // Validate & format Aadhar No
-    const aadharRes = processAadharInput(aadharNo);
+    const aadharRes = processAadharInput(effectiveAadharNo);
     if (!aadharRes.valid) {
       return res.status(400).json({ success: false, message: aadharRes.error });
     }
@@ -412,6 +463,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { pid, name, father, utNo, aadharNo, date, remark } = req.body;
     const cleanPid = (pid || '').toString().trim();
     const cleanName = (name || '').toString().trim();
+    const cleanRemark = (remark || '').trim();
 
     if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
@@ -419,8 +471,20 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
     if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
+    // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
+    const isDisabledRemark = isAadharDisabledRemark(cleanRemark);
+    const effectiveAadharNo = isDisabledRemark ? '' : aadharNo;
+
+    // Fetch system settings to check mandatory Aadhar requirement
+    const sysSettings = await getSystemSettings();
+    if (sysSettings.aadharMandatory && !isDisabledRemark) {
+      if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A') {
+        return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
+      }
+    }
+
     // Validate & format Aadhar No
-    const aadharRes = processAadharInput(aadharNo);
+    const aadharRes = processAadharInput(effectiveAadharNo);
     if (!aadharRes.valid) {
       return res.status(400).json({ success: false, message: aadharRes.error });
     }

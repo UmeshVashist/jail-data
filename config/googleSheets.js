@@ -1161,6 +1161,39 @@ async function deleteRemarkOption(optionValue) {
   return true;
 }
 
+/* System Settings Management */
+async function getSystemSettings() {
+  let aadharMandatory = false;
+
+  try {
+    const { dbGet } = require('./database');
+    const row = await dbGet('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['aadhar_mandatory']);
+    if (row && row.setting_value) {
+      aadharMandatory = row.setting_value === 'true' || row.setting_value === '1';
+    }
+  } catch (e) {
+    if (inMemoryData.settings && inMemoryData.settings.aadhar_mandatory) {
+      aadharMandatory = inMemoryData.settings.aadhar_mandatory === 'true' || inMemoryData.settings.aadhar_mandatory === '1';
+    }
+  }
+
+  return { aadharMandatory };
+}
+
+async function updateSystemSetting(key, value) {
+  const strVal = (String(value).toLowerCase() === 'true' || String(value) === '1') ? 'true' : 'false';
+
+  try {
+    const { dbRun } = require('./database');
+    await dbRun('INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)', [key, strVal]);
+  } catch (e) {}
+
+  if (!inMemoryData.settings) inMemoryData.settings = {};
+  inMemoryData.settings[key] = strVal;
+
+  return await getSystemSettings();
+}
+
 module.exports = {
   initGoogleSheets,
   getUsers,
@@ -1189,6 +1222,9 @@ module.exports = {
   addRemarkOption,
   updateRemarkOption,
   deleteRemarkOption,
+  getSystemSettings,
+  updateSystemSetting,
   getIsConnected: () => isConnected,
   getConnectionError: () => connectionError
 };
+

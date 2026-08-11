@@ -10,11 +10,28 @@ const {
   getEditRequests, 
   createEditRequest, 
   updateEditRequestStatus, 
-  deleteEditRequest 
+  deleteEditRequest,
+  getSystemSettings
 } = require('../config/googleSheets');
 const { requireAuth, requireDeleteRequestPermission } = require('../middleware/auth');
 
 router.use(requireAuth);
+
+function isAadharDisabledRemark(remarkValue) {
+  if (!remarkValue) return false;
+  const val = remarkValue.toString().trim().toLowerCase();
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade' ||
+    val.includes('aadhar not made') ||
+    val.includes('not made')
+  );
+}
 
 function getFormattedDate(d = new Date()) {
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -71,6 +88,17 @@ router.post('/', async (req, res) => {
     const reqDate = getFormattedDate(now);
     const reqTime = getFormattedTime(now);
 
+    const propRemark = (proposedData.remark || '').trim();
+    const isDisabledRemark = isAadharDisabledRemark(propRemark);
+    let propAadhar = isDisabledRemark ? '' : (proposedData.aadharNo || '').trim();
+
+    const sysSettings = await getSystemSettings();
+    if (sysSettings.aadharMandatory && !isDisabledRemark) {
+      if (!propAadhar || propAadhar === '' || propAadhar === '#N/A') {
+        return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
+      }
+    }
+
     await createEditRequest({
       recordId: targetRecord.id || targetRecord.rowIndex,
       pid: targetRecord.pid,
@@ -85,9 +113,9 @@ router.post('/', async (req, res) => {
         name: (proposedData.name || targetRecord.name).trim(),
         father: (proposedData.father || '').trim(),
         utNo: (proposedData.utNo || '').trim(),
-        aadharNo: (proposedData.aadharNo || '').trim(),
+        aadharNo: propAadhar,
         date: proposedData.date || targetRecord.date || '',
-        remark: (proposedData.remark || '').trim(),
+        remark: propRemark,
         createdBy: targetRecord.createdBy,
         createdDate: targetRecord.createdDate,
         createdTime: targetRecord.createdTime

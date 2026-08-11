@@ -152,6 +152,16 @@ async function initDatabase() {
       }
     }
 
+    // Create System Settings table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        setting_key TEXT PRIMARY KEY,
+        setting_value TEXT NOT NULL
+      )
+    `);
+
+    await dbRun(`INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES (?, ?)`, ['aadhar_mandatory', 'false']);
+
     // Create Records table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS records (

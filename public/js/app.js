@@ -4,6 +4,23 @@
 
 let currentUserState = null;
 let currentRecordsData = [];
+window.systemSettings = { aadharMandatory: false };
+
+function isAadharDisabledRemark(remarkValue) {
+  if (!remarkValue) return false;
+  const val = remarkValue.toString().trim().toLowerCase();
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade' ||
+    val.includes('aadhar not made') ||
+    val.includes('not made')
+  );
+}
 let recordModalInstance = null;
 let viewRecordModalInstance = null;
 let confirmModalInstance = null;
@@ -295,6 +312,7 @@ function initializeAuthenticatedApp() {
 
   updateUIForRolePermissions();
   loadRemarkOptions();
+  fetchSystemSettings();
   navigateToView('dashboard');
   startInactivityMonitor();
 }
@@ -925,15 +943,15 @@ function populateRemarkDropdown(selectedValue = '') {
   setupSearchableSelect('modal-record-remark', 'Search or select Remark (e.g. not, lock)...');
 }
 
-/* Foreigner Remark & Aadhar Disable Logic */
+/* Disabled Remark & Aadhar Input Logic */
 
 function handleRecordRemarkChange() {
   const remarkSelect = document.getElementById('modal-record-remark');
   const aadharInput = document.getElementById('modal-record-aadhar');
   if (!remarkSelect || !aadharInput) return;
 
-  const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
-  const isDisableRemark = (selectedVal === 'foreigner' || selectedVal === 'not available' || selectedVal === 'notavailable' || selectedVal === 'n/a' || selectedVal === 'na');
+  const selectedVal = (remarkSelect.value || '').trim();
+  const isDisableRemark = isAadharDisabledRemark(selectedVal);
 
   if (isDisableRemark) {
     aadharInput.value = '';
@@ -941,7 +959,9 @@ function handleRecordRemarkChange() {
     aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
-    aadharInput.placeholder = 'Min 12 digits or leave blank for #N/A';
+    aadharInput.placeholder = window.systemSettings && window.systemSettings.aadharMandatory
+      ? '12 digit Aadhar number (Required)'
+      : 'Min 12 digits or leave blank for #N/A';
   }
 }
 
@@ -950,8 +970,8 @@ function handleSendEditRemarkChange() {
   const aadharInput = document.getElementById('send-edit-aadhar');
   if (!remarkSelect || !aadharInput) return;
 
-  const selectedVal = (remarkSelect.value || '').trim().toLowerCase();
-  const isDisableRemark = (selectedVal === 'foreigner' || selectedVal === 'not available' || selectedVal === 'notavailable' || selectedVal === 'n/a' || selectedVal === 'na');
+  const selectedVal = (remarkSelect.value || '').trim();
+  const isDisableRemark = isAadharDisabledRemark(selectedVal);
 
   if (isDisableRemark) {
     aadharInput.value = '';
@@ -959,7 +979,9 @@ function handleSendEditRemarkChange() {
     aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
-    aadharInput.placeholder = '12 digit Aadhar number';
+    aadharInput.placeholder = window.systemSettings && window.systemSettings.aadharMandatory
+      ? '12 digit Aadhar number (Required)'
+      : '12 digit Aadhar number';
   }
 }
 
@@ -1091,7 +1113,7 @@ async function handleRecordFormSubmit(event) {
   const remark = document.getElementById('modal-record-remark').value.trim();
   let aadharInput = document.getElementById('modal-record-aadhar').value.trim();
 
-  if (remark.toLowerCase() === 'foreigner') {
+  if (isAadharDisabledRemark(remark)) {
     aadharInput = '';
   }
 
@@ -1107,7 +1129,15 @@ async function handleRecordFormSubmit(event) {
     return;
   }
 
-  if (remark.toLowerCase() !== 'foreigner' && aadharInput !== '' && aadharInput !== '#N/A') {
+  // Check mandatory Aadhar setting
+  if (window.systemSettings && window.systemSettings.aadharMandatory && !isAadharDisabledRemark(remark)) {
+    if (!aadharInput || aadharInput === '#N/A') {
+      showToast('danger', 'Validation Error', 'Aadhar No. is mandatory according to system settings.');
+      return;
+    }
+  }
+
+  if (!isAadharDisabledRemark(remark) && aadharInput !== '' && aadharInput !== '#N/A') {
     const cleanDigits = aadharInput.replace(/\D/g, '');
     if (cleanDigits.length < 12) {
       showToast('danger', 'Validation Error', 'Aadhar No must contain at least 12 digits.');
@@ -2053,8 +2083,15 @@ async function handleSendEditRequestSubmit(event) {
   const remark = document.getElementById('send-edit-remark').value;
   const reason = document.getElementById('send-edit-reason').value.trim();
 
-  if ((remark || '').toLowerCase() === 'foreigner') {
+  if (isAadharDisabledRemark(remark)) {
     aadharNo = '';
+  }
+
+  if (window.systemSettings && window.systemSettings.aadharMandatory && !isAadharDisabledRemark(remark)) {
+    if (!aadharNo || aadharNo === '#N/A') {
+      showToast('danger', 'Validation Error', 'Aadhar No. is mandatory according to system settings.');
+      return;
+    }
   }
 
   if (!reason) {
@@ -3110,6 +3147,7 @@ function confirmDeleteUser(userId, username) {
 /* Dropdown Options Management Module (Admin Only) */
 
 async function loadDropdownsView() {
+  fetchSystemSettings();
   showLoader('Loading remark options...');
   try {
     const res = await fetch('/api/records/remark-options');
@@ -3246,4 +3284,60 @@ function confirmDeleteRemarkOption(val) {
 function escapeHtml(str) {
   if (typeof str !== 'string') return str;
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+/* System Validation Settings Functions */
+
+async function fetchSystemSettings() {
+  try {
+    const res = await fetch('/api/records/settings');
+    const data = await res.json();
+    if (data.success && data.settings) {
+      window.systemSettings = data.settings;
+      updateAadharMandatoryUI();
+    }
+  } catch (err) {
+    console.error('Error fetching system settings:', err);
+  }
+}
+
+function updateAadharMandatoryUI() {
+  const switchEl = document.getElementById('setting-aadhar-mandatory');
+  const labelEl = document.getElementById('setting-aadhar-mandatory-label');
+  const isMandatory = !!(window.systemSettings && window.systemSettings.aadharMandatory);
+
+  if (switchEl) switchEl.checked = isMandatory;
+  if (labelEl) {
+    labelEl.innerText = isMandatory ? 'ON' : 'OFF';
+    labelEl.className = `form-check-label fs-6 fw-bold ms-2 align-middle mb-0 ${isMandatory ? 'text-primary' : 'text-secondary'}`;
+  }
+
+  handleRecordRemarkChange();
+  handleSendEditRemarkChange();
+}
+
+async function toggleAadharMandatorySetting(checked) {
+  showLoader(checked ? 'Enabling mandatory Aadhar requirement...' : 'Disabling mandatory Aadhar requirement...');
+  try {
+    const res = await fetch('/api/records/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aadharMandatory: checked })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      window.systemSettings = data.settings || { aadharMandatory: checked };
+      updateAadharMandatoryUI();
+      showToast('success', 'Setting Saved', `Mandatory Aadhar No Input option is now ${checked ? 'ON' : 'OFF'}`);
+    } else {
+      showToast('danger', 'Error', data.message);
+      updateAadharMandatoryUI();
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+    updateAadharMandatoryUI();
+  }
 }

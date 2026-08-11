@@ -5,8 +5,24 @@
 const express = require('express');
 const router = express.Router();
 const ExcelJS = require('exceljs');
-const { getRecords, batchAddRecords, getRemarkOptions } = require('../config/googleSheets');
+const { getRecords, batchAddRecords, getRemarkOptions, getSystemSettings } = require('../config/googleSheets');
 const { requireAuth, requireImportPermission } = require('../middleware/auth');
+
+function isAadharDisabledRemark(remarkValue) {
+  if (!remarkValue) return false;
+  const val = remarkValue.toString().trim().toLowerCase();
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade' ||
+    val.includes('aadhar not made') ||
+    val.includes('not made')
+  );
+}
 
 // GET /api/import/sample-template - Native Excel file download with Inline Data Validation Dropdowns
 router.get('/sample-template', requireAuth, async (req, res) => {
@@ -173,6 +189,8 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
     const duplicateItems = [];
     const failedItems = [];
 
+    const sysSettings = await getSystemSettings();
+
     for (let r = 0; r < records.length; r++) {
       const item = records[r] || {};
       const rowNum = r + 2;
@@ -226,9 +244,20 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
         continue;
       }
 
-      // If Remark is "Foreigner", ignore any provided Aadhar number and force it to blank / #N/A
-      const isForeigner = remark.toLowerCase() === 'foreigner';
-      const effectiveAadhar = isForeigner ? '' : rawAadhar;
+      // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
+      const isDisabledRemark = isAadharDisabledRemark(remark);
+      const effectiveAadhar = isDisabledRemark ? '' : rawAadhar;
+
+      if (sysSettings.aadharMandatory && !isDisabledRemark) {
+        const cleanA = (effectiveAadhar || '').toString().trim();
+        if (!cleanA || cleanA === '#N/A') {
+          failedCount++;
+          const msg = `Row ${rowNum} (PID ${pid}): Aadhar No is mandatory according to system settings`;
+          failedDetails.push(msg);
+          failedItems.push({ row: rowNum, pid: pid, name: name, reason: 'Aadhar No is mandatory according to system settings' });
+          continue;
+        }
+      }
 
       // Validate Aadhar No format
       const aadharRes = processImportAadhar(effectiveAadhar);
