@@ -976,9 +976,11 @@
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
-                    <th style="width: 80px;">#</th>
+                    <th style="width: 60px;">#</th>
                     <th>Remark Option Name</th>
-                    <th class="text-end">Actions</th>
+                    <th style="width: 270px;">Aadhar Input (ON = Not Editable)</th>
+                    <th style="width: 200px;">Google Sheet Sync</th>
+                    <th class="text-end" style="width: 120px;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="dropdowns-table-body">
@@ -1135,7 +1137,7 @@
               </div>
               <div class="col-12">
                 <label for="modal-record-remark" class="form-label small fw-semibold text-secondary">Remark <span class="text-primary">(Select from List)</span></label>
-                <select class="form-select" id="modal-record-remark" autocomplete="off">
+                <select class="form-select" id="modal-record-remark" onchange="handleRecordRemarkChange()" autocomplete="off">
                   <option value="">-- Select Remark --</option>
                 </select>
               </div>
@@ -1389,7 +1391,7 @@
               </div>
               <div class="col-md-6">
                 <label for="send-edit-remark" class="form-label small fw-semibold text-secondary">Remark</label>
-                <select class="form-select" id="send-edit-remark">
+                <select class="form-select" id="send-edit-remark" onchange="handleSendEditRemarkChange()">
                   <!-- Dynamically populated -->
                 </select>
               </div>
@@ -1525,7 +1527,14 @@
 
             <div class="mb-3">
               <label for="modal-remark-option-name" class="form-label small fw-semibold text-secondary">Option Name <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="modal-remark-option-name" placeholder="e.g. Completed, Urgent, etc." autocomplete="off" required>
+              <input type="text" class="form-control" id="modal-remark-option-name" placeholder="e.g. Aadhar Not Made, Foreigner, etc." autocomplete="off" required>
+            </div>
+
+            <div class="p-3 bg-light rounded border form-check form-switch ms-0 d-flex align-items-center">
+              <input class="form-check-input me-2 ms-0 fs-5" type="checkbox" id="modal-remark-disable-aadhar" role="switch" style="cursor: pointer;">
+              <label class="form-check-label small fw-semibold text-dark mb-0 ms-1 align-middle" for="modal-remark-disable-aadhar">
+                Make Aadhar No. field Not Editable when selected
+              </label>
             </div>
           </div>
           <div class="modal-footer">

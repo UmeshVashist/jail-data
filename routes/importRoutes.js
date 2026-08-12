@@ -8,9 +8,18 @@ const ExcelJS = require('exceljs');
 const { getRecords, batchAddRecords, getRemarkOptions, getSystemSettings } = require('../config/googleSheets');
 const { requireAuth, requireImportPermission } = require('../middleware/auth');
 
-function isAadharDisabledRemark(remarkValue) {
+async function isAadharDisabledRemark(remarkValue) {
   if (!remarkValue) return false;
   const val = remarkValue.toString().trim().toLowerCase();
+
+  try {
+    const options = await getRemarkOptions();
+    const match = options.find(opt => (opt.optionValue || opt).toString().trim().toLowerCase() === val);
+    if (match && typeof match === 'object') {
+      return !!match.disableAadhar;
+    }
+  } catch (e) {}
+
   return (
     val === 'foreigner' ||
     val === 'not available' ||
@@ -20,7 +29,7 @@ function isAadharDisabledRemark(remarkValue) {
     val === 'aadhar not made' ||
     val === 'aadharnotmade' ||
     val.includes('aadhar not made') ||
-    val.includes('not made')
+    val.includes('not available')
   );
 }
 
@@ -245,7 +254,7 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
       }
 
       // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
-      const isDisabledRemark = isAadharDisabledRemark(remark);
+      const isDisabledRemark = await isAadharDisabledRemark(remark);
       const effectiveAadhar = isDisabledRemark ? '' : rawAadhar;
 
       if (sysSettings.aadharMandatory && !isDisabledRemark) {

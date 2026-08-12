@@ -11,15 +11,25 @@ const {
   createEditRequest, 
   updateEditRequestStatus, 
   deleteEditRequest,
+  getRemarkOptions,
   getSystemSettings
 } = require('../config/googleSheets');
 const { requireAuth, requireDeleteRequestPermission } = require('../middleware/auth');
 
 router.use(requireAuth);
 
-function isAadharDisabledRemark(remarkValue) {
+async function isAadharDisabledRemark(remarkValue) {
   if (!remarkValue) return false;
   const val = remarkValue.toString().trim().toLowerCase();
+
+  try {
+    const options = await getRemarkOptions();
+    const match = options.find(opt => (opt.optionValue || opt).toString().trim().toLowerCase() === val);
+    if (match && typeof match === 'object') {
+      return !!match.disableAadhar;
+    }
+  } catch (e) {}
+
   return (
     val === 'foreigner' ||
     val === 'not available' ||
@@ -89,7 +99,7 @@ router.post('/', async (req, res) => {
     const reqTime = getFormattedTime(now);
 
     const propRemark = (proposedData.remark || '').trim();
-    const isDisabledRemark = isAadharDisabledRemark(propRemark);
+    const isDisabledRemark = await isAadharDisabledRemark(propRemark);
     let propAadhar = isDisabledRemark ? '' : (proposedData.aadharNo || '').trim();
 
     const sysSettings = await getSystemSettings();

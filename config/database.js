@@ -140,16 +140,34 @@ async function initDatabase() {
     await dbRun(`
       CREATE TABLE IF NOT EXISTS remark_options (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        option_value TEXT UNIQUE NOT NULL
+        option_value TEXT UNIQUE NOT NULL,
+        disable_aadhar INTEGER DEFAULT 0
       )
     `);
 
+    try {
+      await dbRun(`ALTER TABLE remark_options ADD COLUMN disable_aadhar INTEGER DEFAULT 0`);
+    } catch (e) {}
+
     const remarkCount = await dbGet('SELECT COUNT(*) as count FROM remark_options');
     if (remarkCount.count === 0) {
-      const defaults = ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other'];
+      const defaults = [
+        { val: 'Aadhar Not Made', disable: 1 },
+        { val: 'Not Available', disable: 1 },
+        { val: 'Foreigner', disable: 1 },
+        { val: 'Already Linked but other Prisoner', disable: 0 },
+        { val: 'Biometric Block', disable: 0 },
+        { val: 'Biometric data not match', disable: 0 },
+        { val: 'Aadhar Suspended', disable: 0 },
+        { val: 'Other', disable: 0 }
+      ];
       for (const opt of defaults) {
-        await dbRun('INSERT OR IGNORE INTO remark_options (option_value) VALUES (?)', [opt]);
+        await dbRun('INSERT OR IGNORE INTO remark_options (option_value, disable_aadhar) VALUES (?, ?)', [opt.val, opt.disable]);
       }
+    } else {
+      try {
+        await dbRun(`UPDATE remark_options SET disable_aadhar = 1 WHERE LOWER(option_value) IN ('aadhar not made', 'not available', 'foreigner') AND (disable_aadhar IS NULL OR disable_aadhar = 0)`);
+      } catch (e) {}
     }
 
     // Create System Settings table

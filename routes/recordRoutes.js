@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, getSystemSettings, updateSystemSetting } = require('../config/googleSheets');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/googleSheets');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
 // GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab
@@ -20,14 +20,28 @@ router.get('/remark-options', requireAuth, async (req, res) => {
 // POST /api/records/remark-options - Add new remark option (Admin Only)
 router.post('/remark-options', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { optionValue } = req.body;
+    const { optionValue, disableAadhar } = req.body;
     const cleanVal = (optionValue || '').trim();
     if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
-    await addRemarkOption(cleanVal);
+    await addRemarkOption(cleanVal, !!disableAadhar);
     res.json({ success: true, message: `Remark option "${cleanVal}" added successfully.` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Add remark option error: ' + err.message });
+  }
+});
+
+// PUT /api/records/remark-options/toggle-aadhar - Toggle Disable Aadhar setting for a remark option (Admin Only)
+router.put('/remark-options/toggle-aadhar', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { optionValue, disableAadhar } = req.body;
+    const cleanVal = (optionValue || '').trim();
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
+
+    await toggleRemarkOptionAadhar(cleanVal, !!disableAadhar);
+    res.json({ success: true, message: `Remark option "${cleanVal}" Aadhar disable setting updated.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Toggle remark option Aadhar error: ' + err.message });
   }
 });
 
@@ -120,21 +134,20 @@ function processAadharInput(inputStr) {
   return { valid: true, value: formatted, cleanDigits: cleanDigits };
 }
 
-// Helper to check if Remark indicates Aadhar is not applicable or not made
-function isAadharDisabledRemark(remarkValue) {
+// Helper to check if Remark indicates Aadhar is not applicable or disabled by Admin
+async function isAadharDisabledRemark(remarkValue) {
   if (!remarkValue) return false;
   const val = remarkValue.toString().trim().toLowerCase();
-  return (
-    val === 'foreigner' ||
-    val === 'not available' ||
-    val === 'notavailable' ||
-    val === 'n/a' ||
-    val === 'na' ||
-    val === 'aadhar not made' ||
-    val === 'aadharnotmade' ||
-    val.includes('aadhar not made') ||
-    val.includes('not made')
-  );
+
+  try {
+    const options = await getRemarkOptions();
+    const match = options.find(opt => (opt.optionValue || opt).toString().trim().toLowerCase() === val);
+    if (match && typeof match === 'object' && match.disableAadhar !== undefined) {
+      return !!match.disableAadhar;
+    }
+  } catch (e) {}
+
+  return false;
 }
 
 // GET /api/records/settings - Fetch system settings
@@ -346,7 +359,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
-    const isDisabledRemark = isAadharDisabledRemark(cleanRemark);
+    const isDisabledRemark = await isAadharDisabledRemark(cleanRemark);
     const effectiveAadharNo = isDisabledRemark ? '' : aadharNo;
 
     // Fetch system settings to check mandatory Aadhar requirement
@@ -472,7 +485,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
-    const isDisabledRemark = isAadharDisabledRemark(cleanRemark);
+    const isDisabledRemark = await isAadharDisabledRemark(cleanRemark);
     const effectiveAadharNo = isDisabledRemark ? '' : aadharNo;
 
     // Fetch system settings to check mandatory Aadhar requirement

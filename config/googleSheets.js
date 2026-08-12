@@ -34,7 +34,16 @@ const inMemoryData = {
   deleteRequests: [],
   editRequests: [],
   listAddRequests: [],
-  remarkOptions: ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other']
+  remarkOptions: [
+    { optionValue: 'Aadhar Not Made', disableAadhar: true },
+    { optionValue: 'Not Available', disableAadhar: true },
+    { optionValue: 'Foreigner', disableAadhar: true },
+    { optionValue: 'Already Linked but other Prisoner', disableAadhar: false },
+    { optionValue: 'Biometric Block', disableAadhar: false },
+    { optionValue: 'Biometric data not match', disableAadhar: false },
+    { optionValue: 'Aadhar Suspended', disableAadhar: false },
+    { optionValue: 'Other', disableAadhar: false }
+  ]
 };
 
 /**
@@ -190,32 +199,27 @@ async function initGoogleSheets() {
       console.log('Creating "DropdownOptions" sheet in Google Sheet...');
       dropdownSheet = await doc.addSheet({
         title: 'DropdownOptions',
-        headerValues: ['Remark Options']
+        headerValues: ['Remark Options', 'Disable Aadhar']
       });
       await dropdownSheet.addRows([
-        { 'Remark Options': 'Completed' },
-        { 'Remark Options': 'Pending' },
-        { 'Remark Options': 'In Progress' },
-        { 'Remark Options': 'Verified' },
-        { 'Remark Options': 'Rejected' },
-        { 'Remark Options': 'Imported' },
-        { 'Remark Options': 'Other' }
+        { 'Remark Options': 'Aadhar Not Made', 'Disable Aadhar': 'Yes' },
+        { 'Remark Options': 'Not Available', 'Disable Aadhar': 'Yes' },
+        { 'Remark Options': 'Foreigner', 'Disable Aadhar': 'Yes' },
+        { 'Remark Options': 'Already Linked but other Prisoner', 'Disable Aadhar': 'No' },
+        { 'Remark Options': 'Biometric Block', 'Disable Aadhar': 'No' },
+        { 'Remark Options': 'Biometric data not match', 'Disable Aadhar': 'No' },
+        { 'Remark Options': 'Aadhar Suspended', 'Disable Aadhar': 'No' },
+        { 'Remark Options': 'Other', 'Disable Aadhar': 'No' }
       ]);
       console.log('Default Remark Options seeded into "DropdownOptions" sheet.');
     } else {
-      const existingRows = await dropdownSheet.getRows();
-      if (existingRows.length === 0) {
-        console.log('Seeding default Remark Options into empty "DropdownOptions" sheet...');
-        await dropdownSheet.addRows([
-          { 'Remark Options': 'Completed' },
-          { 'Remark Options': 'Pending' },
-          { 'Remark Options': 'In Progress' },
-          { 'Remark Options': 'Verified' },
-          { 'Remark Options': 'Rejected' },
-          { 'Remark Options': 'Imported' },
-          { 'Remark Options': 'Other' }
-        ]);
-      }
+      try {
+        await dropdownSheet.loadHeaderRow();
+        const headers = dropdownSheet.headerValues || [];
+        if (!headers.includes('Disable Aadhar')) {
+          await dropdownSheet.setHeaderRow(['Remark Options', 'Disable Aadhar']);
+        }
+      } catch (e) {}
     }
 
     // Ensure 'SystemSettings' sheet exists
@@ -323,7 +327,7 @@ async function getUsers() {
 
   try {
     const rows = await usersSheet.getRows();
-    return rows.map(row => {
+    const fetchedUsers = rows.map(row => {
       const delReqVal = (row.get('Delete Request Access') || row.get('Delete Request Permission') || '').toString().trim().toLowerCase();
       return {
         id: row.rowNumber,
@@ -337,8 +341,28 @@ async function getUsers() {
         status: (row.get('Status') || 'Active').toString().trim()
       };
     });
+    // Cache users in memory
+    inMemoryData.users = fetchedUsers;
+    return fetchedUsers;
   } catch (err) {
     console.error('getUsers error:', err.message);
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT id, username, password, role, import_permission, full_access, delete_request_permission, status FROM users');
+      if (rows && rows.length > 0) {
+        return rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          username: (r.username || '').trim(),
+          password: (r.password || '').trim(),
+          role: (r.role || 'View').trim(),
+          importPermission: r.import_permission === 1 || r.import_permission === '1' || r.import_permission === 'yes',
+          fullAccess: r.full_access === 1 || r.full_access === '1' || r.full_access === 'yes',
+          deleteRequestPermission: r.delete_request_permission === 1 || r.delete_request_permission === '1' || r.delete_request_permission === 'yes',
+          status: (r.status || 'Active').trim()
+        }));
+      }
+    } catch (e) {}
     return inMemoryData.users.map(u => ({ ...u, id: u.rowIndex }));
   }
 }
@@ -1081,11 +1105,14 @@ async function getRemarkOptions() {
   if (!isConnected) {
     try {
       const { dbAll } = require('./database');
-      const rows = await dbAll('SELECT option_value FROM remark_options ORDER BY id ASC');
+      const rows = await dbAll('SELECT option_value, disable_aadhar FROM remark_options ORDER BY id ASC');
       if (rows && rows.length > 0) {
         permanentOptions = rows
-          .map(r => r.option_value)
-          .filter(val => val && val.toString().trim().toLowerCase() !== 'remark options');
+          .map(r => ({
+            optionValue: (r.option_value || '').toString().trim(),
+            disableAadhar: (r.disable_aadhar === 1 || r.disable_aadhar === '1' || r.disable_aadhar === 'true' || r.disable_aadhar === true)
+          }))
+          .filter(val => val.optionValue && val.optionValue.toLowerCase() !== 'remark options');
       }
     } catch (e) {}
     if (permanentOptions.length === 0) permanentOptions = [...inMemoryData.remarkOptions];
@@ -1095,11 +1122,26 @@ async function getRemarkOptions() {
       permanentOptions = rows
         .map(row => {
           const val = row.get('Remark Options') || (row._rawData ? row._rawData[0] : '');
-          return (val || '').toString().trim();
+          const dis = row.get('Disable Aadhar') || (row._rawData ? row._rawData[1] : '');
+          const optStr = (val || '').toString().trim();
+          const disBool = (dis || '').toString().trim().toLowerCase() === 'yes' || dis === 'true' || dis === '1' || dis === 1;
+          return { optionValue: optStr, disableAadhar: disBool };
         })
-        .filter(val => val !== '' && val.toLowerCase() !== 'remark options');
+        .filter(val => val.optionValue !== '' && val.optionValue.toLowerCase() !== 'remark options');
     } catch (err) {
       console.error('getRemarkOptions error:', err.message);
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT option_value, disable_aadhar FROM remark_options ORDER BY id ASC');
+        if (rows && rows.length > 0) {
+          permanentOptions = rows
+            .map(r => ({
+              optionValue: (r.option_value || '').toString().trim(),
+              disableAadhar: (r.disable_aadhar === 1 || r.disable_aadhar === '1' || r.disable_aadhar === 'true' || r.disable_aadhar === true)
+            }))
+            .filter(val => val.optionValue && val.optionValue.toLowerCase() !== 'remark options');
+        }
+      } catch (e) {}
     }
     if (permanentOptions.length === 0) permanentOptions = [...inMemoryData.remarkOptions];
   }
@@ -1125,8 +1167,8 @@ async function getRemarkOptions() {
       .map(r => (r.optionValue || '').toString().trim());
 
     for (const tempOpt of tempActiveOptions) {
-      if (tempOpt && !permanentOptions.some(opt => opt.toLowerCase() === tempOpt.toLowerCase())) {
-        permanentOptions.push(tempOpt);
+      if (tempOpt && !permanentOptions.some(opt => (opt.optionValue || opt).toLowerCase() === tempOpt.toLowerCase())) {
+        permanentOptions.push({ optionValue: tempOpt, disableAadhar: false });
       }
     }
   } catch (e) {
@@ -1136,17 +1178,19 @@ async function getRemarkOptions() {
   return permanentOptions;
 }
 
-async function addRemarkOption(optionValue) {
+async function addRemarkOption(optionValue, disableAadhar = false) {
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
+  const disInt = disableAadhar ? 1 : 0;
+  const disStr = disableAadhar ? 'Yes' : 'No';
 
   if (!isConnected) {
     try {
       const { dbRun } = require('./database');
-      await dbRun('INSERT OR IGNORE INTO remark_options (option_value) VALUES (?)', [cleanVal]);
+      await dbRun('INSERT OR IGNORE INTO remark_options (option_value, disable_aadhar) VALUES (?, ?)', [cleanVal, disInt]);
     } catch (e) {}
-    if (!inMemoryData.remarkOptions.includes(cleanVal)) {
-      inMemoryData.remarkOptions.push(cleanVal);
+    if (!inMemoryData.remarkOptions.some(opt => (opt.optionValue || opt).toLowerCase() === cleanVal.toLowerCase())) {
+      inMemoryData.remarkOptions.push({ optionValue: cleanVal, disableAadhar: disableAadhar });
     }
     return true;
   }
@@ -1154,7 +1198,7 @@ async function addRemarkOption(optionValue) {
   const rows = await dropdownSheet.getRows();
   const exists = rows.some(r => (r.get('Remark Options') || '').toString().trim().toLowerCase() === cleanVal.toLowerCase());
   if (!exists) {
-    await dropdownSheet.addRow({ 'Remark Options': cleanVal });
+    await dropdownSheet.addRow({ 'Remark Options': cleanVal, 'Disable Aadhar': disStr });
   }
   return true;
 }
@@ -1167,10 +1211,13 @@ async function updateRemarkOption(oldValue, newValue) {
   if (!isConnected) {
     try {
       const { dbRun } = require('./database');
-      await dbRun('UPDATE remark_options SET option_value = ? WHERE option_value = ?', [cleanNew, cleanOld]);
+      await dbRun('UPDATE remark_options SET option_value = ? WHERE LOWER(option_value) = LOWER(?)', [cleanNew, cleanOld]);
     } catch (e) {}
-    const idx = inMemoryData.remarkOptions.indexOf(cleanOld);
-    if (idx !== -1) inMemoryData.remarkOptions[idx] = cleanNew;
+    const item = inMemoryData.remarkOptions.find(opt => (opt.optionValue || opt).toLowerCase() === cleanOld.toLowerCase());
+    if (item) {
+      if (typeof item === 'object') item.optionValue = cleanNew;
+      else inMemoryData.remarkOptions[inMemoryData.remarkOptions.indexOf(item)] = cleanNew;
+    }
     return true;
   }
 
@@ -1183,6 +1230,38 @@ async function updateRemarkOption(oldValue, newValue) {
   return true;
 }
 
+async function toggleRemarkOptionAadhar(optionValue, disableAadhar) {
+  const cleanVal = (optionValue || '').toString().trim();
+  if (!cleanVal) return false;
+  const disInt = disableAadhar ? 1 : 0;
+  const disStr = disableAadhar ? 'Yes' : 'No';
+
+  try {
+    const { dbRun } = require('./database');
+    await dbRun('UPDATE remark_options SET disable_aadhar = ? WHERE LOWER(option_value) = LOWER(?)', [disInt, cleanVal]);
+  } catch (e) {}
+
+  const memItem = inMemoryData.remarkOptions.find(opt => (opt.optionValue || opt).toLowerCase() === cleanVal.toLowerCase());
+  if (memItem) {
+    if (typeof memItem === 'object') memItem.disableAadhar = disableAadhar;
+  }
+
+  if (isConnected && dropdownSheet) {
+    try {
+      const rows = await dropdownSheet.getRows();
+      const targetRow = rows.find(r => (r.get('Remark Options') || (r._rawData ? r._rawData[0] : '')).toString().trim().toLowerCase() === cleanVal.toLowerCase());
+      if (targetRow) {
+        targetRow.set('Disable Aadhar', disStr);
+        await targetRow.save();
+      }
+    } catch (e) {
+      console.error('Error updating Disable Aadhar in Google Sheet:', e.message);
+    }
+  }
+
+  return true;
+}
+
 async function deleteRemarkOption(optionValue) {
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
@@ -1190,9 +1269,9 @@ async function deleteRemarkOption(optionValue) {
   if (!isConnected) {
     try {
       const { dbRun } = require('./database');
-      await dbRun('DELETE FROM remark_options WHERE option_value = ?', [cleanVal]);
+      await dbRun('DELETE FROM remark_options WHERE LOWER(option_value) = LOWER(?)', [cleanVal]);
     } catch (e) {}
-    inMemoryData.remarkOptions = inMemoryData.remarkOptions.filter(opt => opt !== cleanVal);
+    inMemoryData.remarkOptions = inMemoryData.remarkOptions.filter(opt => (opt.optionValue || opt).toLowerCase() !== cleanVal.toLowerCase());
     return true;
   }
 
@@ -1305,6 +1384,7 @@ module.exports = {
   addRemarkOption,
   updateRemarkOption,
   deleteRemarkOption,
+  toggleRemarkOptionAadhar,
   getSystemSettings,
   updateSystemSetting,
   getIsConnected: () => isConnected,

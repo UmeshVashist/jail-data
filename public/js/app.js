@@ -5,22 +5,7 @@
 let currentUserState = null;
 let currentRecordsData = [];
 window.systemSettings = { aadharMandatory: false };
-
-function isAadharDisabledRemark(remarkValue) {
-  if (!remarkValue) return false;
-  const val = remarkValue.toString().trim().toLowerCase();
-  return (
-    val === 'foreigner' ||
-    val === 'not available' ||
-    val === 'notavailable' ||
-    val === 'n/a' ||
-    val === 'na' ||
-    val === 'aadhar not made' ||
-    val === 'aadharnotmade' ||
-    val.includes('aadhar not made') ||
-    val.includes('not made')
-  );
-}
+window.currentRemarkOptions = [];
 let recordModalInstance = null;
 let viewRecordModalInstance = null;
 let confirmModalInstance = null;
@@ -724,6 +709,7 @@ async function loadRemarkOptions() {
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
       currentRemarkOptions = data.data;
+      window.currentRemarkOptions = data.data;
       populateFilterRemarkDropdown();
     }
   } catch (err) {
@@ -809,6 +795,8 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
           input.value = val ? text : '';
           menu.classList.remove('show');
           selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          handleRecordRemarkChange();
+          handleSendEditRemarkChange();
         });
 
         menu.appendChild(item);
@@ -824,9 +812,13 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
       menu.classList.add('show');
     };
 
-    input.addEventListener('focus', () => {
-      renderMenuItems(input.value);
-    });
+    const showAllOrFiltered = () => {
+      renderMenuItems('');
+      input.select();
+    };
+
+    input.addEventListener('focus', showAllOrFiltered);
+    input.addEventListener('click', showAllOrFiltered);
 
     input.addEventListener('input', () => {
       if (input.value.trim() === '' && selectEl.value !== '') {
@@ -888,7 +880,11 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
       });
     }
 
-    selectEl.addEventListener('change', updateInputFromSelect);
+    selectEl.addEventListener('change', () => {
+      updateInputFromSelect();
+      handleRecordRemarkChange();
+      handleSendEditRemarkChange();
+    });
     selectEl.syncSearchableSelect = updateInputFromSelect;
   } else {
     input = wrapper.querySelector('.searchable-select-input');
@@ -906,11 +902,15 @@ function populateFilterRemarkDropdown() {
   const currentVal = selectEl.value;
 
   let html = '<option value="">All Remarks</option>';
-  const cleanOptions = currentRemarkOptions.filter(opt => opt && opt.toString().trim().toLowerCase() !== 'remark options');
+  const cleanOptions = currentRemarkOptions.filter(opt => {
+    const val = typeof opt === 'object' ? opt.optionValue : opt;
+    return val && val.toString().trim().toLowerCase() !== 'remark options';
+  });
 
   cleanOptions.forEach(opt => {
-    const isSelected = opt === currentVal ? 'selected' : '';
-    html += `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+    const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+    const isSelected = optVal === currentVal ? 'selected' : '';
+    html += `<option value="${escapeHtml(optVal)}" ${isSelected}>${escapeHtml(optVal)}</option>`;
   });
 
   selectEl.innerHTML = html;
@@ -927,13 +927,14 @@ function populateRemarkDropdown(selectedValue = '') {
   let html = '<option value="">-- Select Remark --</option>';
   const optionsList = [...currentRemarkOptions];
   
-  if (selectedValue && !optionsList.includes(selectedValue)) {
-    optionsList.unshift(selectedValue);
+  if (selectedValue && !optionsList.some(opt => (typeof opt === 'object' ? opt.optionValue : opt) === selectedValue)) {
+    optionsList.unshift({ optionValue: selectedValue, disableAadhar: isAadharDisabledRemark(selectedValue) });
   }
 
   optionsList.forEach(opt => {
-    const isSelected = opt === selectedValue ? 'selected' : '';
-    html += `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+    const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+    const isSelected = optVal === selectedValue ? 'selected' : '';
+    html += `<option value="${escapeHtml(optVal)}" ${isSelected}>${escapeHtml(optVal)}</option>`;
   });
 
   selectEl.innerHTML = html;
@@ -941,9 +942,27 @@ function populateRemarkDropdown(selectedValue = '') {
     selectEl.value = selectedValue;
   }
   setupSearchableSelect('modal-record-remark', 'Search or select Remark (e.g. not, lock)...');
+  handleRecordRemarkChange();
 }
 
 /* Disabled Remark & Aadhar Input Logic */
+
+function isAadharDisabledRemark(remarkValue) {
+  if (!remarkValue) return false;
+  const val = remarkValue.toString().trim().toLowerCase();
+
+  if (window.currentRemarkOptions && Array.isArray(window.currentRemarkOptions)) {
+    const match = window.currentRemarkOptions.find(opt => {
+      const name = (typeof opt === 'object' ? opt.optionValue : opt) || '';
+      return name.toString().trim().toLowerCase() === val;
+    });
+    if (match && typeof match === 'object' && match.disableAadhar !== undefined) {
+      return !!match.disableAadhar;
+    }
+  }
+
+  return false;
+}
 
 function handleRecordRemarkChange() {
   const remarkSelect = document.getElementById('modal-record-remark');
@@ -956,9 +975,15 @@ function handleRecordRemarkChange() {
   if (isDisableRemark) {
     aadharInput.value = '';
     aadharInput.disabled = true;
+    aadharInput.readOnly = true;
+    aadharInput.style.pointerEvents = 'none';
+    aadharInput.style.backgroundColor = '#e9ecef';
     aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
+    aadharInput.readOnly = false;
+    aadharInput.style.pointerEvents = 'auto';
+    aadharInput.style.backgroundColor = '';
     aadharInput.placeholder = window.systemSettings && window.systemSettings.aadharMandatory
       ? '12 digit Aadhar number (Required)'
       : 'Min 12 digits or leave blank for #N/A';
@@ -976,9 +1001,15 @@ function handleSendEditRemarkChange() {
   if (isDisableRemark) {
     aadharInput.value = '';
     aadharInput.disabled = true;
+    aadharInput.readOnly = true;
+    aadharInput.style.pointerEvents = 'none';
+    aadharInput.style.backgroundColor = '#e9ecef';
     aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
+    aadharInput.readOnly = false;
+    aadharInput.style.pointerEvents = 'auto';
+    aadharInput.style.backgroundColor = '';
     aadharInput.placeholder = window.systemSettings && window.systemSettings.aadharMandatory
       ? '12 digit Aadhar number (Required)'
       : '12 digit Aadhar number';
@@ -2063,8 +2094,9 @@ function openSendEditRequestModal(encodedRecJson) {
   const remarkSelect = document.getElementById('send-edit-remark');
   remarkSelect.innerHTML = '<option value="">Select Remark</option>';
   currentRemarkOptions.forEach(opt => {
-    const selected = opt.toLowerCase() === (rec.remark || '').toLowerCase() ? 'selected' : '';
-    remarkSelect.innerHTML += `<option value="${escapeHtml(opt)}" ${selected}>${escapeHtml(opt)}</option>`;
+    const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+    const selected = optVal.toLowerCase() === (rec.remark || '').toLowerCase() ? 'selected' : '';
+    remarkSelect.innerHTML += `<option value="${escapeHtml(optVal)}" ${selected}>${escapeHtml(optVal)}</option>`;
   });
   setupSearchableSelect('send-edit-remark', 'Search or select Remark (e.g. not, lock)...');
 
@@ -2954,8 +2986,9 @@ function showUpdateRecordRemarkModal(recordId, pid, name, oldRemark) {
     let html = '<option value="">-- Select Approved Remark --</option>';
     // Only show valid approved remark options
     currentRemarkOptions.forEach(opt => {
-      if (opt && opt.toLowerCase() !== oldRemark.toLowerCase() && opt.toLowerCase() !== 'remark options') {
-        html += `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`;
+      const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+      if (optVal && optVal.toLowerCase() !== oldRemark.toLowerCase() && optVal.toLowerCase() !== 'remark options') {
+        html += `<option value="${escapeHtml(optVal)}">${escapeHtml(optVal)}</option>`;
       }
     });
     selectEl.innerHTML = html;
@@ -3169,20 +3202,31 @@ async function loadDropdownsView() {
 function renderDropdownsTable(options) {
   const tbody = document.getElementById('dropdowns-table-body');
   if (!options || options.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No remark dropdown options found. Click "Add New Remark Option" to create one.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No remark dropdown options found. Click "Add New Remark Option" to create one.</td></tr>';
     return;
   }
 
   let html = '';
   options.forEach((opt, idx) => {
+    const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+    const isDisable = typeof opt === 'object' ? !!opt.disableAadhar : isAadharDisabledRemark(optVal);
+
     html += `
       <tr>
         <td class="fw-bold text-secondary">${idx + 1}</td>
-        <td class="fw-semibold text-dark"><i class="bi bi-tag-fill text-primary me-2"></i>${escapeHtml(opt)}</td>
-        <td><span class="badge bg-success-subtle-custom text-success border border-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Synced (Google Sheet 'DropdownOptions')</span></td>
+        <td class="fw-semibold text-dark"><i class="bi bi-tag-fill text-primary me-2"></i>${escapeHtml(optVal)}</td>
+        <td>
+          <div class="form-check form-switch mb-0 d-flex align-items-center">
+            <input class="form-check-input fs-5 me-2" type="checkbox" id="toggle-opt-${idx}" ${isDisable ? 'checked' : ''} onchange="toggleRemarkOptionAadhar('${escapeHtml(optVal)}', this.checked)" role="switch" style="cursor: pointer;">
+            <label class="form-check-label small fw-bold mb-0 align-middle ${isDisable ? 'text-danger' : 'text-secondary'}" for="toggle-opt-${idx}">
+              ${isDisable ? '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="bi bi-lock-fill me-1"></i>ON (Not Editable)</span>' : '<span class="badge bg-light text-secondary border"><i class="bi bi-pencil-fill me-1"></i>OFF (Editable)</span>'}
+            </label>
+          </div>
+        </td>
+        <td><span class="badge bg-success-subtle-custom text-success border border-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Synced</span></td>
         <td class="text-end">
-          <button class="btn btn-sm btn-outline-primary me-1" title="Edit Option" onclick="showEditRemarkOptionModal('${escapeHtml(opt)}')"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger" title="Delete Option" onclick="confirmDeleteRemarkOption('${escapeHtml(opt)}')"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-sm btn-outline-primary me-1" title="Edit Option" onclick="showEditRemarkOptionModal('${escapeHtml(optVal)}', ${isDisable})"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete Option" onclick="confirmDeleteRemarkOption('${escapeHtml(optVal)}')"><i class="bi bi-trash"></i></button>
         </td>
       </tr>
     `;
@@ -3191,19 +3235,60 @@ function renderDropdownsTable(options) {
   tbody.innerHTML = html;
 }
 
+async function toggleRemarkOptionAadhar(optionValue, disableAadhar) {
+  // Update in-memory state immediately so modal forms reflect changes instantly
+  if (window.currentRemarkOptions && Array.isArray(window.currentRemarkOptions)) {
+    const item = window.currentRemarkOptions.find(opt => {
+      const name = (typeof opt === 'object' ? opt.optionValue : opt) || '';
+      return name.toString().trim().toLowerCase() === optionValue.toString().trim().toLowerCase();
+    });
+    if (item && typeof item === 'object') {
+      item.disableAadhar = disableAadhar;
+    }
+  }
+
+  showLoader(disableAadhar ? 'Setting Aadhar field as Not Editable...' : 'Setting Aadhar field as Editable...');
+  try {
+    const res = await fetch('/api/records/remark-options/toggle-aadhar', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optionValue, disableAadhar })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Setting Saved', `Remark "${optionValue}" Aadhar input is now ${disableAadhar ? 'ON (Not Editable)' : 'OFF (Editable)'}`);
+      await loadRemarkOptions();
+      await loadDropdownsView();
+    } else {
+      showToast('danger', 'Error', data.message);
+      await loadDropdownsView();
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+    await loadDropdownsView();
+  }
+}
+
 function showAddRemarkOptionModal() {
   document.getElementById('remarkOptionModalTitle').innerText = 'Add Remark Option';
   document.getElementById('remarkOptionForm').reset();
   document.getElementById('remark-option-mode').value = 'add';
   document.getElementById('remark-option-old-value').value = '';
+  const chk = document.getElementById('modal-remark-disable-aadhar');
+  if (chk) chk.checked = false;
   remarkOptionModalInstance.show();
 }
 
-function showEditRemarkOptionModal(val) {
+function showEditRemarkOptionModal(val, disable = false) {
   document.getElementById('remarkOptionModalTitle').innerText = 'Edit Remark Option';
   document.getElementById('remark-option-mode').value = 'edit';
   document.getElementById('remark-option-old-value').value = val;
   document.getElementById('modal-remark-option-name').value = val;
+  const chk = document.getElementById('modal-remark-disable-aadhar');
+  if (chk) chk.checked = !!disable;
   remarkOptionModalInstance.show();
 }
 
@@ -3212,6 +3297,7 @@ async function handleRemarkOptionFormSubmit(event) {
   const mode = document.getElementById('remark-option-mode').value;
   const oldValue = document.getElementById('remark-option-old-value').value;
   const newValue = document.getElementById('modal-remark-option-name').value.trim();
+  const disableAadhar = document.getElementById('modal-remark-disable-aadhar') ? document.getElementById('modal-remark-disable-aadhar').checked : false;
 
   if (!newValue) {
     showToast('danger', 'Validation Error', 'Option name cannot be empty.');
@@ -3220,7 +3306,7 @@ async function handleRemarkOptionFormSubmit(event) {
 
   const endpoint = '/api/records/remark-options';
   const method = mode === 'add' ? 'POST' : 'PUT';
-  const payload = mode === 'add' ? { optionValue: newValue } : { oldValue: oldValue, newValue: newValue };
+  const payload = mode === 'add' ? { optionValue: newValue, disableAadhar } : { oldValue: oldValue, newValue: newValue, disableAadhar };
 
   showLoader(mode === 'add' ? 'Adding remark option...' : 'Updating remark option...');
   try {
@@ -3235,8 +3321,8 @@ async function handleRemarkOptionFormSubmit(event) {
     if (data.success) {
       remarkOptionModalInstance.hide();
       showToast('success', 'Option Saved', data.message);
-      loadDropdownsView();
-      loadRemarkOptions();
+      await loadDropdownsView();
+      await loadRemarkOptions();
     } else {
       showToast('danger', 'Error', data.message);
     }
