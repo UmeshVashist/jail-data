@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
   checkSessionOnLoad();
   setupDropzone();
   loadRemarkOptions();
+  setInterval(loadRemarkOptions, 20000);
 });
 
 /* Helper to format Aadhar No as 'XXXX XXXX XXXX' or '#N/A' */
@@ -599,7 +600,7 @@ function renderRecordsTable(records, highlightPid = null) {
     if (menuItems.length > 0) {
       actionButtons = `
         <div class="dropdown d-inline-block">
-          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
             <i class="bi bi-three-dots-vertical fs-6 text-secondary"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 170px; border-radius: 10px; font-size: 0.85rem; z-index: 1060;">
@@ -956,12 +957,20 @@ function isAadharDisabledRemark(remarkValue) {
       const name = (typeof opt === 'object' ? opt.optionValue : opt) || '';
       return name.toString().trim().toLowerCase() === val;
     });
-    if (match && typeof match === 'object' && match.disableAadhar !== undefined) {
+    if (match && typeof match === 'object') {
       return !!match.disableAadhar;
     }
   }
 
-  return false;
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade'
+  );
 }
 
 function handleRecordRemarkChange() {
@@ -2080,7 +2089,8 @@ async function fetchPendingEditRequestsCount() {
   } catch (e) {}
 }
 
-function openSendEditRequestModal(encodedRecJson) {
+async function openSendEditRequestModal(encodedRecJson) {
+  await loadRemarkOptions();
   const rec = JSON.parse(decodeURIComponent(encodedRecJson));
   document.getElementById('send-edit-record-id').value = rec.id || rec.rowIndex;
   document.getElementById('send-edit-pid').innerText = rec.pid;
@@ -2975,7 +2985,8 @@ async function loadReactiveList() {
   }
 }
 
-function showUpdateRecordRemarkModal(recordId, pid, name, oldRemark) {
+async function showUpdateRecordRemarkModal(recordId, pid, name, oldRemark) {
+  await loadRemarkOptions();
   document.getElementById('update-remark-record-id').value = recordId;
   document.getElementById('update-remark-pid').innerText = pid;
   document.getElementById('update-remark-name').innerText = name;

@@ -134,7 +134,6 @@ function processAadharInput(inputStr) {
   return { valid: true, value: formatted, cleanDigits: cleanDigits };
 }
 
-// Helper to check if Remark indicates Aadhar is not applicable or disabled by Admin
 async function isAadharDisabledRemark(remarkValue) {
   if (!remarkValue) return false;
   const val = remarkValue.toString().trim().toLowerCase();
@@ -142,12 +141,20 @@ async function isAadharDisabledRemark(remarkValue) {
   try {
     const options = await getRemarkOptions();
     const match = options.find(opt => (opt.optionValue || opt).toString().trim().toLowerCase() === val);
-    if (match && typeof match === 'object' && match.disableAadhar !== undefined) {
+    if (match && typeof match === 'object') {
       return !!match.disableAadhar;
     }
   } catch (e) {}
 
-  return false;
+  return (
+    val === 'foreigner' ||
+    val === 'not available' ||
+    val === 'notavailable' ||
+    val === 'n/a' ||
+    val === 'na' ||
+    val === 'aadhar not made' ||
+    val === 'aadharnotmade'
+  );
 }
 
 // GET /api/records/settings - Fetch system settings
@@ -443,9 +450,13 @@ router.put('/:id/remark', requireAuth, async (req, res) => {
     const updatedDate = getFormattedDate(now);
     const updatedTime = getFormattedTime(now);
 
+    const isDisabledRemark = await isAadharDisabledRemark(cleanRemark);
+    const updatedAadharNo = isDisabledRemark ? '' : (targetRec.aadharNo || '');
+
     const updatedData = {
       ...targetRec,
       remark: cleanRemark,
+      aadharNo: updatedAadharNo,
       updatedDate,
       updatedTime
     };

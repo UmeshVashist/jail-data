@@ -24,6 +24,42 @@ let systemSettingsSheet = null;
 let isConnected = false;
 let connectionError = null;
 
+/* In-memory TTL Cache & Quota Cooldown Mechanism to prevent Google 429 Rate Limits */
+const sheetCache = {
+  users: { data: null, timestamp: 0 },
+  remarkOptions: { data: null, timestamp: 0 },
+  listAddRequests: { data: null, timestamp: 0 },
+  records: { data: null, timestamp: 0 },
+  systemSettings: { data: null, timestamp: 0 }
+};
+
+let googleQuotaExceededUntil = 0; // Timestamp until which Google API calls are skipped due to 429 quota
+const CACHE_TTL_MS = 10000; // 10 seconds cache TTL
+const QUOTA_COOLDOWN_MS = 60000; // 60 seconds cooldown when 429 quota error occurs
+
+function invalidateCache(key) {
+  if (key && sheetCache[key]) {
+    sheetCache[key].timestamp = 0;
+    sheetCache[key].data = null;
+  } else {
+    Object.keys(sheetCache).forEach(k => {
+      sheetCache[k].timestamp = 0;
+      sheetCache[k].data = null;
+    });
+  }
+}
+
+function isQuotaExceeded() {
+  return Date.now() < googleQuotaExceededUntil;
+}
+
+function handleGoogleApiError(err) {
+  if (err && err.message && (err.message.includes('Quota exceeded') || err.message.includes('429'))) {
+    console.warn('\n[NOTICE] Google Sheets API 429 Quota Exceeded. Automatically serving data from cache/DB for 60 seconds.');
+    googleQuotaExceededUntil = Date.now() + QUOTA_COOLDOWN_MS;
+  }
+}
+
 const inMemoryData = {
   users: [
     { rowIndex: 2, username: 'Admin', password: 'Admin@123', role: 'Admin', importPermission: true, fullAccess: true, deleteRequestPermission: true, status: 'Active' },
@@ -321,7 +357,31 @@ function formatDateValue(val) {
    ========================================================================== */
 
 async function getUsers() {
-  if (!isConnected) {
+  const now = Date.now();
+  if (sheetCache.users.data && (now - sheetCache.users.timestamp) < CACHE_TTL_MS) {
+    return sheetCache.users.data;
+  }
+
+  if (!isConnected || isQuotaExceeded()) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT id, username, password, role, import_permission, full_access, delete_request_permission, status FROM users');
+      if (rows && rows.length > 0) {
+        const dbUsers = rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          username: (r.username || '').trim(),
+          password: (r.password || '').trim(),
+          role: (r.role || 'View').trim(),
+          importPermission: r.import_permission === 1 || r.import_permission === '1' || r.import_permission === 'yes',
+          fullAccess: r.full_access === 1 || r.full_access === '1' || r.full_access === 'yes',
+          deleteRequestPermission: r.delete_request_permission === 1 || r.delete_request_permission === '1' || r.delete_request_permission === 'yes',
+          status: (r.status || 'Active').trim()
+        }));
+        sheetCache.users = { data: dbUsers, timestamp: now };
+        return dbUsers;
+      }
+    } catch (e) {}
     return inMemoryData.users.map(u => ({ ...u, id: u.rowIndex }));
   }
 
@@ -341,10 +401,11 @@ async function getUsers() {
         status: (row.get('Status') || 'Active').toString().trim()
       };
     });
-    // Cache users in memory
     inMemoryData.users = fetchedUsers;
+    sheetCache.users = { data: fetchedUsers, timestamp: now };
     return fetchedUsers;
   } catch (err) {
+    handleGoogleApiError(err);
     console.error('getUsers error:', err.message);
     try {
       const { dbAll } = require('./database');
@@ -458,7 +519,62 @@ async function deleteUser(rowIndex, targetUsername) {
    ========================================================================== */
 
 async function getRecords() {
-  if (!isConnected) {
+  const now = Date.now();
+  if (sheetCache.records.data && (now - sheetCache.records.timestamp) < CACHE_TTL_MS) {
+    return sheetCache.records.data;
+  }
+
+  if (!isConnected || isQuotaExceeded()) {
+    try {
+      const { dbAll } = require('./database');
+      const rows = await dbAll('SELECT * FROM records ORDER BY id DESC');
+      if (rows && rows.length > 0) {
+        const fetched = rows.map(r => ({
+          id: r.id,
+          rowIndex: r.id,
+          pid: r.pid,
+          name: r.name,
+          father: r.father,
+          utNo: r.ut_no,
+          aadharNo: r.aadhar_no,
+          date: r.date,
+          remark: r.remark,
+          createdBy: r.created_by,
+          createdDate: r.created_date,
+          createdTime: r.created_time,
+          updatedDate: r.updated_date,
+          updatedTime: r.updated_time
+        }));
+        sheetCache.records = { data: fetched, timestamp: now };
+        return fetched;
+      }
+    } catch (e) {}
+    return inMemoryData.records;
+  }
+
+  try {
+    const rows = await dataSheet.getRows();
+    const fetched = rows.map(row => ({
+      id: row.rowNumber,
+      rowIndex: row.rowNumber,
+      pid: (row.get('PID') || '').toString().trim(),
+      name: (row.get('Name') || '').toString().trim(),
+      father: (row.get('Father') || '').toString().trim(),
+      utNo: (row.get('UT No') || '').toString().trim(),
+      aadharNo: (row.get('Aadhar no.') || '').toString().trim(),
+      date: formatDateValue(row.get('Date')) || (row.get('Date') || '').toString().trim(),
+      remark: (row.get('Remark') || '').toString().trim(),
+      createdBy: (row.get('Created By') || '').toString().trim(),
+      createdDate: formatDateValue(row.get('Created Date')) || (row.get('Created Date') || '').toString().trim(),
+      createdTime: (row.get('Created Time') || '').toString().trim(),
+      updatedDate: formatDateValue(row.get('Updated Date')) || (row.get('Updated Date') || '').toString().trim(),
+      updatedTime: (row.get('Updated Time') || '').toString().trim()
+    }));
+    sheetCache.records = { data: fetched, timestamp: now };
+    return fetched;
+  } catch (err) {
+    handleGoogleApiError(err);
+    console.error('getRecords error:', err.message);
     try {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT * FROM records ORDER BY id DESC');
@@ -481,29 +597,6 @@ async function getRecords() {
         }));
       }
     } catch (e) {}
-    return inMemoryData.records;
-  }
-
-  try {
-    const rows = await dataSheet.getRows();
-    return rows.map(row => ({
-      id: row.rowNumber,
-      rowIndex: row.rowNumber,
-      pid: (row.get('PID') || '').toString().trim(),
-      name: (row.get('Name') || '').toString().trim(),
-      father: (row.get('Father') || '').toString().trim(),
-      utNo: (row.get('UT No') || '').toString().trim(),
-      aadharNo: (row.get('Aadhar no.') || '').toString().trim(),
-      date: formatDateValue(row.get('Date')) || (row.get('Date') || '').toString().trim(),
-      remark: (row.get('Remark') || '').toString().trim(),
-      createdBy: (row.get('Created By') || '').toString().trim(),
-      createdDate: formatDateValue(row.get('Created Date')) || (row.get('Created Date') || '').toString().trim(),
-      createdTime: (row.get('Created Time') || '').toString().trim(),
-      updatedDate: formatDateValue(row.get('Updated Date')) || (row.get('Updated Date') || '').toString().trim(),
-      updatedTime: (row.get('Updated Time') || '').toString().trim()
-    }));
-  } catch (err) {
-    console.error('getRecords error:', err.message);
     return inMemoryData.records;
   }
 }
@@ -949,12 +1042,17 @@ async function deleteEditRequest(requestId) {
    ========================================================================== */
 
 async function getListAddRequests() {
-  if (!isConnected) {
+  const now = Date.now();
+  if (sheetCache.listAddRequests.data && (now - sheetCache.listAddRequests.timestamp) < CACHE_TTL_MS) {
+    return sheetCache.listAddRequests.data;
+  }
+
+  if (!isConnected || isQuotaExceeded()) {
     try {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
       if (rows && rows.length > 0) {
-        return rows.map(r => {
+        const fetched = rows.map(r => {
           let reqMs = r.created_at;
           if (!reqMs && r.requested_date) {
             try {
@@ -975,6 +1073,8 @@ async function getListAddRequests() {
             createdAt: reqMs || Date.now()
           };
         });
+        sheetCache.listAddRequests = { data: fetched, timestamp: now };
+        return fetched;
       }
     } catch (e) {}
     return inMemoryData.listAddRequests;
@@ -982,7 +1082,7 @@ async function getListAddRequests() {
 
   try {
     const rows = await listAddRequestsSheet.getRows();
-    return rows.map(row => {
+    const fetched = rows.map(row => {
       const rDate = (row.get('Requested Date') || '').toString().trim();
       const rTime = (row.get('Requested Time') || '').toString().trim();
       let reqMs = null;
@@ -1003,7 +1103,10 @@ async function getListAddRequests() {
         createdAt: reqMs || Date.now()
       };
     });
+    sheetCache.listAddRequests = { data: fetched, timestamp: now };
+    return fetched;
   } catch (err) {
+    handleGoogleApiError(err);
     console.error('getListAddRequests error:', err.message);
     return inMemoryData.listAddRequests;
   }
@@ -1100,9 +1203,14 @@ async function deleteListAddRequest(requestId) {
    ========================================================================== */
 
 async function getRemarkOptions() {
+  const now = Date.now();
+  if (sheetCache.remarkOptions.data && (now - sheetCache.remarkOptions.timestamp) < CACHE_TTL_MS) {
+    return sheetCache.remarkOptions.data;
+  }
+
   let permanentOptions = [];
 
-  if (!isConnected) {
+  if (!isConnected || isQuotaExceeded()) {
     try {
       const { dbAll } = require('./database');
       const rows = await dbAll('SELECT option_value, disable_aadhar FROM remark_options ORDER BY id ASC');
@@ -1129,6 +1237,7 @@ async function getRemarkOptions() {
         })
         .filter(val => val.optionValue !== '' && val.optionValue.toLowerCase() !== 'remark options');
     } catch (err) {
+      handleGoogleApiError(err);
       console.error('getRemarkOptions error:', err.message);
       try {
         const { dbAll } = require('./database');
@@ -1146,10 +1255,37 @@ async function getRemarkOptions() {
     if (permanentOptions.length === 0) permanentOptions = [...inMemoryData.remarkOptions];
   }
 
+  // Ensure local SQLite & in-memory disableAadhar overrides are merged if present
+  try {
+    const { dbAll } = require('./database');
+    const dbRows = await dbAll('SELECT option_value, disable_aadhar FROM remark_options');
+    if (dbRows && dbRows.length > 0) {
+      dbRows.forEach(r => {
+        const val = (r.option_value || '').toString().trim().toLowerCase();
+        const dis = (r.disable_aadhar === 1 || r.disable_aadhar === '1' || r.disable_aadhar === 'true' || r.disable_aadhar === true);
+        const match = permanentOptions.find(o => (o.optionValue || o).toString().trim().toLowerCase() === val);
+        if (match && dis) {
+          match.disableAadhar = true;
+        }
+      });
+    }
+  } catch (e) {}
+
+  if (Array.isArray(inMemoryData.remarkOptions)) {
+    inMemoryData.remarkOptions.forEach(mem => {
+      if (typeof mem === 'object' && mem.disableAadhar) {
+        const val = (mem.optionValue || '').toString().trim().toLowerCase();
+        const match = permanentOptions.find(o => (o.optionValue || o).toString().trim().toLowerCase() === val);
+        if (match) {
+          match.disableAadhar = true;
+        }
+      }
+    });
+  }
+
   // Combine permanent options with active 24-hour temporary pending list requests ("empery base list")
   try {
     const allRequests = await getListAddRequests();
-    const now = Date.now();
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
     const tempActiveOptions = allRequests
@@ -1175,10 +1311,12 @@ async function getRemarkOptions() {
     console.error('Error merging temporary dropdown options:', e.message);
   }
 
+  sheetCache.remarkOptions = { data: permanentOptions, timestamp: now };
   return permanentOptions;
 }
 
 async function addRemarkOption(optionValue, disableAadhar = false) {
+  invalidateCache('remarkOptions');
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
   const disInt = disableAadhar ? 1 : 0;
@@ -1204,6 +1342,7 @@ async function addRemarkOption(optionValue, disableAadhar = false) {
 }
 
 async function updateRemarkOption(oldValue, newValue) {
+  invalidateCache('remarkOptions');
   const cleanOld = (oldValue || '').toString().trim();
   const cleanNew = (newValue || '').toString().trim();
   if (!cleanOld || !cleanNew) return false;
@@ -1231,28 +1370,55 @@ async function updateRemarkOption(oldValue, newValue) {
 }
 
 async function toggleRemarkOptionAadhar(optionValue, disableAadhar) {
+  invalidateCache('remarkOptions');
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
   const disInt = disableAadhar ? 1 : 0;
   const disStr = disableAadhar ? 'Yes' : 'No';
 
+  // 1. Update/Upsert SQLite Database
   try {
     const { dbRun } = require('./database');
-    await dbRun('UPDATE remark_options SET disable_aadhar = ? WHERE LOWER(option_value) = LOWER(?)', [disInt, cleanVal]);
-  } catch (e) {}
-
-  const memItem = inMemoryData.remarkOptions.find(opt => (opt.optionValue || opt).toLowerCase() === cleanVal.toLowerCase());
-  if (memItem) {
-    if (typeof memItem === 'object') memItem.disableAadhar = disableAadhar;
+    await dbRun(`
+      INSERT INTO remark_options (option_value, disable_aadhar)
+      VALUES (?, ?)
+      ON CONFLICT(option_value) DO UPDATE SET disable_aadhar = excluded.disable_aadhar
+    `, [cleanVal, disInt]);
+  } catch (e) {
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('UPDATE remark_options SET disable_aadhar = ? WHERE LOWER(option_value) = LOWER(?)', [disInt, cleanVal]);
+    } catch (err) {}
   }
 
+  // 2. Update in-memory data
+  const memItem = inMemoryData.remarkOptions.find(opt => (typeof opt === 'object' ? opt.optionValue : opt).toString().trim().toLowerCase() === cleanVal.toLowerCase());
+  if (memItem) {
+    if (typeof memItem === 'object') {
+      memItem.disableAadhar = !!disableAadhar;
+    } else {
+      const idx = inMemoryData.remarkOptions.indexOf(memItem);
+      inMemoryData.remarkOptions[idx] = { optionValue: cleanVal, disableAadhar: !!disableAadhar };
+    }
+  } else {
+    inMemoryData.remarkOptions.push({ optionValue: cleanVal, disableAadhar: !!disableAadhar });
+  }
+
+  // 3. Update Google Sheet
   if (isConnected && dropdownSheet) {
     try {
+      await dropdownSheet.loadHeaderRow();
+      const headers = dropdownSheet.headerValues || [];
+      if (!headers.includes('Disable Aadhar')) {
+        await dropdownSheet.setHeaderRow(['Remark Options', 'Disable Aadhar']);
+      }
       const rows = await dropdownSheet.getRows();
       const targetRow = rows.find(r => (r.get('Remark Options') || (r._rawData ? r._rawData[0] : '')).toString().trim().toLowerCase() === cleanVal.toLowerCase());
       if (targetRow) {
         targetRow.set('Disable Aadhar', disStr);
         await targetRow.save();
+      } else {
+        await dropdownSheet.addRow({ 'Remark Options': cleanVal, 'Disable Aadhar': disStr });
       }
     } catch (e) {
       console.error('Error updating Disable Aadhar in Google Sheet:', e.message);
