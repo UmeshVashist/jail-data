@@ -53,7 +53,10 @@ router.post('/', async (req, res) => {
 
     // Check if option already exists in current options
     const existingOptions = await getRemarkOptions();
-    const alreadyExists = existingOptions.some(opt => opt.toLowerCase() === cleanOption.toLowerCase());
+    const alreadyExists = existingOptions.some(opt => {
+      const val = typeof opt === 'object' && opt !== null ? (opt.optionValue || '') : String(opt || '');
+      return val.trim().toLowerCase() === cleanOption.toLowerCase();
+    });
 
     if (alreadyExists) {
       return res.status(400).json({ success: false, message: `Option "${cleanOption}" already exists in dropdown list.` });
@@ -119,7 +122,10 @@ router.get('/reactive', async (req, res) => {
       permanentOptions = ['Not Available', 'Already Linked but other Prisoner', 'Biometric Block', 'Biometric data not match', 'Aadhar Suspended', 'Other'];
     }
 
-    const permSet = new Set(permanentOptions.map(opt => opt.trim().toLowerCase()));
+    const permSet = new Set(permanentOptions.map(opt => {
+      const val = typeof opt === 'object' && opt !== null ? (opt.optionValue || '') : String(opt || '');
+      return val.trim().toLowerCase();
+    }));
 
     // Filter requests that are NOT Approved (Pending or Rejected/Reactive)
     const unapprovedRequests = allRequests.filter(r => r.status !== 'Approved');

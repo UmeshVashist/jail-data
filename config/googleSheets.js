@@ -1132,6 +1132,7 @@ async function createListAddRequest(reqObj) {
       reqObj.rowIndex = newId;
     }
     inMemoryData.listAddRequests.push({ ...reqObj, optionValue: optVal, reason: reasonVal, status: 'Pending', createdAt: createdAtMs });
+    sheetCache.listAddRequests = { data: null, timestamp: 0 };
     return true;
   }
 
@@ -1146,11 +1147,13 @@ async function createListAddRequest(reqObj) {
     'Action By': '',
     'Action Date': ''
   });
+  sheetCache.listAddRequests = { data: null, timestamp: 0 };
   return true;
 }
 
 async function updateListAddRequestStatus(requestId, status, actionBy) {
   const actionDate = getFormattedDateTime();
+  sheetCache.listAddRequests = { data: null, timestamp: 0 };
   
   if (!isConnected) {
     try {

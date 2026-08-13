@@ -3438,3 +3438,38 @@ async function toggleAadharMandatorySetting(checked) {
     updateAadharMandatoryUI();
   }
 }
+
+// Proper Case Helper Function
+function toProperCase(str) {
+  if (!str) return '';
+  return str.replace(/\b\w/g, function(txt) {
+    return txt.toUpperCase();
+  });
+}
+
+function handleProperCaseInput(e) {
+  const start = e.target.selectionStart;
+  const end = e.target.selectionEnd;
+  const val = e.target.value;
+  // Convert words: first letter uppercase, rest lowercase per word as user types
+  const formatted = val.replace(/\b\w+/g, function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+  if (e.target.value !== formatted) {
+    e.target.value = formatted;
+    e.target.setSelectionRange(start, end);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const remarkInput1 = document.getElementById('modal-remark-option-name');
+  const remarkInput2 = document.getElementById('send-list-add-option');
+
+  if (remarkInput1) {
+    remarkInput1.addEventListener('input', handleProperCaseInput);
+  }
+  if (remarkInput2) {
+    remarkInput2.addEventListener('input', handleProperCaseInput);
+  }
+});
+
