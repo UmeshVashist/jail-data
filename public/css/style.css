@@ -1,54 +1,242 @@
 /* ==========================================================================
-   Design System & Modern Aesthetics
+   UI UX Pro Max Design System - Modern Aesthetics & Sleek Visual Tokens
    ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 :root {
-  --sidebar-bg: #1e293b;
-  --sidebar-hover: #334155;
+  /* Color Palette - Vibrant Indigo/Violet & Modern Slate */
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --primary-glow: rgba(99, 102, 241, 0.35);
+  
+  --accent-color: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+
+  --success-color: #10b981;
+  --success-bg: #ecfdf5;
+  --success-text: #047857;
+
+  --warning-color: #f59e0b;
+  --warning-bg: #fffbeb;
+  --warning-text: #b45309;
+
+  --danger-color: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-text: #b91c1c;
+
+  --info-color: #3b82f6;
+  --info-bg: #eff6ff;
+  --info-text: #1d4ed8;
+
+  /* Dark Sidebar Tokens */
+  --sidebar-bg: #0f172a;
+  --sidebar-card: #1e293b;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
   --sidebar-text: #94a3b8;
   --sidebar-active-text: #ffffff;
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --accent-color: #06b6d4;
-  --bg-light: #f8fafc;
-  --card-border-radius: 12px;
-  --shadow-soft: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+
+  /* Light Theme Tokens */
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-radius: 16px;
+  
+  /* Modern Shadow Hierarchy */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 25px -5px rgba(99, 102, 241, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+
+  /* Typography */
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Base Body Styling */
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--bg-light);
-  color: #334155;
+  font-family: var(--font-main);
+  background-color: var(--bg-main);
+  color: #1e293b;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ambient Background Blur Elements for Modern Vibe */
+body::before {
+  content: '';
+  position: fixed;
+  top: -10vw;
+  right: -10vw;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.07) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -10vw;
+  left: -10vw;
+  width: 35vw;
+  height: 35vw;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ==========================================================================
-   Compact Sidebar Layout
+   Modern Login Screen (Glassmorphism & Neon Accent)
    ========================================================================== */
+#login-view {
+  background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+#login-view::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  border-radius: 50%;
+  filter: blur(90px);
+  top: 15%;
+  left: 20%;
+  opacity: 0.35;
+  animation: pulseGlow 8s infinite alternate ease-in-out;
+}
+
+#login-view::after {
+  content: '';
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border-radius: 50%;
+  filter: blur(100px);
+  bottom: 15%;
+  right: 20%;
+  opacity: 0.25;
+  animation: pulseGlow 10s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.15) translate(20px, -20px); }
+}
+
+.login-card {
+  background: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  z-index: 1;
+}
+
+.login-card .form-control {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.login-card .form-control::placeholder {
+  color: #64748b !important;
+}
+
+.login-card .form-control:focus {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25) !important;
+}
+
+.login-card .input-group-text {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+.login-icon-box {
+  background: var(--primary-gradient);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+}
+
+/* ==========================================================================
+   Full Width Portal Layout & Flex Structure
+   ========================================================================== */
+#app-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 #sidebar {
-  min-width: 200px;
-  max-width: 200px;
+  min-width: 220px;
+  max-width: 220px;
+  width: 220px;
+  flex-shrink: 0;
   background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   color: var(--sidebar-text);
-  transition: all 0.3s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+#content {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 #sidebar .sidebar-header {
-  padding: 1.1rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 1.1rem;
+  border-bottom: 1px solid var(--sidebar-border);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.brand-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--primary-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 #sidebar .nav-link {
   color: var(--sidebar-text);
-  padding: 0.6rem 0.85rem;
-  border-radius: 8px;
-  margin: 0.2rem 0.4rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  margin: 0.25rem 0.6rem;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  transition: all 0.2s ease;
+  gap: 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+
+#sidebar .nav-link i {
+  font-size: 1.15rem;
+  transition: transform 0.2s ease;
 }
 
 #sidebar .nav-link:hover {
@@ -56,146 +244,271 @@ body {
   color: var(--sidebar-active-text);
 }
 
+#sidebar .nav-link:hover i {
+  transform: translateX(2px);
+}
+
 #sidebar .nav-link.active {
-  background-color: var(--primary-color);
+  background: var(--primary-gradient);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  font-weight: 600;
+  box-shadow: 0 6px 16px var(--primary-glow);
 }
 
-#sidebar .nav-link i {
-  font-size: 1.1rem;
+#sidebar .nav-link.active i {
+  color: #ffffff !important;
 }
 
-/* Main Content Area */
-#content {
-  width: 100%;
-  min-height: 100vh;
-  transition: all 0.3s;
-}
-
+/* Top Navbar Header */
 .top-navbar {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  padding: 0.85rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--card-border);
+  padding: 0.85rem 1.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  width: 100%;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Modern Avatar */
+.avatar-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* ==========================================================================
-   Dashboard Cards & Visual Components
+   Dashboard Cards & Metric Visuals
    ========================================================================== */
 .stat-card {
-  border: none;
-  border-radius: var(--card-border-radius);
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--card-radius) !important;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  transition: background 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+.stat-card:hover::after {
+  background: var(--primary-gradient);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
+  transition: transform 0.3s ease;
 }
 
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(4deg);
+}
+
+/* Custom Soft Colored Metric Badges */
 .bg-primary-subtle-custom { background-color: #e0e7ff; color: #4338ca; }
-.bg-success-subtle-custom { background-color: #dcfce7; color: #15803d; }
-.bg-info-subtle-custom { background-color: #cff4fc; color: #055160; }
-.bg-warning-subtle-custom { background-color: #fef9c3; color: #a16207; }
+.bg-success-subtle-custom { background-color: #d1fae5; color: #047857; }
+.bg-info-subtle-custom { background-color: #cff4fc; color: #0891b2; }
+.bg-warning-subtle-custom { background-color: #fef3c7; color: #b45309; }
 
 /* ==========================================================================
-   Custom Table Card & Clean Layout
+   Modern Table Card & Custom Scrollable Components
    ========================================================================== */
 .custom-table-card {
   background: #ffffff;
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--shadow-soft);
-  border: 1px solid #e2e8f0;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
   overflow: hidden;
 }
 
-.custom-table-card .table-responsive:not(.dropdown-table-scroll-container) {
-  min-height: 200px;
+.custom-table-card table {
+  margin-bottom: 0;
 }
 
 .custom-table-card table th {
-  background-color: #f1f5f9;
+  background-color: #f8fafc;
   color: #475569;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.06em;
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--card-border);
   white-space: nowrap;
 }
 
 .custom-table-card table td {
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.1rem;
   font-size: 0.875rem;
   color: #334155;
   border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
 }
 
-.custom-table-card table tr:last-child td {
-  border-bottom: none;
+.custom-table-card table tbody tr {
+  transition: background-color 0.15s ease-in-out;
 }
 
-/* Scrollable table container for Dropdown Settings (Activates scrollbar after 6 items) */
-.dropdown-table-scroll-container {
-  max-height: 410px;
-  overflow-y: auto;
+.custom-table-card table tbody tr:hover {
+  background-color: #f8fafc;
 }
 
-.dropdown-table-scroll-container thead th {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+/* Sortable Table Header Styling */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.sortable-header:hover {
+  color: var(--primary-color) !important;
   background-color: #f1f5f9 !important;
-  box-shadow: inset 0 -1px 0 #e2e8f0;
 }
 
-/* ==========================================================================
-   Excel / CSV Drag & Drop Upload Zone
-   ========================================================================== */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Modern Form Controls & Focus Effects */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.875rem;
+  padding: 0.55rem 0.85rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.input-group-text {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+/* Buttons Polish */
+.btn-primary {
+  background: var(--primary-gradient);
+  border: none;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--primary-glow);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* Action Dropdown Dots Button */
+.action-dots-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  transition: all 0.15s ease-in-out;
+}
+
+.action-dots-btn:hover, .show > .action-dots-btn {
+  background-color: #e0e7ff !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+/* Drag and Dropzone Container */
 .dropzone-container {
   border: 2px dashed #cbd5e1;
-  border-radius: var(--card-border-radius);
+  border-radius: var(--card-radius);
   background-color: #f8fafc;
-  padding: 2.5rem 1.5rem;
+  padding: 3rem 1.5rem;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dropzone-container:hover, .dropzone-container.dragover {
   border-color: var(--primary-color);
-  background-color: #eeef2a10;
+  background-color: rgba(99, 102, 241, 0.04);
+  transform: scale(1.01);
 }
 
 .dropzone-icon {
-  font-size: 3rem;
+  font-size: 3.5rem;
   color: var(--primary-color);
+  transition: transform 0.3s ease;
 }
 
-/* ==========================================================================
-   Custom Loader Overlay
-   ========================================================================== */
+.dropzone-container:hover .dropzone-icon {
+  transform: translateY(-6px);
+}
+
+/* Fullscreen Loader Blur Overlay */
 #loader-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -204,110 +517,46 @@ body {
   color: #ffffff;
 }
 
-/* Print Optimization */
-@media print {
-  #sidebar, .top-navbar, .no-print, #pagination-container {
-    display: none !important;
-  }
-  #content {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  .custom-table-card {
-    box-shadow: none !important;
-    border: none !important;
-  }
+/* View Section Fade-In Animation & Full Width */
+main {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* Mobile Sidebar Behavior */
+.view-section {
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeInView 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInView {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Clickable PID Link */
+.pid-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pid-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Mobile Sidebar Slide Behavior */
 @media (max-width: 767.98px) {
   #sidebar {
-    margin-left: -200px;
+    margin-left: -220px;
     position: fixed;
     height: 100vh;
   }
   #sidebar.active {
     margin-left: 0;
   }
-}
-
-/* Newly Added Record Animation */
-@keyframes highlightRowFade {
-  0% { background-color: #d1fae5; }
-  50% { background-color: #a7f3d0; }
-  100% { background-color: transparent; }
-}
-
-.highlight-new-row {
-  animation: highlightRowFade 3s ease-out;
-}
-
-/* Clickable PID Link Styles */
-.pid-link {
-  color: var(--primary-color);
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
-  transition: color 0.15s ease-in-out;
-}
-
-.pid-link:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
-  text-shadow: 0 0 1px rgba(79, 70, 229, 0.2);
-}
-
-/* 3-Dots Table Action Button Styling */
-.action-dots-btn {
-  transition: all 0.2s ease-in-out;
-  background-color: #f8fafc;
-}
-.action-dots-btn:hover, .action-dots-btn:focus, .show > .action-dots-btn {
-  background-color: #e2e8f0 !important;
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15) !important;
-}
-.action-dots-btn:hover i, .show > .action-dots-btn i {
-  color: var(--primary-color) !important;
-}
-.custom-table-card table td .dropdown-item {
-  font-weight: 500;
-  border-radius: 6px;
-  margin: 2px 4px;
-  width: calc(100% - 8px);
-  transition: background-color 0.15s ease;
-}
-.custom-table-card table td .dropdown-item:hover {
-  background-color: #f1f5f9;
-}
-
-/* Searchable Select Dropdown Styling */
-.searchable-select-wrapper {
-  position: relative;
-}
-
-.searchable-select-input {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-  padding-right: 2.25rem;
-}
-
-.searchable-select-menu {
-  z-index: 1060;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.125);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-}
-
-.searchable-select-menu .dropdown-item {
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.searchable-select-menu .dropdown-item:hover,
-.searchable-select-menu .dropdown-item.active {
-  background-color: #e0e7ff;
-  color: #3730a3;
 }

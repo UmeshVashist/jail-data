@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data Management Portal</title>
   
-  <!-- Google Fonts: Inter -->
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
   <!-- Global Fullscreen Loader Overlay -->
   <div id="loader-overlay" class="d-none">
-    <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;" role="status">
+    <div class="spinner-border text-primary mb-3" style="width: 3.5rem; height: 3.5rem;" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
     <h6 class="fw-semibold text-white mb-0" id="loader-message">Processing request...</h6>
@@ -35,41 +35,41 @@
   <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
   <!-- Authentication / Login Screen -->
-  <div id="login-view" class="d-none min-vh-100 d-flex align-items-center justify-content-center bg-light">
-    <div class="card border-0 shadow-lg p-4 p-md-5" style="max-width: 420px; width: 100%; border-radius: 16px;">
+  <div id="login-view" class="d-none min-vh-100 d-flex align-items-center justify-content-center p-3">
+    <div class="card login-card p-4 p-md-5 text-white" style="max-width: 440px; width: 100%;">
       <div class="text-center mb-4">
-        <div class="stat-icon bg-primary text-white mx-auto mb-3 shadow" style="width: 56px; height: 56px; border-radius: 14px;">
-          <i class="bi bi-shield-lock-fill fs-3"></i>
+        <div class="brand-logo-icon mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 18px; font-size: 1.8rem;">
+          <i class="bi bi-shield-lock-fill"></i>
         </div>
-        <h4 class="fw-bold text-dark mb-1">Data Portal Access</h4>
-        <p class="text-muted small">Sign in using your account credentials</p>
+        <h3 class="fw-bold mb-1 text-white">Data Portal Access</h3>
+        <p class="text-white-50 small mb-0">Sign in to manage your sheets & data records</p>
       </div>
 
-      <div id="login-alert" class="alert alert-danger d-none small" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i> <span id="login-alert-text">Invalid Username or Password.</span>
+      <div id="login-alert" class="alert alert-danger d-none small rounded-3 border-0 bg-danger bg-opacity-25 text-white" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1 text-danger"></i> <span id="login-alert-text">Invalid Username or Password.</span>
       </div>
 
       <form id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="off">
         <div class="mb-3">
-          <label for="login-username" class="form-label small fw-semibold text-secondary">Username</label>
+          <label for="login-username" class="form-label small fw-semibold text-white-50">Username</label>
           <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
-            <input type="text" class="form-control border-start-0 ps-0" id="login-username" placeholder="Enter username" autocomplete="off" required>
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="off" required>
           </div>
         </div>
 
         <div class="mb-4">
-          <label for="login-password" class="form-label small fw-semibold text-secondary">Password</label>
+          <label for="login-password" class="form-label small fw-semibold text-white-50">Password</label>
           <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key"></i></span>
-            <input type="password" class="form-control border-start-0 border-end-0 ps-0" id="login-password" placeholder="Enter password" autocomplete="off" required>
-            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility('login-password', 'login-pass-icon')">
-              <i class="bi bi-eye" id="login-pass-icon"></i>
+            <span class="input-group-text"><i class="bi bi-key"></i></span>
+            <input type="password" class="form-control border-end-0" id="login-password" placeholder="Enter password" autocomplete="off" required>
+            <button class="btn btn-outline-secondary border-start-0 input-group-text" type="button" onclick="togglePasswordVisibility('login-password', 'login-pass-icon')">
+              <i class="bi bi-eye text-white-50" id="login-pass-icon"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold rounded-3 shadow-sm" id="btn-login-submit">
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-lg fs-6" id="btn-login-submit">
           <span class="spinner-border spinner-border-sm me-2 d-none" id="login-spinner" role="status"></span>
           <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
         </button>
@@ -83,8 +83,10 @@
     <!-- Sidebar Component -->
     <nav id="sidebar" class="d-flex flex-column">
       <div class="sidebar-header d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-layers-fill text-primary fs-4"></i>
+        <div class="d-flex align-items-center gap-2.5">
+          <div class="brand-logo-icon">
+            <i class="bi bi-layers-fill"></i>
+          </div>
           <span class="fw-bold text-white fs-5 tracking-wide">Data Portal</span>
         </div>
         <button class="btn btn-link text-white-50 d-md-none p-0" onclick="toggleMobileSidebar()">
@@ -140,13 +142,13 @@
         <li class="nav-item d-none" id="nav-item-dropdowns">
           <a class="nav-link" id="nav-dropdowns" href="#" onclick="navigateToView('dropdowns'); return false;">
             <i class="bi bi-gear-wide-connected text-primary"></i>
-            <span>System & Dropdown Settings</span>
+            <span>System Settings</span>
           </a>
         </li>
       </ul>
 
       <div class="mt-auto p-3 border-top border-secondary border-opacity-25">
-        <button class="btn btn-outline-danger w-100 btn-sm rounded-2 d-flex align-items-center justify-content-center gap-2" onclick="handleLogout()">
+        <button class="btn btn-outline-danger w-100 btn-sm rounded-3 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium" onclick="handleLogout()">
           <i class="bi bi-box-arrow-left"></i>
           <span>Sign Out</span>
         </button>
@@ -159,25 +161,28 @@
       <!-- Top Navbar Header -->
       <header class="top-navbar d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-3">
-          <button class="btn btn-light d-md-none border-0 shadow-sm" onclick="toggleMobileSidebar()">
+          <button class="btn btn-light d-md-none border-0 shadow-sm rounded-3" onclick="toggleMobileSidebar()">
             <i class="bi bi-list fs-5"></i>
           </button>
-          <h5 class="fw-semibold text-dark mb-0" id="page-title-display">Dashboard Overview</h5>
+          <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="page-title-display">
+            <i class="bi bi-speedometer2 text-primary"></i> Dashboard Overview
+          </h5>
         </div>
 
         <div class="d-flex align-items-center gap-3">
           <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 36px; height: 36px; font-size: 0.9rem;" id="header-avatar">
+              <div class="avatar avatar-gradient rounded-circle d-flex align-items-center justify-content-center fw-bold me-2 position-relative" style="width: 38px; height: 38px; font-size: 0.95rem;" id="header-avatar">
                 U
+                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1" style="width: 10px; height: 10px;"></span>
               </div>
               <div class="d-none d-sm-block text-start">
-                <div class="fw-semibold small leading-tight" id="header-user-display">User</div>
-                <div class="text-muted text-uppercase" style="font-size: 0.65rem;" id="header-role-display">Role</div>
+                <div class="fw-bold small leading-tight" id="header-user-display">User</div>
+                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;" id="header-role-display">Role</div>
               </div>
             </a>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
-              <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-left me-2"></i> Sign Out</a></li>
+            <ul class="dropdown-menu dropdown-menu-end shadow-md border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item text-danger rounded-2 py-2" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-left me-2"></i> Sign Out</a></li>
             </ul>
           </div>
         </div>
