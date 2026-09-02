@@ -38,8 +38,10 @@ router.get('/', requireAuth, async (req, res) => {
       if (startDate !== '' && r.date < startDate) continue;
       if (endDate !== '' && r.date > endDate) continue;
 
+      const numPid = (r.pid !== undefined && r.pid !== null && !isNaN(r.pid) && String(r.pid).trim() !== '') ? Number(r.pid) : r.pid;
+
       formattedRows.push([
-        r.pid,
+        numPid,
         r.name,
         r.father || '',
         r.utNo || '',

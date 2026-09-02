@@ -223,7 +223,7 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="card stat-card h-100 p-3">
+              <div class="card stat-card h-100 p-3" onclick="showTodayRecordsModal()" style="cursor: pointer;" title="Click to view today's records">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">Today's Records</span>
@@ -337,12 +337,9 @@
                 </div>
               </div>
               <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text bg-light text-muted"><i class="bi bi-funnel me-1"></i>Remark</span>
-                  <select class="form-select" id="filter-remark" onchange="triggerFetchRecords()" autocomplete="off">
-                    <option value="">All</option>
-                  </select>
-                </div>
+                <select class="form-select form-select-sm" id="filter-remark" onchange="triggerFetchRecords()" autocomplete="off">
+                  <option value="">All Remarks</option>
+                </select>
               </div>
               <div class="col-6 col-sm-3 col-md-2 col-lg-2">
                 <div class="input-group input-group-sm">
@@ -364,9 +361,9 @@
 
           <!-- Main Records Table -->
           <div class="custom-table-card mb-3">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
               <table class="table table-hover align-middle mb-0">
-                <thead>
+                <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
                   <tr>
                     <th class="sortable-header" onclick="changeSortColumn('pid')">PID <i class="bi bi-arrow-down-up ms-1 small opacity-50"></i></th>
                     <th class="sortable-header" onclick="changeSortColumn('name')">Name <i class="bi bi-arrow-down-up ms-1 small opacity-50"></i></th>
@@ -1099,6 +1096,49 @@
     </div>
   </div>
 
+  <!-- Today's Records Modal -->
+  <div class="modal fade" id="todayRecordsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content shadow border-0 rounded-4">
+        <div class="modal-header bg-success-subtle border-bottom px-4 py-3">
+          <div class="d-flex align-items-center">
+            <div class="stat-icon bg-success text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+              <i class="bi bi-calendar-check fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-dark">Today's Uploaded Records</h5>
+              <span class="text-muted small">Records uploaded or added today (<span id="today-records-count-badge" class="badge bg-success text-white">0</span>)</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modern shadow-xs ms-auto" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="today-records-table">
+              <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
+                <tr>
+                  <th class="ps-4">PID</th>
+                  <th>Name</th>
+                  <th>Father</th>
+                  <th>UT.No</th>
+                  <th>Date</th>
+                  <th>Remark</th>
+                  <th class="text-end pe-4">Action</th>
+                </tr>
+              </thead>
+              <tbody id="today-records-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer bg-light px-4 py-2 border-top">
+          <button type="button" class="btn btn-modern-close rounded-pill px-4" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1.5"></i>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add/Edit Record Modal -->
   <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1568,10 +1608,41 @@
     </div>
   </div>
 
+  <!-- Hidden Printable Report Area for PDF Export -->
+  <div id="pdf-print-area" class="d-none d-print-block">
+    <div style="margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 20pt; font-weight: bold; color: #1e293b;">DATA RECORDS REPORT</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11pt;">
+        <div>
+          <span style="font-weight: bold; color: #2563eb;">Total Records Count: </span>
+          <span id="pdf-total-count" style="font-weight: bold; font-size: 13pt; color: #000;">0</span>
+        </div>
+        <div id="pdf-print-date" style="color: #64748b; font-size: 9.5pt;"></div>
+      </div>
+    </div>
+    <table id="pdf-print-table">
+      <thead>
+        <tr>
+          <th style="width: 15%;">PID</th>
+          <th style="width: 25%;">Name</th>
+          <th style="width: 25%;">Father</th>
+          <th style="width: 15%;">UT. No.</th>
+          <th style="width: 20%;">Remark</th>
+        </tr>
+      </thead>
+      <tbody id="pdf-print-table-body">
+        <!-- Dynamic rows -->
+      </tbody>
+    </table>
+  </div>
+
   <!-- Bootstrap 5 JavaScript Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Main Frontend Application Controller -->
   <script src="/js/app.js"></script>
+
+  <!-- Hidden Iframe for Isolated PDF Report Printing -->
+  <iframe id="pdf-print-iframe" style="position: absolute; width: 0; height: 0; border: 0; visibility: hidden;" aria-hidden="true"></iframe>
 
 </body>
 </html>

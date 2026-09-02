@@ -39,6 +39,7 @@ let sendEditRequestModalInstance = null;
 let sendListAddRequestModalInstance = null;
 let viewEditComparisonModalInstance = null;
 let updateRecordRemarkModalInstance = null;
+let todayRecordsModalInstance = null;
 let rawPendingDeleteRequests = [];
 let rawPendingEditRequests = [];
 let rawPendingListAddRequests = [];
@@ -59,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
   sendListAddRequestModalInstance = new bootstrap.Modal(document.getElementById('sendListAddRequestModal'));
   viewEditComparisonModalInstance = new bootstrap.Modal(document.getElementById('viewEditComparisonModal'));
   updateRecordRemarkModalInstance = new bootstrap.Modal(document.getElementById('updateRecordRemarkModal'));
+  const todayModalEl = document.getElementById('todayRecordsModal');
+  if (todayModalEl) todayRecordsModalInstance = new bootstrap.Modal(todayModalEl);
 
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
@@ -472,6 +475,146 @@ async function loadDashboardData(highlightPid = null) {
   }
 }
 
+async function showTodayRecordsModal() {
+  if (!todayRecordsModalInstance) {
+    const el = document.getElementById('todayRecordsModal');
+    if (el) todayRecordsModalInstance = new bootstrap.Modal(el);
+  }
+  if (todayRecordsModalInstance) {
+    todayRecordsModalInstance.show();
+  }
+  await loadTodayRecords();
+}
+
+async function loadTodayRecords() {
+  const tbody = document.getElementById('today-records-table-body');
+  const countBadge = document.getElementById('today-records-count-badge');
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="text-center py-4 text-muted">
+        <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div> Loading today's records...
+      </td>
+    </tr>
+  `;
+
+  try {
+    const res = await fetch('/api/records?today=true&pageSize=All');
+    const data = await res.json();
+
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading records: ${escapeHtml(data.message)}</td></tr>`;
+      if (countBadge) countBadge.innerText = '0';
+      return;
+    }
+
+    const records = (data.data && data.data.records) ? data.data.records : [];
+    if (countBadge) countBadge.innerText = records.length;
+
+    if (records.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4 d-block mb-1 opacity-50"></i>No records uploaded today yet.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    records.forEach(rec => {
+      const recJson = encodeURIComponent(JSON.stringify(rec));
+      let menuItems = [];
+
+      // Edit option
+      if (rec.canEdit) {
+        menuItems.push(`
+          <li>
+            <a class="dropdown-item text-primary d-flex align-items-center py-2" href="#" onclick="showEditRecordModal('${recJson}'); return false;">
+              <i class="bi bi-pencil me-2 text-primary"></i><span>Edit Record</span>
+            </a>
+          </li>
+        `);
+      } else if (currentUserState && (currentUserState.role === 'Add' || currentUserState.role === 'Admin')) {
+        if (rec.hasPendingEditRequest) {
+          menuItems.push(`
+            <li>
+              <span class="dropdown-item disabled text-info d-flex align-items-center py-2">
+                <i class="bi bi-clock-history me-2 text-info"></i><span>Requested Edit</span>
+              </span>
+            </li>
+          `);
+        } else {
+          menuItems.push(`
+            <li>
+              <a class="dropdown-item text-info d-flex align-items-center py-2" href="#" onclick="openSendEditRequestModal('${recJson}'); return false;">
+                <i class="bi bi-pencil-square me-2 text-info"></i><span>Request Edit</span>
+              </a>
+            </li>
+          `);
+        }
+      }
+
+      // Delete option
+      if (rec.canDelete) {
+        menuItems.push(`
+          <li>
+            <a class="dropdown-item text-danger d-flex align-items-center py-2" href="#" onclick="confirmDeleteRecord(${rec.id}, '${escapeHtml(rec.pid)}'); return false;">
+              <i class="bi bi-trash me-2 text-danger"></i><span>Delete Record</span>
+            </a>
+          </li>
+        `);
+      } else if (currentUserState && (currentUserState.role === 'Add' || currentUserState.role === 'Admin')) {
+        if (rec.hasPendingDeleteRequest) {
+          menuItems.push(`
+            <li>
+              <span class="dropdown-item disabled text-warning d-flex align-items-center py-2">
+                <i class="bi bi-clock-history me-2 text-warning"></i><span>Delete Requested</span>
+              </span>
+            </li>
+          `);
+        } else {
+          menuItems.push(`
+            <li>
+              <a class="dropdown-item text-warning d-flex align-items-center py-2" href="#" onclick="openSendDeleteRequestModal(${rec.id}, '${escapeHtml(rec.pid)}'); return false;">
+                <i class="bi bi-send me-2 text-warning"></i><span>Request Delete</span>
+              </a>
+            </li>
+          `);
+        }
+      }
+
+      let actionButtons = '';
+      if (menuItems.length > 0) {
+        actionButtons = `
+          <div class="dropdown d-inline-block">
+            <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+              <i class="bi bi-three-dots-vertical fs-6 text-secondary"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 170px; border-radius: 10px; font-size: 0.85rem; z-index: 1060;">
+              ${menuItems.join('')}
+            </ul>
+          </div>
+        `;
+      } else {
+        actionButtons = '<span class="text-muted small">-</span>';
+      }
+
+      html += `
+        <tr>
+          <td class="ps-4"><a href="#" onclick="viewRecordDetails('${recJson}'); return false;" class="pid-link fw-semibold" title="Click to view record details">${escapeHtml(rec.pid)}</a></td>
+          <td class="fw-semibold">${escapeHtml(rec.name)}</td>
+          <td>${escapeHtml(rec.father || '-')}</td>
+          <td>${escapeHtml(rec.utNo || '-')}</td>
+          <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-event me-1 text-primary opacity-75"></i>${escapeHtml(rec.date || rec.createdDate || '-')}</span></td>
+          <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(rec.remark)}">${escapeHtml(rec.remark || '-')}</span></td>
+          <td class="text-end pe-4">${actionButtons}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading today's records: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
 /* Records Table & CRUD */
 
 function handleInstantSearch() {
@@ -512,6 +655,10 @@ async function triggerFetchRecords(highlightPid = null) {
     if (data.success) {
       renderRecordsTable(data.data.records, highlightPid);
       renderPagination(data.data.totalRecords, data.data.page, data.data.pageSize);
+      const todayModalEl = document.getElementById('todayRecordsModal');
+      if (todayModalEl && todayModalEl.classList.contains('show')) {
+        loadTodayRecords();
+      }
     } else {
       showToast('danger', 'Fetch Error', data.message);
     }
@@ -918,7 +1065,7 @@ function populateFilterRemarkDropdown() {
   if (currentVal) {
     selectEl.value = currentVal;
   }
-  setupSearchableSelect('filter-remark', 'Search remark filter...');
+  setupSearchableSelect('filter-remark', 'All Remarks');
 }
 
 function populateRemarkDropdown(selectedValue = '') {
@@ -1233,6 +1380,7 @@ async function handleRecordFormSubmit(event) {
 
       // Refresh Dashboard stats & Recent Table without switching views
       loadDashboardData(highlightPid);
+      loadTodayRecords();
       // Refresh Records Table in background
       await triggerFetchRecords(highlightPid);
     } else {
@@ -1341,6 +1489,8 @@ function confirmDeleteRecord(recordId, pid) {
       if (data.success) {
         showToast('success', 'Deleted', data.message);
         triggerFetchRecords();
+        loadDashboardData();
+        loadTodayRecords();
       } else {
         showToast('danger', 'Delete Error', data.message);
       }
@@ -1595,7 +1745,14 @@ async function exportDataToExcel() {
 
     if (data.success) {
       const exportData = data.data;
-      const sheetRows = [exportData.headers, ...exportData.rows];
+      const processedRows = (exportData.rows || []).map(row => {
+        const newRow = [...row];
+        if (newRow[0] !== undefined && newRow[0] !== null && !isNaN(newRow[0]) && String(newRow[0]).trim() !== '') {
+          newRow[0] = Number(newRow[0]);
+        }
+        return newRow;
+      });
+      const sheetRows = [exportData.headers, ...processedRows];
       
       const worksheet = XLSX.utils.aoa_to_sheet(sheetRows);
       const workbook = XLSX.utils.book_new();
@@ -1612,12 +1769,193 @@ async function exportDataToExcel() {
   }
 }
 
-function exportDataToPDF() {
-  printCurrentTable();
+async function exportDataToPDF() {
+  showLoader('Preparing PDF report...');
+  try {
+    const queryParams = new URLSearchParams({
+      query: searchState.query,
+      startDate: searchState.startDate,
+      endDate: searchState.endDate,
+      remark: searchState.remark
+    });
+
+    const res = await fetch(`/api/export?${queryParams.toString()}`);
+    const data = await res.json();
+    hideLoader();
+
+    if (!data.success) {
+      showToast('danger', 'Export Error', data.message);
+      return;
+    }
+
+    const rows = data.data.rows || [];
+    const now = new Date();
+    const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+    let tableRowsHtml = '';
+    if (rows.length === 0) {
+      tableRowsHtml = '<tr><td colspan="5" style="text-align: center; padding: 15px;">No records found.</td></tr>';
+    } else {
+      rows.forEach(r => {
+        const pid = r[0] !== undefined && r[0] !== null ? r[0] : '-';
+        const name = r[1] || '-';
+        const father = r[2] || '-';
+        const utNo = r[3] || '-';
+        const remark = r[6] || '-';
+
+        tableRowsHtml += `
+          <tr>
+            <td style="font-weight: bold;">${escapeHtml(String(pid))}</td>
+            <td>${escapeHtml(String(name))}</td>
+            <td>${escapeHtml(String(father))}</td>
+            <td>${escapeHtml(String(utNo))}</td>
+            <td>${escapeHtml(String(remark))}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const reportHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Data Records Report</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 10mm 12mm 10mm;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #000000;
+      font-size: 9.5pt;
+    }
+    .header-bar {
+      border-bottom: 2px solid #1e293b;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+    }
+    .header-title {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      letter-spacing: 0.5px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5pt;
+    }
+    .count-label {
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .count-num {
+      font-weight: bold;
+      color: #0f172a;
+      font-size: 12pt;
+    }
+    .date-label {
+      color: #64748b;
+      font-size: 9.5pt;
+    }
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #334155;
+      padding: 6px 8px;
+      font-size: 9.5pt;
+      line-height: 1.35;
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+    }
+    th {
+      background-color: #f1f5f9 !important;
+      font-weight: 700;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    thead {
+      display: table-header-group;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="header-title">DATA RECORDS REPORT</div>
+    <div class="meta-row">
+      <div><span class="count-label">Total Records Count: </span><span class="count-num">${rows.length}</span></div>
+      <div class="date-label">Generated: ${formattedDate}</div>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%;">PID</th>
+        <th style="width: 25%;">Name</th>
+        <th style="width: 25%;">Father</th>
+        <th style="width: 17%;">UT. No.</th>
+        <th style="width: 18%;">Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRowsHtml}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+    let iframe = document.getElementById('pdf-print-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'pdf-print-iframe';
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.visibility = 'hidden';
+      document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(reportHtml);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 250);
+
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'PDF Error', err.message);
+  }
 }
 
 function printCurrentTable() {
-  window.print();
+  exportDataToPDF();
 }
 
 /* User Management (Admin Only) */

@@ -243,6 +243,8 @@ router.get('/dashboard', requireAuth, async (req, res) => {
 // GET /api/records - Search, Filter, Sort & Paginate
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const todayOnly = req.query.today === 'true' || req.query.todayOnly === 'true';
+    const todayStr = getFormattedDate();
     const query = (req.query.query || '').trim().toLowerCase();
     const startDate = req.query.startDate || '';
     const endDate = req.query.endDate || '';
@@ -266,6 +268,9 @@ router.get('/', requireAuth, async (req, res) => {
 
     for (let i = 0; i < allRecords.length; i++) {
       const rec = allRecords[i];
+
+      // Today Only Filter
+      if (todayOnly && rec.createdDate !== todayStr && rec.date !== todayStr) continue;
 
       // Search Filter (PID, Name, Father, UT No, Aadhar No)
       if (query !== '') {
