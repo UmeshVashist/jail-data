@@ -619,6 +619,189 @@ main {
   transform: rotate(90deg);
 }
 
+/* ==========================================================================
+   Dark Theme System (Login Page Dark Gradient & Sleek Tokens)
+   ========================================================================== */
+body.dark-theme {
+  background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 100%) fixed !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme header {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+body.dark-theme #page-title-display,
+body.dark-theme h1, body.dark-theme h2, body.dark-theme h3, 
+body.dark-theme h4, body.dark-theme h5, body.dark-theme h6 {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .text-dark {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .text-muted, 
+body.dark-theme .text-secondary {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .card, 
+body.dark-theme .stat-card, 
+body.dark-theme .custom-table-card {
+  background: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .table {
+  --bs-table-bg: transparent !important;
+  --bs-table-color: #f8fafc !important;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05) !important;
+  --bs-table-hover-color: #ffffff !important;
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.02) !important;
+  color: #f8fafc !important;
+  background-color: transparent !important;
+}
+
+body.dark-theme .table th,
+body.dark-theme .table td {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .table thead,
+body.dark-theme .table thead th,
+body.dark-theme .table-light,
+body.dark-theme .table-light th,
+body.dark-theme .table-light td {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .table tbody tr {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .table tbody tr:hover,
+body.dark-theme .table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .bg-light,
+body.dark-theme .bg-white,
+body.dark-theme .bg-body {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .badge.bg-light {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .btn-light {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .btn-light:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .action-dots-btn {
+  background-color: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .action-dots-btn i {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .pagination-container,
+body.dark-theme .pagination-container span,
+body.dark-theme .pagination-container strong {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select,
+body.dark-theme .input-group-text {
+  background-color: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .form-control::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
+
+body.dark-theme .dropdown-menu {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-theme .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .modal-content {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+body.dark-theme .searchable-select-menu {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .searchable-select-menu .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .searchable-select-menu .dropdown-item:hover,
+body.dark-theme .searchable-select-menu .dropdown-item.active {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .theme-toggle-btn {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
 /* Print Media Styles for PDF Report */
 @page {
   size: A4 portrait;

@@ -73,7 +73,44 @@ document.addEventListener('DOMContentLoaded', function () {
   setupDropzone();
   loadRemarkOptions();
   setInterval(loadRemarkOptions, 20000);
+  initTheme();
 });
+
+/* Theme Module (Default Light Theme, Dark Theme using Login Radial Gradient) */
+function initTheme() {
+  const savedTheme = localStorage.getItem('portal_theme') || 'light';
+  applyTheme(savedTheme);
+}
+
+function toggleAppTheme() {
+  const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  applyTheme(newTheme);
+  localStorage.setItem('portal_theme', newTheme);
+}
+
+function applyTheme(themeName) {
+  const iconEl = document.getElementById('theme-toggle-icon');
+  const btnEl = document.getElementById('theme-toggle-btn');
+
+  if (themeName === 'dark') {
+    document.body.classList.add('dark-theme');
+    if (iconEl) {
+      iconEl.className = 'bi bi-sun-fill text-warning fs-6';
+    }
+    if (btnEl) {
+      btnEl.title = 'Switch to Light Theme';
+    }
+  } else {
+    document.body.classList.remove('dark-theme');
+    if (iconEl) {
+      iconEl.className = 'bi bi-moon-stars-fill text-secondary fs-6';
+    }
+    if (btnEl) {
+      btnEl.title = 'Switch to Dark Theme';
+    }
+  }
+}
 
 /* Helper to format Aadhar No as 'XXXX XXXX XXXX' or '#N/A' */
 function formatAadharDisplay(val) {
