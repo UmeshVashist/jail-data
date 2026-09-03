@@ -808,6 +808,51 @@ body.dark-theme .theme-toggle-btn {
   color: #fbbf24 !important;
 }
 
+/* Dark Theme Calendar Picker Indicator (Date input calendar icon) */
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2) !important;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Dark Theme Modal Close Buttons */
+body.dark-theme .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+  opacity: 0.85;
+}
+
+body.dark-theme .btn-close:hover {
+  opacity: 1;
+}
+
+body.dark-theme .btn-close-modern {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .btn-close-modern:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .btn-modern-close {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .btn-modern-close:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
 /* Print Media Styles for PDF Report */
 @page {
   size: A4 portrait;

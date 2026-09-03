@@ -334,30 +334,37 @@
           <!-- Instant Search & Filters Bar -->
           <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 12px;">
             <div class="row g-3 align-items-center">
-              <div class="col-12 col-md-4 col-lg-4">
+              <div class="col-12 col-md-3 col-lg-3">
                 <div class="input-group">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-query-input" placeholder="Search PID, Name, Father, UT No, Aadhar..." oninput="handleInstantSearch()" autocomplete="off">
                 </div>
               </div>
-              <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+              <div class="col-6 col-sm-4 col-md-2 col-lg-2">
+                <select class="form-select form-select-sm fw-semibold" id="filter-record-type" onchange="triggerFetchRecords()" autocomplete="off">
+                  <option value="All" selected>All (UT / CT)</option>
+                  <option value="UT">UT</option>
+                  <option value="CT">CT</option>
+                </select>
+              </div>
+              <div class="col-6 col-sm-8 col-md-3 col-lg-2">
                 <select class="form-select form-select-sm" id="filter-remark" onchange="triggerFetchRecords()" autocomplete="off">
                   <option value="">All Remarks</option>
                 </select>
               </div>
-              <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+              <div class="col-6 col-sm-5 col-md-2 col-lg-2">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted">From</span>
                   <input type="date" class="form-control" id="filter-start-date" onchange="triggerFetchRecords()" autocomplete="off">
                 </div>
               </div>
-              <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+              <div class="col-6 col-sm-5 col-md-2 col-lg-2">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted">To</span>
                   <input type="date" class="form-control" id="filter-end-date" onchange="triggerFetchRecords()" autocomplete="off">
                 </div>
               </div>
-              <div class="col-12 col-md-1 col-lg-1 text-md-end">
+              <div class="col-12 col-sm-2 col-md-1 col-lg-1 text-md-end">
                 <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()" title="Reset Filters"><i class="bi bi-x-circle"></i></button>
               </div>
             </div>
@@ -1199,7 +1206,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title fw-bold" id="recordModalTitle">Add New Record</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close-modern shadow-xs" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
         </div>
         <form id="recordForm" onsubmit="handleRecordFormSubmit(event); return false;" autocomplete="off">
           <div class="modal-body">
@@ -1222,8 +1229,20 @@
                 <input type="text" class="form-control" id="modal-record-father" placeholder="Father's Name" autocomplete="off">
               </div>
               <div class="col-12 col-md-6">
-                <label for="modal-record-ut" class="form-label small fw-semibold text-secondary">UT No.</label>
-                <input type="text" class="form-control" id="modal-record-ut" placeholder="UT Number" autocomplete="off">
+                <div class="row g-2">
+                  <div class="col-8">
+                    <label for="modal-record-ut" class="form-label small fw-semibold text-secondary">UT No.</label>
+                    <input type="text" class="form-control" id="modal-record-ut" placeholder="UT Number" autocomplete="off" oninput="handleModalRecordUtInput()">
+                  </div>
+                  <div class="col-4">
+                    <label for="modal-record-type" class="form-label small fw-semibold text-secondary">Type</label>
+                    <select class="form-select fw-semibold" id="modal-record-type" autocomplete="off">
+                      <option value="" selected>Select</option>
+                      <option value="UT">UT</option>
+                      <option value="CT">CT</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label for="modal-record-aadhar" class="form-label small fw-semibold text-secondary">Aadhar No.</label>
@@ -1456,7 +1475,7 @@
       <div class="modal-content">
         <div class="modal-header bg-info bg-opacity-10">
           <h5 class="modal-title fw-bold text-dark" id="sendEditRequestModalTitle"><i class="bi bi-pencil-square text-info me-2"></i>Send Edit Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close-modern shadow-xs" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
         </div>
         <form id="sendEditRequestForm" onsubmit="handleSendEditRequestSubmit(event)" autocomplete="off">
           <div class="modal-body">
@@ -1477,8 +1496,20 @@
                 <input type="text" class="form-control" id="send-edit-father" placeholder="Enter updated father name" autocomplete="off">
               </div>
               <div class="col-md-6">
-                <label for="send-edit-ut" class="form-label small fw-semibold text-secondary">UT No</label>
-                <input type="text" class="form-control" id="send-edit-ut" placeholder="e.g. 1234/2026-UT" autocomplete="off">
+                <div class="row g-2">
+                  <div class="col-8">
+                    <label for="send-edit-ut" class="form-label small fw-semibold text-secondary">UT No</label>
+                    <input type="text" class="form-control" id="send-edit-ut" placeholder="e.g. 1234/2026-UT" autocomplete="off" oninput="handleSendEditUtInput()">
+                  </div>
+                  <div class="col-4">
+                    <label for="send-edit-type" class="form-label small fw-semibold text-secondary">Type</label>
+                    <select class="form-select fw-semibold" id="send-edit-type" autocomplete="off">
+                      <option value="" selected>Select</option>
+                      <option value="UT">UT</option>
+                      <option value="CT">CT</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div class="col-md-6">
                 <label for="send-edit-aadhar" class="form-label small fw-semibold text-secondary">Aadhar No</label>

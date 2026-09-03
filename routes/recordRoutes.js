@@ -249,6 +249,7 @@ router.get('/', requireAuth, async (req, res) => {
     const startDate = req.query.startDate || '';
     const endDate = req.query.endDate || '';
     const remarkFilter = (req.query.remark || '').trim();
+    const recordTypeFilter = (req.query.recordType || 'all').trim().toUpperCase();
     const page = parseInt(req.query.page || 1, 10);
     const pageSize = req.query.pageSize === 'All' ? 'All' : parseInt(req.query.pageSize || 25, 10);
     const sortColumn = req.query.sortColumn || 'createdDate';
@@ -285,6 +286,17 @@ router.get('/', requireAuth, async (req, res) => {
       // Remark Filter
       if (remarkFilter !== '' && remarkFilter.toLowerCase() !== 'all') {
         if ((rec.remark || '').trim().toLowerCase() !== remarkFilter.toLowerCase()) continue;
+      }
+
+      // Record Type Filter (UT vs CT)
+      if (recordTypeFilter === 'UT') {
+        const isUT = (rec.recordType && rec.recordType.toUpperCase() === 'UT') ||
+                     /\bUT\b|UT/i.test(rec.utNo);
+        if (!isUT) continue;
+      } else if (recordTypeFilter === 'CT') {
+        const isCT = (rec.recordType && rec.recordType.toUpperCase() === 'CT') ||
+                     /\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(rec.utNo);
+        if (!isCT) continue;
       }
 
       // Date Range Filter
@@ -359,10 +371,16 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'View users cannot add records.' });
     }
 
-    const { pid, name, father, utNo, aadharNo, date, remark } = req.body;
+    const { pid, name, father, utNo, recordType, aadharNo, date, remark } = req.body;
     const cleanPid = (pid || '').toString().trim();
     const cleanName = (name || '').toString().trim();
     const cleanRemark = (remark || '').trim();
+    let cleanUtNo = (utNo || '').trim();
+    const cleanRecordType = (recordType || '').trim().toUpperCase();
+
+    if (cleanUtNo && !/(UT|CT|CP|DT|DP)/i.test(cleanUtNo) && cleanRecordType) {
+      cleanUtNo = `${cleanUtNo}-${cleanRecordType}`;
+    }
 
     if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
@@ -419,7 +437,8 @@ router.post('/', requireAuth, async (req, res) => {
       pid: cleanPid,
       name: cleanName,
       father: (father || '').trim(),
-      utNo: (utNo || '').trim(),
+      utNo: cleanUtNo,
+      recordType: cleanRecordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(cleanUtNo) ? 'CT' : 'UT'),
       aadharNo: aadharRes.value,
       date: recordDate,
       remark: (remark || '').trim(),
@@ -489,10 +508,16 @@ router.put('/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'You do not have permission to edit this record (Only own records within 24h allowed).' });
     }
 
-    const { pid, name, father, utNo, aadharNo, date, remark } = req.body;
+    const { pid, name, father, utNo, recordType, aadharNo, date, remark } = req.body;
     const cleanPid = (pid || '').toString().trim();
     const cleanName = (name || '').toString().trim();
     const cleanRemark = (remark || '').trim();
+    let cleanUtNo = (utNo || '').trim();
+    const cleanRecordType = (recordType || '').trim().toUpperCase();
+
+    if (cleanUtNo && !/(UT|CT|CP|DT|DP)/i.test(cleanUtNo) && cleanRecordType) {
+      cleanUtNo = `${cleanUtNo}-${cleanRecordType}`;
+    }
 
     if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
@@ -546,7 +571,8 @@ router.put('/:id', requireAuth, async (req, res) => {
       pid: cleanPid,
       name: cleanName,
       father: (father || '').trim(),
-      utNo: (utNo || '').trim(),
+      utNo: cleanUtNo,
+      recordType: cleanRecordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(cleanUtNo) ? 'CT' : 'UT'),
       aadharNo: aadharRes.value,
       date: date || existingRecord.date,
       remark: (remark || '').trim(),

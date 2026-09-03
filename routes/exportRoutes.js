@@ -14,6 +14,7 @@ router.get('/', requireAuth, async (req, res) => {
     const startDate = req.query.startDate || '';
     const endDate = req.query.endDate || '';
     const remarkFilter = (req.query.remark || '').trim();
+    const recordTypeFilter = (req.query.recordType || 'all').trim().toUpperCase();
 
     const allRecords = await getRecords();
     const headers = ['PID', 'Name', 'Father', 'UT No', 'Aadhar no.', 'Date', 'Remark', 'Created By', 'Created Date'];
@@ -33,6 +34,14 @@ router.get('/', requireAuth, async (req, res) => {
 
       if (remarkFilter !== '' && remarkFilter.toLowerCase() !== 'all') {
         if ((r.remark || '').trim().toLowerCase() !== remarkFilter.toLowerCase()) continue;
+      }
+
+      if (recordTypeFilter === 'UT') {
+        const isUT = (r.recordType && r.recordType.toUpperCase() === 'UT') || /\bUT\b|UT/i.test(r.utNo);
+        if (!isUT) continue;
+      } else if (recordTypeFilter === 'CT') {
+        const isCT = (r.recordType && r.recordType.toUpperCase() === 'CT') || /\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(r.utNo);
+        if (!isCT) continue;
       }
 
       if (startDate !== '' && r.date < startDate) continue;

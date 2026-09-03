@@ -149,8 +149,19 @@ async function initGoogleSheets() {
       console.log('Creating "Data" sheet in Google Sheet...');
       dataSheet = await doc.addSheet({
         title: 'Data',
-        headerValues: ['PID', 'Name', 'Father', 'UT No', 'Aadhar no.', 'Date', 'Remark', 'Created By', 'Created Date', 'Created Time', 'Updated Date', 'Updated Time']
+        headerValues: ['PID', 'Name', 'Father', 'UT No', 'Type', 'Aadhar no.', 'Date', 'Remark', 'Created By', 'Created Date', 'Created Time', 'Updated Date', 'Updated Time']
       });
+    } else {
+      try {
+        await dataSheet.loadHeaderRow();
+        if (!dataSheet.headerValues.includes('Type')) {
+          console.log('Adding "Type" column header to Data sheet in Google Sheet...');
+          const newHeaders = [...dataSheet.headerValues, 'Type'];
+          await dataSheet.setHeaderRow(newHeaders);
+        }
+      } catch (hErr) {
+        console.warn('Notice checking Data sheet header row:', hErr.message);
+      }
     }
 
     // Ensure 'Users' sheet exists
@@ -561,6 +572,8 @@ async function getRecords() {
       name: (row.get('Name') || '').toString().trim(),
       father: (row.get('Father') || '').toString().trim(),
       utNo: (row.get('UT No') || '').toString().trim(),
+      type: (row.get('Type') || '').toString().trim() || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(row.get('UT No')) ? 'CT' : (/\bUT\b|UT/i.test(row.get('UT No')) ? 'UT' : '')),
+      recordType: (row.get('Type') || '').toString().trim() || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(row.get('UT No')) ? 'CT' : (/\bUT\b|UT/i.test(row.get('UT No')) ? 'UT' : '')),
       aadharNo: (row.get('Aadhar no.') || '').toString().trim(),
       date: formatDateValue(row.get('Date')) || (row.get('Date') || '').toString().trim(),
       remark: (row.get('Remark') || '').toString().trim(),
@@ -620,7 +633,8 @@ async function addRecord(recObj) {
     }
   }
 
-  const addedRow = await dataSheet.addRow({
+  const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
+  const addPayload = {
     PID: recObj.pid,
     Name: recObj.name,
     Father: recObj.father || '',
@@ -633,8 +647,12 @@ async function addRecord(recObj) {
     'Created Time': recObj.createdTime,
     'Updated Date': '',
     'Updated Time': ''
-  });
-  return { id: addedRow.rowNumber, rowIndex: addedRow.rowNumber, ...recObj };
+  };
+  if (dataSheet.headerValues && dataSheet.headerValues.includes('Type')) {
+    addPayload.Type = recType;
+  }
+  const addedRow = await dataSheet.addRow(addPayload);
+  return { id: addedRow.rowNumber, rowIndex: addedRow.rowNumber, recordType: recType, type: recType, ...recObj };
 }
 
 async function updateRecord(rowIndex, recObj) {
@@ -660,6 +678,10 @@ async function updateRecord(rowIndex, recObj) {
     targetRow.set('Name', recObj.name);
     targetRow.set('Father', recObj.father || '');
     targetRow.set('UT No', recObj.utNo || '');
+    try {
+      const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
+      targetRow.set('Type', recType);
+    } catch (tErr) {}
     targetRow.set('Aadhar no.', recObj.aadharNo || '');
     targetRow.set('Date', recObj.date || '');
     targetRow.set('Remark', recObj.remark || '');
@@ -706,20 +728,27 @@ async function batchAddRecords(recordsArr) {
     return true;
   }
 
-  const mappedRows = recordsArr.map(rec => ({
-    PID: rec.pid,
-    Name: rec.name,
-    Father: rec.father || '',
-    'UT No': rec.utNo || '',
-    'Aadhar no.': rec.aadharNo || '',
-    Date: rec.date || '',
-    Remark: rec.remark || '',
-    'Created By': rec.createdBy,
-    'Created Date': rec.createdDate,
-    'Created Time': rec.createdTime,
-    'Updated Date': '',
-    'Updated Time': ''
-  }));
+  const mappedRows = recordsArr.map(rec => {
+    const recType = rec.recordType || rec.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(rec.utNo) ? 'CT' : (/\bUT\b|UT/i.test(rec.utNo) ? 'UT' : ''));
+    const item = {
+      PID: rec.pid,
+      Name: rec.name,
+      Father: rec.father || '',
+      'UT No': rec.utNo || '',
+      'Aadhar no.': rec.aadharNo || '',
+      Date: rec.date || '',
+      Remark: rec.remark || '',
+      'Created By': rec.createdBy,
+      'Created Date': rec.createdDate,
+      'Created Time': rec.createdTime,
+      'Updated Date': '',
+      'Updated Time': ''
+    };
+    if (dataSheet.headerValues && dataSheet.headerValues.includes('Type')) {
+      item.Type = recType;
+    }
+    return item;
+  });
 
   await dataSheet.addRows(mappedRows);
   return true;

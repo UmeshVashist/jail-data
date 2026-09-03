@@ -21,6 +21,7 @@ let lastImportResult = {
 
 let searchState = {
   query: '',
+  recordType: 'All',
   startDate: '',
   endDate: '',
   remark: '',
@@ -799,6 +800,35 @@ async function toggleModalUserStatus(userId, isChecked) {
   }
 }
 
+/* UT No. Input Auto-Detection for UT vs CT Dropdown */
+function handleModalRecordUtInput() {
+  const inputEl = document.getElementById('modal-record-ut');
+  const typeEl = document.getElementById('modal-record-type');
+  if (!inputEl || !typeEl) return;
+  const val = inputEl.value.toUpperCase();
+  if (/\bUT\b|UT/i.test(val)) {
+    typeEl.value = 'UT';
+  } else if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(val)) {
+    typeEl.value = 'CT';
+  } else if (!val.trim()) {
+    typeEl.value = '';
+  }
+}
+
+function handleSendEditUtInput() {
+  const inputEl = document.getElementById('send-edit-ut');
+  const typeEl = document.getElementById('send-edit-type');
+  if (!inputEl || !typeEl) return;
+  const val = inputEl.value.toUpperCase();
+  if (/\bUT\b|UT/i.test(val)) {
+    typeEl.value = 'UT';
+  } else if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(val)) {
+    typeEl.value = 'CT';
+  } else if (!val.trim()) {
+    typeEl.value = '';
+  }
+}
+
 /* Records Table & CRUD */
 
 function handleInstantSearch() {
@@ -818,9 +848,12 @@ async function triggerFetchRecords(highlightPid = null) {
   searchState.endDate = document.getElementById('filter-end-date').value;
   const filterRemarkEl = document.getElementById('filter-remark');
   searchState.remark = filterRemarkEl ? filterRemarkEl.value : '';
+  const filterRecordTypeEl = document.getElementById('filter-record-type');
+  searchState.recordType = filterRecordTypeEl ? filterRecordTypeEl.value : 'All';
 
   const queryParams = new URLSearchParams({
     query: searchState.query,
+    recordType: searchState.recordType || 'All',
     startDate: searchState.startDate,
     endDate: searchState.endDate,
     remark: searchState.remark,
@@ -1018,6 +1051,8 @@ function clearFilters() {
   document.getElementById('search-query-input').value = '';
   document.getElementById('filter-start-date').value = '';
   document.getElementById('filter-end-date').value = '';
+  const filterRecordTypeEl = document.getElementById('filter-record-type');
+  if (filterRecordTypeEl) filterRecordTypeEl.value = 'All';
   const filterRemarkEl = document.getElementById('filter-remark');
   if (filterRemarkEl) {
     filterRemarkEl.value = '';
@@ -1026,6 +1061,7 @@ function clearFilters() {
     }
   }
   searchState.query = '';
+  searchState.recordType = 'All';
   searchState.startDate = '';
   searchState.endDate = '';
   searchState.remark = '';
@@ -1450,6 +1486,8 @@ async function showAddRecordModal() {
   const badge = document.getElementById('pid-status-badge');
   if (badge) badge.innerHTML = '';
   document.getElementById('modal-record-date').value = new Date().toISOString().split('T')[0];
+  const typeSelect = document.getElementById('modal-record-type');
+  if (typeSelect) typeSelect.value = '';
   populateRemarkDropdown('');
   handleRecordRemarkChange();
   recordModalInstance.show();
@@ -1466,6 +1504,20 @@ async function showEditRecordModal(encodedRecJson) {
   document.getElementById('modal-record-name').value = rec.name;
   document.getElementById('modal-record-father').value = rec.father;
   document.getElementById('modal-record-ut').value = rec.utNo;
+
+  const typeSelect = document.getElementById('modal-record-type');
+  if (typeSelect) {
+    if (rec.recordType) {
+      typeSelect.value = rec.recordType;
+    } else if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(rec.utNo)) {
+      typeSelect.value = 'CT';
+    } else if (/\bUT\b|UT/i.test(rec.utNo)) {
+      typeSelect.value = 'UT';
+    } else {
+      typeSelect.value = '';
+    }
+  }
+
   document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : rec.aadharNo);
   document.getElementById('modal-record-date').value = rec.date;
 
@@ -1516,11 +1568,19 @@ async function handleRecordFormSubmit(event) {
     }
   }
 
+  let rawUt = document.getElementById('modal-record-ut').value.trim();
+  const recType = document.getElementById('modal-record-type') ? document.getElementById('modal-record-type').value : 'UT';
+
+  if (rawUt && !/(UT|CT|CP|DT|DP)/i.test(rawUt)) {
+    rawUt = `${rawUt}-${recType}`;
+  }
+
   const recordData = {
     pid: pid,
     name: name,
     father: document.getElementById('modal-record-father').value.trim(),
-    utNo: document.getElementById('modal-record-ut').value.trim(),
+    utNo: rawUt,
+    recordType: recType,
     aadharNo: aadharInput,
     date: document.getElementById('modal-record-date').value,
     remark: document.getElementById('modal-record-remark').value.trim()
@@ -1918,6 +1978,7 @@ async function exportDataToExcel() {
   try {
     const queryParams = new URLSearchParams({
       query: searchState.query,
+      recordType: searchState.recordType || 'All',
       startDate: searchState.startDate,
       endDate: searchState.endDate,
       remark: searchState.remark
@@ -1958,6 +2019,7 @@ async function exportDataToPDF() {
   try {
     const queryParams = new URLSearchParams({
       query: searchState.query,
+      recordType: searchState.recordType || 'All',
       startDate: searchState.startDate,
       endDate: searchState.endDate,
       remark: searchState.remark
@@ -2628,6 +2690,20 @@ async function openSendEditRequestModal(encodedRecJson) {
   document.getElementById('send-edit-date').value = rec.date || '';
   document.getElementById('send-edit-reason').value = '';
 
+  const typeSelect = document.getElementById('send-edit-type');
+  if (typeSelect) {
+    const utVal = (rec.utNo || rec.ut_no || '');
+    if (rec.recordType) {
+      typeSelect.value = rec.recordType;
+    } else if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utVal)) {
+      typeSelect.value = 'CT';
+    } else if (/\bUT\b|UT/i.test(utVal)) {
+      typeSelect.value = 'UT';
+    } else {
+      typeSelect.value = '';
+    }
+  }
+
   const remarkSelect = document.getElementById('send-edit-remark');
   remarkSelect.innerHTML = '<option value="">Select Remark</option>';
   currentRemarkOptions.forEach(opt => {
@@ -2646,7 +2722,12 @@ async function handleSendEditRequestSubmit(event) {
   const recordId = document.getElementById('send-edit-record-id').value;
   const name = document.getElementById('send-edit-name').value.trim();
   const father = document.getElementById('send-edit-father').value.trim();
-  const utNo = document.getElementById('send-edit-ut').value.trim();
+  let rawUt = document.getElementById('send-edit-ut').value.trim();
+  const recType = document.getElementById('send-edit-type') ? document.getElementById('send-edit-type').value : 'UT';
+  if (rawUt && !/(UT|CT|CP|DT|DP)/i.test(rawUt)) {
+    rawUt = `${rawUt}-${recType}`;
+  }
+  const utNo = rawUt;
   let aadharNo = document.getElementById('send-edit-aadhar').value.trim();
   const date = document.getElementById('send-edit-date').value;
   const remark = document.getElementById('send-edit-remark').value;
