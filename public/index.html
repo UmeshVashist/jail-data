@@ -241,7 +241,7 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3" id="dash-card-total-users">
-              <div class="card stat-card h-100 p-3">
+              <div class="card stat-card h-100 p-3" onclick="showTotalUsersModal()" style="cursor: pointer;" title="Click to view user accounts">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">Total Users</span>
@@ -978,9 +978,9 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive dropdown-table-scroll-container">
+            <div class="table-responsive dropdown-table-scroll-container" style="max-height: 335px; overflow-y: auto;">
               <table class="table table-hover align-middle mb-0">
-                <thead>
+                <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
                   <tr>
                     <th style="width: 60px;">#</th>
                     <th>Remark Option Name</th>
@@ -1137,6 +1137,56 @@
           </div>
         </div>
         <div class="modal-footer bg-light px-4 py-2 border-top">
+          <button type="button" class="btn btn-modern-close rounded-pill px-4" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1.5"></i>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Users Modal -->
+  <div class="modal fade" id="totalUsersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content shadow border-0 rounded-4">
+        <div class="modal-header bg-info-subtle border-bottom px-4 py-3">
+          <div class="d-flex align-items-center me-auto">
+            <div class="stat-icon bg-info text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+              <i class="bi bi-people fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-dark">Portal User Accounts</h5>
+              <span class="text-muted small">Manage and view system users (<span id="modal-users-count-badge" class="badge bg-info text-white">0</span>)</span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <label for="modal-users-status-filter" class="form-label small fw-semibold text-secondary mb-0">Status:</label>
+              <select id="modal-users-status-filter" class="form-select form-select-sm" onchange="filterModalUsersTable()" style="width: 120px;" autocomplete="off">
+                <option value="Active" selected>Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="All">All</option>
+              </select>
+            </div>
+            <button type="button" class="btn-close-modern shadow-xs" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="modal-users-table">
+              <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
+                <tr>
+                  <th class="ps-4">Username</th>
+                  <th>Status</th>
+                  <th class="text-end pe-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="modal-users-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer bg-light px-4 py-2 border-top justify-content-between">
+          <span class="small text-muted" id="modal-users-footer-info">Showing active users</span>
           <button type="button" class="btn btn-modern-close rounded-pill px-4" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1.5"></i>Close</button>
         </div>
       </div>

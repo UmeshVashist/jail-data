@@ -40,6 +40,8 @@ let sendListAddRequestModalInstance = null;
 let viewEditComparisonModalInstance = null;
 let updateRecordRemarkModalInstance = null;
 let todayRecordsModalInstance = null;
+let totalUsersModalInstance = null;
+let rawModalUsersList = [];
 let rawPendingDeleteRequests = [];
 let rawPendingEditRequests = [];
 let rawPendingListAddRequests = [];
@@ -62,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
   updateRecordRemarkModalInstance = new bootstrap.Modal(document.getElementById('updateRecordRemarkModal'));
   const todayModalEl = document.getElementById('todayRecordsModal');
   if (todayModalEl) todayRecordsModalInstance = new bootstrap.Modal(todayModalEl);
+  const totalUsersModalEl = document.getElementById('totalUsersModal');
+  if (totalUsersModalEl) totalUsersModalInstance = new bootstrap.Modal(totalUsersModalEl);
 
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
@@ -649,6 +653,149 @@ async function loadTodayRecords() {
     tbody.innerHTML = html;
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading today's records: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+/* Total Users Modal Module */
+
+async function showTotalUsersModal() {
+  if (!totalUsersModalInstance) {
+    const el = document.getElementById('totalUsersModal');
+    if (el) totalUsersModalInstance = new bootstrap.Modal(el);
+  }
+
+  // By default, select 'Active' status filter as requested
+  const statusFilterEl = document.getElementById('modal-users-status-filter');
+  if (statusFilterEl) {
+    statusFilterEl.value = 'Active';
+  }
+
+  if (totalUsersModalInstance) {
+    totalUsersModalInstance.show();
+  }
+
+  await loadTotalUsersModalData();
+}
+
+async function loadTotalUsersModalData() {
+  const tbody = document.getElementById('modal-users-table-body');
+  const countBadge = document.getElementById('modal-users-count-badge');
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="3" class="text-center py-4 text-muted">
+        <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div> Loading user accounts...
+      </td>
+    </tr>
+  `;
+
+  try {
+    const res = await fetch('/api/users');
+    const data = await res.json();
+
+    if (data.success) {
+      rawModalUsersList = data.data || [];
+      rawUsersList = rawModalUsersList;
+      filterModalUsersTable();
+    } else {
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">${escapeHtml(data.message)}</td></tr>`;
+      if (countBadge) countBadge.innerText = '0';
+    }
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">Error loading users: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function filterModalUsersTable() {
+  const statusFilterEl = document.getElementById('modal-users-status-filter');
+  const targetStatus = statusFilterEl ? statusFilterEl.value : 'Active';
+  const tbody = document.getElementById('modal-users-table-body');
+  const countBadge = document.getElementById('modal-users-count-badge');
+  const footerInfo = document.getElementById('modal-users-footer-info');
+  if (!tbody) return;
+
+  let filtered = [...rawModalUsersList];
+  if (targetStatus !== 'All') {
+    filtered = filtered.filter(u => (u.status || 'Active').toLowerCase() === targetStatus.toLowerCase());
+  }
+
+  if (countBadge) {
+    countBadge.innerText = filtered.length;
+  }
+  if (footerInfo) {
+    footerInfo.innerText = `Showing ${targetStatus.toLowerCase()} users (${filtered.length} of ${rawModalUsersList.length})`;
+  }
+
+  if (!filtered || filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted"><i class="bi bi-person-x fs-4 d-block mb-1 opacity-50"></i>No ${escapeHtml(targetStatus)} users found.</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(u => {
+    const uJson = encodeURIComponent(JSON.stringify(u));
+    const isCurrentUser = currentUserState && (currentUserState.username === u.username);
+    const roleBadge = u.role === 'Admin' ? 'bg-danger' : u.role === 'Add' ? 'bg-primary' : 'bg-secondary';
+    const statusBadge = u.status === 'Active' ? 'bg-success' : 'bg-secondary';
+
+    html += `
+      <tr>
+        <td class="ps-4">
+          <div class="d-flex align-items-center">
+            <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 36px; height: 36px; font-size: 0.9rem;">
+              ${escapeHtml((u.username || 'U').charAt(0).toUpperCase())}
+            </div>
+            <div>
+              <div class="fw-bold text-dark">${escapeHtml(u.username)}</div>
+              <span class="badge ${roleBadge}" style="font-size: 0.65rem;">${escapeHtml(u.role)}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="form-check form-switch mb-0 d-flex align-items-center">
+            <input class="form-check-input me-2" type="checkbox" ${u.status === 'Active' ? 'checked' : ''} ${isCurrentUser ? 'disabled title="Cannot deactivate yourself"' : ''} onchange="toggleModalUserStatus(${u.id || u.rowIndex}, this.checked)">
+            <span class="badge ${statusBadge}">${escapeHtml(u.status)}</span>
+          </div>
+        </td>
+        <td class="text-end pe-4">
+          <button class="btn btn-sm btn-outline-warning me-1" title="Reset Password" onclick="showResetPasswordModal(${u.id || u.rowIndex}, '${escapeHtml(u.username)}')"><i class="bi bi-key"></i></button>
+          <button class="btn btn-sm btn-outline-primary me-1" title="Edit User" onclick="showEditUserModal('${uJson}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete User" ${isCurrentUser ? 'disabled' : ''} onclick="confirmDeleteUser(${u.id || u.rowIndex}, '${escapeHtml(u.username)}')"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+async function toggleModalUserStatus(userId, isChecked) {
+  showLoader('Updating user status...');
+  try {
+    const res = await fetch(`/api/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: isChecked ? 'Active' : 'Inactive' })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Status Updated', data.message);
+      const user = rawModalUsersList.find(u => u.id === userId || u.rowIndex === userId);
+      if (user) user.status = isChecked ? 'Active' : 'Inactive';
+      filterModalUsersTable();
+      if (typeof loadUsersList === 'function') loadUsersList();
+      if (typeof loadDashboardData === 'function') loadDashboardData();
+    } else {
+      showToast('danger', 'Update Error', data.message);
+      loadTotalUsersModalData();
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+    loadTotalUsersModalData();
   }
 }
 
@@ -2163,6 +2310,11 @@ async function handleUserFormSubmit(event) {
       userModalInstance.hide();
       showToast('success', 'User Saved', data.message);
       loadUsersList();
+      if (typeof loadDashboardData === 'function') loadDashboardData();
+      const totalUsersModalEl = document.getElementById('totalUsersModal');
+      if (totalUsersModalEl && totalUsersModalEl.classList.contains('show')) {
+        loadTotalUsersModalData();
+      }
     } else {
       showToast('danger', 'User Error', data.message);
     }
@@ -3551,6 +3703,11 @@ function confirmDeleteUser(userId, username) {
       if (data.success) {
         showToast('success', 'User Deleted', data.message);
         loadUsersList();
+        if (typeof loadDashboardData === 'function') loadDashboardData();
+        const totalUsersModalEl = document.getElementById('totalUsersModal');
+        if (totalUsersModalEl && totalUsersModalEl.classList.contains('show')) {
+          loadTotalUsersModalData();
+        }
       } else {
         showToast('danger', 'Delete Error', data.message);
       }

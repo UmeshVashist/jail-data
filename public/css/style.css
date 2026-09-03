@@ -549,6 +549,12 @@ main {
   text-decoration: underline;
 }
 
+/* System Settings Dropdown Table Scroll Container (Active after 6 rows) */
+.dropdown-table-scroll-container {
+  max-height: 335px;
+  overflow-y: auto;
+}
+
 /* Mobile Sidebar Slide Behavior */
 @media (max-width: 767.98px) {
   #sidebar {
