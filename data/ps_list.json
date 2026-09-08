@@ -1,38 +1,12 @@
 [
   {
     "id": 1,
-    "psName": "Sadar Bazar",
-    "district": "North Delhi",
-    "state": "Delhi",
-    "createdBy": "Admin",
-    "createdDate": "2026-09-08 10:00:00 AM",
-    "updatedDate": ""
-  },
-  {
-    "id": 2,
-    "psName": "Civil Lines",
-    "district": "Central",
-    "state": "Delhi",
-    "createdBy": "Admin",
-    "createdDate": "2026-09-08 10:05:00 AM",
-    "updatedDate": ""
-  },
-  {
-    "id": 3,
-    "psName": "Sector 14",
-    "district": "Gurugram",
+    "psName": "Sadar Jhajjar",
+    "ps": "Sadar Jhajjar",
+    "district": "Jhajjar",
     "state": "Haryana",
-    "createdBy": "Admin",
-    "createdDate": "2026-09-08 10:10:00 AM",
-    "updatedDate": ""
-  },
-  {
-    "id": 4,
-    "psName": "Indirapuram",
-    "district": "Ghaziabad",
-    "state": "Uttar Pradesh",
-    "createdBy": "Admin",
-    "createdDate": "2026-09-08 10:15:00 AM",
+    "createdBy": "admin",
+    "createdDate": "2026-09-08 10:20:07 PM",
     "updatedDate": ""
   }
 ]

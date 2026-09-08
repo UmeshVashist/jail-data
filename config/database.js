@@ -2,22 +2,27 @@
  * config/database.js - SQLite database initialization, table creation & default user seeding
  */
 
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const bcrypt = require('bcryptjs');
+let sqlite3 = null;
+let db = null;
 
-const dbPath = path.join(__dirname, '..', 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error connecting to SQLite database:', err.message);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-  }
-});
+try {
+  sqlite3 = require('sqlite3').verbose();
+  const dbPath = path.join(__dirname, '..', 'database.sqlite');
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error connecting to SQLite database:', err.message);
+    } else {
+      console.log('Connected to SQLite database at:', dbPath);
+    }
+  });
+} catch (err) {
+  // sqlite3 module not installed/available; operations will gracefully fallback
+}
 
 // Promisified database helpers
 const dbRun = (sql, params = []) => {
   return new Promise((resolve, reject) => {
+    if (!db) return resolve({ changes: 0, lastID: 0 });
     db.run(sql, params, function (err) {
       if (err) reject(err);
       else resolve(this);
@@ -27,6 +32,7 @@ const dbRun = (sql, params = []) => {
 
 const dbGet = (sql, params = []) => {
   return new Promise((resolve, reject) => {
+    if (!db) return resolve(null);
     db.get(sql, params, (err, row) => {
       if (err) reject(err);
       else resolve(row);
@@ -36,6 +42,7 @@ const dbGet = (sql, params = []) => {
 
 const dbAll = (sql, params = []) => {
   return new Promise((resolve, reject) => {
+    if (!db) return resolve([]);
     db.all(sql, params, (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
@@ -196,6 +203,19 @@ async function initDatabase() {
         created_time TEXT NOT NULL,
         updated_date TEXT,
         updated_time TEXT
+      )
+    `);
+
+    // Create Police Stations table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS police_stations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ps_name TEXT NOT NULL,
+        district TEXT NOT NULL,
+        state TEXT NOT NULL,
+        created_by TEXT NOT NULL DEFAULT 'Admin',
+        created_date TEXT NOT NULL,
+        updated_date TEXT
       )
     `);
 

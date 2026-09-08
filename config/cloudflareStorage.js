@@ -117,7 +117,12 @@ function loadLocalCollections() {
   if (settings) memoryStore.settings = settings;
 
   const psList = readLocal(R2_KEYS.PS_LIST);
-  if (psList && Array.isArray(psList) && psList.length) memoryStore.psList = psList;
+  if (psList && Array.isArray(psList)) {
+    memoryStore.psList = psList.filter(p => {
+      const name = (p.psName || p.ps || '').trim().toLowerCase();
+      return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+    });
+  }
 }
 
 // Initial cold load from disk
@@ -339,11 +344,48 @@ async function syncAllCollections() {
     }
 
     // 8. PS List
-    const r2PS = await readFromR2(R2_KEYS.PS_LIST) || readLocal(R2_KEYS.PS_LIST);
-    if (r2PS && Array.isArray(r2PS) && r2PS.length > 0) {
-      memoryStore.psList = r2PS;
-    } else if (memoryStore.psList && memoryStore.psList.length > 0) {
-      await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+    const r2PS = await readFromR2(R2_KEYS.PS_LIST);
+    if (r2PS && Array.isArray(r2PS)) {
+      memoryStore.psList = r2PS.filter(p => {
+        const name = (p.psName || p.ps || '').trim().toLowerCase();
+        return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+      });
+      if (memoryStore.psList.length !== r2PS.length) {
+        await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+      }
+    } else {
+      // Check local SQLite database
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM police_stations ORDER BY id DESC');
+        if (rows && rows.length > 0) {
+          memoryStore.psList = rows.map(r => ({
+            id: r.id,
+            psName: r.ps_name,
+            ps: r.ps_name,
+            district: r.district,
+            state: r.state,
+            createdBy: r.created_by,
+            createdDate: r.created_date,
+            updatedDate: r.updated_date || ''
+          }));
+          await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+        } else {
+          const local = readLocal(R2_KEYS.PS_LIST);
+          const cleanLocal = Array.isArray(local) ? local.filter(p => {
+            const name = (p.psName || p.ps || '').trim().toLowerCase();
+            return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+          }) : [];
+          memoryStore.psList = cleanLocal;
+          await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+        }
+      } catch (e) {
+        const local = readLocal(R2_KEYS.PS_LIST);
+        memoryStore.psList = Array.isArray(local) ? local.filter(p => {
+          const name = (p.psName || p.ps || '').trim().toLowerCase();
+          return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+        }) : [];
+      }
     }
 
     console.log(`[Cloudflare R2] Successfully synced all collections with bucket "${BUCKET_NAME}".`);
@@ -1034,12 +1076,24 @@ async function addPSEntry(entryObj) {
   };
 
   memoryStore.psList.unshift(newEntry);
+
+  // Sync to local SQLite database
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(
+      `INSERT OR REPLACE INTO police_stations (id, ps_name, district, state, created_by, created_date, updated_date) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [newEntry.id, newEntry.psName, newEntry.district, newEntry.state, newEntry.createdBy, newEntry.createdDate, newEntry.updatedDate]
+    );
+  } catch (e) {}
+
+  // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
   return newEntry;
 }
 
 async function updatePSEntry(id, entryObj) {
-  const target = memoryStore.psList.find(p => p.id === parseInt(id, 10));
+  const idNum = parseInt(id, 10);
+  const target = memoryStore.psList.find(p => p.id === idNum);
   if (!target) return false;
 
   const cleanPS = entryObj.psName !== undefined ? entryObj.psName : entryObj.ps;
@@ -1051,6 +1105,16 @@ async function updatePSEntry(id, entryObj) {
   if (entryObj.state !== undefined) target.state = (entryObj.state || '').toString().trim();
   target.updatedDate = getFormattedDateTime();
 
+  // Sync to local SQLite database
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(
+      `UPDATE police_stations SET ps_name = ?, district = ?, state = ?, updated_date = ? WHERE id = ?`,
+      [target.psName, target.district, target.state, target.updatedDate, idNum]
+    );
+  } catch (e) {}
+
+  // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
   return target;
 }
@@ -1060,6 +1124,13 @@ async function deletePSEntry(id) {
   const initialLen = memoryStore.psList.length;
   memoryStore.psList = memoryStore.psList.filter(p => p.id !== idNum);
   if (memoryStore.psList.length !== initialLen) {
+    // Sync to local SQLite database
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(`DELETE FROM police_stations WHERE id = ?`, [idNum]);
+    } catch (e) {}
+
+    // Sync to Cloudflare R2
     await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
     return true;
   }
@@ -1079,7 +1150,7 @@ async function batchAddPS(entriesArr) {
     if (!psName && !district) continue;
 
     maxId++;
-    memoryStore.psList.push({
+    const entry = {
       id: maxId,
       psName,
       ps: psName,
@@ -1088,9 +1159,20 @@ async function batchAddPS(entriesArr) {
       createdBy: item.createdBy || 'Admin',
       createdDate: item.createdDate || now,
       updatedDate: ''
-    });
+    };
+    memoryStore.psList.push(entry);
+
+    // Sync to local SQLite database
+    try {
+      const { dbRun } = require('./database');
+      await dbRun(
+        `INSERT OR REPLACE INTO police_stations (id, ps_name, district, state, created_by, created_date, updated_date) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [entry.id, entry.psName, entry.district, entry.state, entry.createdBy, entry.createdDate, '']
+      );
+    } catch (e) {}
   }
 
+  // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
   return true;
 }
