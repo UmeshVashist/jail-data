@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "rowIndex": 1,
+    "username": "admin",
+    "password": "Umesh@5313",
+    "role": "Admin",
+    "importPermission": true,
+    "fullAccess": true,
+    "deleteRequestPermission": true,
+    "status": "Active"
+  },
+  {
+    "id": 2,
+    "rowIndex": 2,
+    "username": "addct",
+    "password": "Ram@1020",
+    "role": "Add",
+    "importPermission": false,
+    "fullAccess": false,
+    "deleteRequestPermission": false,
+    "status": "Active"
+  },
+  {
+    "id": 3,
+    "rowIndex": 3,
+    "username": "addut",
+    "password": "Ram@1020",
+    "role": "Add",
+    "importPermission": false,
+    "fullAccess": false,
+    "deleteRequestPermission": false,
+    "status": "Active"
+  },
+  {
+    "id": 4,
+    "rowIndex": 4,
+    "username": "addut1",
+    "password": "Ram@1020",
+    "role": "Add",
+    "importPermission": false,
+    "fullAccess": false,
+    "deleteRequestPermission": false,
+    "status": "Active"
+  },
+  {
+    "id": 5,
+    "rowIndex": 5,
+    "username": "addvc",
+    "password": "Ram@1020",
+    "role": "Add",
+    "importPermission": false,
+    "fullAccess": false,
+    "deleteRequestPermission": false,
+    "status": "Inactive"
+  }
+]

@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const ExcelJS = require('exceljs');
-const { getRecords, batchAddRecords, getRemarkOptions, getSystemSettings } = require('../config/googleSheets');
+const { getRecords, batchAddRecords, getRemarkOptions, getSystemSettings } = require('../config/cloudflareStorage');
 const { requireAuth, requireImportPermission } = require('../middleware/auth');
 
 async function isAadharDisabledRemark(remarkValue) {

@@ -1,10 +1,10 @@
 /**
- * routes/userRoutes.js - Admin User Management Endpoints via Google Sheets API
+ * routes/userRoutes.js - Admin User Management Endpoints via Cloudflare R2
  */
 
 const express = require('express');
 const router = express.Router();
-const { getUsers, getUserByUsername, createUser, updateUser, deleteUser } = require('../config/googleSheets');
+const { getUsers, getUserByUsername, createUser, updateUser, deleteUser } = require('../config/cloudflareStorage');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 router.use(requireAuth);
@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
       status: status || 'Active'
     });
 
-    res.json({ success: true, message: `User "${cleanUsername}" created successfully in Google Sheet!` });
+    res.json({ success: true, message: `User "${cleanUsername}" created successfully in Cloudflare!` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Create user error: ' + err.message });
   }
@@ -87,7 +87,7 @@ router.put('/:id/password', async (req, res) => {
 
     await updateUser(rowIndex, { password: newPassword });
 
-    res.json({ success: true, message: 'User password reset successfully in Google Sheet.' });
+    res.json({ success: true, message: 'User password reset successfully in Cloudflare.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Reset password error: ' + err.message });
   }

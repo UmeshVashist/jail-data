@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "optionValue": "Not Available",
+    "disableAadhar": true
+  },
+  {
+    "id": 2,
+    "optionValue": "Already Linked but other Prisoner",
+    "disableAadhar": false
+  },
+  {
+    "id": 3,
+    "optionValue": "Biometric Locked",
+    "disableAadhar": false
+  },
+  {
+    "id": 4,
+    "optionValue": "Biometric data not match",
+    "disableAadhar": false
+  },
+  {
+    "id": 5,
+    "optionValue": "Aadhar Suspended",
+    "disableAadhar": false
+  },
+  {
+    "id": 6,
+    "optionValue": "Aadhar Not Made",
+    "disableAadhar": true
+  },
+  {
+    "id": 7,
+    "optionValue": "Invalid Aadhaar",
+    "disableAadhar": false
+  },
+  {
+    "id": 8,
+    "optionValue": "Foreigner",
+    "disableAadhar": true
+  },
+  {
+    "id": 9,
+    "optionValue": "Other",
+    "disableAadhar": false
+  },
+  {
+    "id": 10,
+    "optionValue": "Aadhar Pending Due To Finger Black Ink Problem",
+    "disableAadhar": false
+  },
+  {
+    "id": 11,
+    "optionValue": "Court Hearing",
+    "disableAadhar": false
+  },
+  {
+    "id": 12,
+    "optionValue": "Already Linked But Not Showing In Database",
+    "disableAadhar": false
+  }
+]

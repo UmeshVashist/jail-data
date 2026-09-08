@@ -1,5 +1,5 @@
 /**
- * server.js - Express Application Server Entry Point (Vercel Serverless Ready)
+ * server.js - Express Application Server Entry Point (Cloudflare R2 Database Service)
  */
 
 const express = require('express');
@@ -8,8 +8,8 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-// Initialize Google Sheets API database service
-const { initGoogleSheets, getIsConnected } = require('./config/googleSheets');
+// Initialize Cloudflare R2 Database Service
+const { initCloudflareStorage, getIsConnected } = require('./config/cloudflareStorage');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -29,20 +29,20 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Cookie-Session Configuration (Works 100% on Vercel Serverless)
+// Cookie-Session Configuration
 app.use(
   cookieSession({
     name: 'informaction_session',
-    keys: [process.env.SESSION_SECRET || 'informaction-secret-key-gsheet-2026'],
+    keys: [process.env.SESSION_SECRET || 'informaction-secret-key-cloudflare-2026'],
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   })
 );
 
-// Middleware to ensure Google Sheets connection on every request (Cold-start resilient)
+// Middleware to ensure Cloudflare R2 connection on every request
 app.use(async (req, res, next) => {
   try {
     if (!getIsConnected()) {
-      await initGoogleSheets();
+      await initCloudflareStorage();
     }
   } catch (err) {
     console.error('Connection middleware warning:', err.message);
@@ -75,7 +75,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     console.log(`  Data Management Portal Server running on:`);
     console.log(`  http://localhost:${PORT}`);
     console.log(`=======================================================`);
-    await initGoogleSheets();
+    await initCloudflareStorage();
   });
 
   server.on('error', (err) => {

@@ -1,10 +1,10 @@
 /**
- * routes/exportRoutes.js - Formatted Export Data Endpoints via Google Sheets API
+ * routes/exportRoutes.js - Formatted Export Data Endpoints via Cloudflare R2
  */
 
 const express = require('express');
 const router = express.Router();
-const { getRecords } = require('../config/googleSheets');
+const { getRecords } = require('../config/cloudflareStorage');
 const { requireAuth } = require('../middleware/auth');
 
 // GET /api/export - Get formatted data for Excel/PDF/Print

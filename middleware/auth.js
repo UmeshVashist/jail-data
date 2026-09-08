@@ -1,8 +1,8 @@
 /**
- * middleware/auth.js - Authentication & Authorization middleware using Google Sheets API
+ * middleware/auth.js - Authentication & Authorization middleware using Cloudflare R2 Database Service
  */
 
-const { getUserByUsername } = require('../config/googleSheets');
+const { getUserByUsername } = require('../config/cloudflareStorage');
 
 /**
  * Middleware to require an active user session.
@@ -31,7 +31,7 @@ async function requireAuth(req, res, next) {
  * Middleware to require Admin privileges.
  */
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== 'Admin') {
+  if (!req.user || String(req.user.role || '').trim().toLowerCase() !== 'admin') {
     return res.status(403).json({ success: false, message: 'Access denied. Admin privileges required.' });
   }
   next();

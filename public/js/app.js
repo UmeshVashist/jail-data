@@ -834,18 +834,21 @@ function handleSendEditUtInput() {
 function handleInstantSearch() {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
-    searchState.query = document.getElementById('search-query-input').value;
+    const input = document.getElementById('search-query-input');
+    searchState.query = input ? input.value : '';
     searchState.page = 1;
-    triggerFetchRecords();
-  }, 300);
+    triggerFetchRecords(null, true);
+  }, 200);
 }
 
-async function triggerFetchRecords(highlightPid = null) {
+async function triggerFetchRecords(highlightPid = null, isInstant = false) {
   if (!currentRemarkOptions || currentRemarkOptions.length === 0) {
     await loadRemarkOptions();
   }
-  searchState.startDate = document.getElementById('filter-start-date').value;
-  searchState.endDate = document.getElementById('filter-end-date').value;
+  const startEl = document.getElementById('filter-start-date');
+  const endEl = document.getElementById('filter-end-date');
+  searchState.startDate = startEl ? startEl.value : '';
+  searchState.endDate = endEl ? endEl.value : '';
   const filterRemarkEl = document.getElementById('filter-remark');
   searchState.remark = filterRemarkEl ? filterRemarkEl.value : '';
   const filterRecordTypeEl = document.getElementById('filter-record-type');
@@ -863,11 +866,19 @@ async function triggerFetchRecords(highlightPid = null) {
     sortDirection: searchState.sortDirection
   });
 
-  showLoader('Fetching records...');
+  const tbody = document.getElementById('records-table-body');
+  if (isInstant && tbody) {
+    tbody.style.opacity = '0.4';
+    tbody.style.transition = 'opacity 0.1s ease';
+  } else if (!isInstant) {
+    showLoader('Fetching records...');
+  }
+
   try {
     const res = await fetch(`/api/records?${queryParams.toString()}`);
     const data = await res.json();
-    hideLoader();
+    if (tbody) tbody.style.opacity = '1';
+    if (!isInstant) hideLoader();
 
     if (data.success) {
       renderRecordsTable(data.data.records, highlightPid);
@@ -880,7 +891,8 @@ async function triggerFetchRecords(highlightPid = null) {
       showToast('danger', 'Fetch Error', data.message);
     }
   } catch (err) {
-    hideLoader();
+    if (tbody) tbody.style.opacity = '1';
+    if (!isInstant) hideLoader();
     showToast('danger', 'Error', err.message);
   }
 }
@@ -1066,7 +1078,7 @@ function clearFilters() {
   searchState.endDate = '';
   searchState.remark = '';
   searchState.page = 1;
-  triggerFetchRecords();
+  triggerFetchRecords(null, true);
 }
 
 /* Dynamic Remark Dropdown Helpers */
@@ -3958,7 +3970,7 @@ async function handleRemarkOptionFormSubmit(event) {
 
 function confirmDeleteRemarkOption(val) {
   document.getElementById('confirmModalTitle').innerText = 'Delete Remark Option?';
-  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to remove option "${val}" from Google Sheet 'DropdownOptions'?`;
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to remove option "${val}" from Cloudflare?`;
   const executeBtn = document.getElementById('confirmModalExecuteBtn');
   executeBtn.innerText = 'Yes, Delete Option';
   executeBtn.className = 'btn btn-danger btn-sm px-3';

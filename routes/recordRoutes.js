@@ -1,10 +1,10 @@
 /**
- * routes/recordRoutes.js - Records CRUD, Instant Search, Date Filters & Aadhar/PID Validation via Google Sheets API
+ * routes/recordRoutes.js - Records CRUD, Instant Search, Date Filters & Aadhar/PID Validation via Cloudflare R2
  */
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/googleSheets');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/cloudflareStorage');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
 // GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab

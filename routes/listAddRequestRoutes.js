@@ -13,7 +13,7 @@ const {
   getRemarkOptions,
   getRecords,
   getIsConnected
-} = require('../config/googleSheets');
+} = require('../config/cloudflareStorage');
 const { requireAuth, requireDeleteRequestPermission } = require('../middleware/auth');
 
 router.use(requireAuth);

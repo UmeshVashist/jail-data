@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch --watch-path=server.js --watch-path=routes --watch-path=config --watch-path=middleware server.js",
+    "migrate:gsheet": "node scripts/migrate_from_gsheet.js"
   },
   "keywords": [
     "nodejs",
@@ -18,6 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
     "bcryptjs": "^2.4.3",
     "cookie-session": "^2.1.1",
     "cors": "^2.8.5",

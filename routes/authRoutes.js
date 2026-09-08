@@ -1,11 +1,11 @@
 /**
- * routes/authRoutes.js - Authentication endpoints using Google Sheets API
+ * routes/authRoutes.js - Authentication endpoints using Cloudflare R2 Database Service
  */
 
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { getUserByUsername } = require('../config/googleSheets');
+const { getUserByUsername } = require('../config/cloudflareStorage');
 const { requireAuth } = require('../middleware/auth');
 
 /**
