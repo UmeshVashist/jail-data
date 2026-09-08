@@ -107,7 +107,23 @@ function requireDeleteRequestPermission(req, res, next) {
     return next();
   }
 
-  return res.status(403).json({ success: false, message: 'Delete Request permission denied. Contact your Admin.' });
+  return res.status(403).json({ success: false, message: 'Delete request management permission denied.' });
+}
+
+/**
+ * Middleware to require PS List permission (Admin or users with psListPermission).
+ */
+function requirePSListPermission(req, res, next) {
+  if (!req.user || req.user.status !== 'Active') {
+    return res.status(403).json({ success: false, message: 'Access denied.' });
+  }
+
+  const role = String(req.user.role || '').trim().toLowerCase();
+  if (role === 'admin' || req.user.psListPermission) {
+    return next();
+  }
+
+  return res.status(403).json({ success: false, message: 'PS List permission denied. Contact your Admin.' });
 }
 
 module.exports = {
@@ -115,5 +131,6 @@ module.exports = {
   requireAdmin,
   requireImportPermission,
   requireDeleteRequestPermission,
+  requirePSListPermission,
   canModifyRecord
 };

@@ -30,7 +30,8 @@
     "importPermission": false,
     "fullAccess": false,
     "deleteRequestPermission": false,
-    "status": "Active"
+    "status": "Active",
+    "psListPermission": true
   },
   {
     "id": 4,

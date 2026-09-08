@@ -39,15 +39,16 @@ const R2_KEYS = {
   EDIT_REQUESTS: 'data/edit_requests.json',
   LIST_ADD_REQUESTS: 'data/list_add_requests.json',
   REMARK_OPTIONS: 'data/remark_options.json',
-  SETTINGS: 'data/system_settings.json'
+  SETTINGS: 'data/system_settings.json',
+  PS_LIST: 'data/ps_list.json'
 };
 
 /* In-memory Data Store (Auto-seeded with defaults) */
 const memoryStore = {
   users: [
-    { id: 1, rowIndex: 1, username: 'Admin', password: 'Admin@123', role: 'Admin', importPermission: true, fullAccess: true, deleteRequestPermission: true, status: 'Active' },
-    { id: 2, rowIndex: 2, username: 'Add', password: 'Add@123', role: 'Add', importPermission: false, fullAccess: false, deleteRequestPermission: false, status: 'Active' },
-    { id: 3, rowIndex: 3, username: 'View', password: 'View@123', role: 'View', importPermission: false, fullAccess: false, deleteRequestPermission: false, status: 'Active' }
+    { id: 1, rowIndex: 1, username: 'Admin', password: 'Admin@123', role: 'Admin', importPermission: true, fullAccess: true, deleteRequestPermission: true, psListPermission: true, status: 'Active' },
+    { id: 2, rowIndex: 2, username: 'Add', password: 'Add@123', role: 'Add', importPermission: false, fullAccess: false, deleteRequestPermission: false, psListPermission: false, status: 'Active' },
+    { id: 3, rowIndex: 3, username: 'View', password: 'View@123', role: 'View', importPermission: false, fullAccess: false, deleteRequestPermission: false, psListPermission: false, status: 'Active' }
   ],
   records: [],
   deleteRequests: [],
@@ -65,7 +66,8 @@ const memoryStore = {
   ],
   settings: {
     aadhar_mandatory: 'false'
-  }
+  },
+  psList: []
 };
 
 /* Helper: Save a collection locally to data/ directory */
@@ -113,6 +115,9 @@ function loadLocalCollections() {
 
   const settings = readLocal(R2_KEYS.SETTINGS);
   if (settings) memoryStore.settings = settings;
+
+  const psList = readLocal(R2_KEYS.PS_LIST);
+  if (psList && Array.isArray(psList) && psList.length) memoryStore.psList = psList;
 }
 
 // Initial cold load from disk
@@ -333,6 +338,14 @@ async function syncAllCollections() {
       await saveToR2(R2_KEYS.SETTINGS, memoryStore.settings);
     }
 
+    // 8. PS List
+    const r2PS = await readFromR2(R2_KEYS.PS_LIST) || readLocal(R2_KEYS.PS_LIST);
+    if (r2PS && Array.isArray(r2PS) && r2PS.length > 0) {
+      memoryStore.psList = r2PS;
+    } else if (memoryStore.psList && memoryStore.psList.length > 0) {
+      await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+    }
+
     console.log(`[Cloudflare R2] Successfully synced all collections with bucket "${BUCKET_NAME}".`);
   } catch (err) {
     console.error('[Cloudflare R2 Sync Warning]', err.message);
@@ -344,17 +357,21 @@ async function syncAllCollections() {
    ========================================================================== */
 
 async function getUsers() {
-  return memoryStore.users.map(u => ({
-    id: u.id || u.rowIndex,
-    rowIndex: u.rowIndex || u.id,
-    username: (u.username || '').trim(),
-    password: (u.password || '').trim(),
-    role: (u.role || 'View').trim(),
-    importPermission: !!u.importPermission,
-    fullAccess: !!u.fullAccess,
-    deleteRequestPermission: !!u.deleteRequestPermission,
-    status: (u.status || 'Active').trim()
-  }));
+  return memoryStore.users.map(u => {
+    const isAdmin = (u.role || '').trim().toLowerCase() === 'admin';
+    return {
+      id: u.id || u.rowIndex,
+      rowIndex: u.rowIndex || u.id,
+      username: (u.username || '').trim(),
+      password: (u.password || '').trim(),
+      role: (u.role || 'View').trim(),
+      importPermission: !!u.importPermission,
+      fullAccess: !!u.fullAccess,
+      deleteRequestPermission: !!u.deleteRequestPermission,
+      psListPermission: isAdmin ? true : !!u.psListPermission,
+      status: (u.status || 'Active').trim()
+    };
+  });
 }
 
 async function getUserByUsername(username) {
@@ -374,20 +391,11 @@ async function createUser(userObj) {
     importPermission: !!userObj.importPermission,
     fullAccess: !!userObj.fullAccess,
     deleteRequestPermission: !!userObj.deleteRequestPermission,
+    psListPermission: !!userObj.psListPermission,
     status: userObj.status || 'Active'
   };
 
   memoryStore.users.push(newUser);
-
-  // Sync to local SQLite
-  try {
-    const { dbRun } = require('./database');
-    const hashed = bcrypt.hashSync(newUser.password, 10);
-    await dbRun(
-      `INSERT OR REPLACE INTO users (username, password, role, import_permission, full_access, delete_request_permission, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [newUser.username, hashed, newUser.role, newUser.importPermission ? 1 : 0, newUser.fullAccess ? 1 : 0, newUser.deleteRequestPermission ? 1 : 0, newUser.status]
-    );
-  } catch (e) {}
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.USERS, memoryStore.users);
@@ -403,6 +411,7 @@ async function updateUser(rowIndex, updateFields) {
   if (updateFields.importPermission !== undefined) target.importPermission = !!updateFields.importPermission;
   if (updateFields.fullAccess !== undefined) target.fullAccess = !!updateFields.fullAccess;
   if (updateFields.deleteRequestPermission !== undefined) target.deleteRequestPermission = !!updateFields.deleteRequestPermission;
+  if (updateFields.psListPermission !== undefined) target.psListPermission = !!updateFields.psListPermission;
   if (updateFields.status) target.status = updateFields.status;
 
   // Sync to local SQLite
@@ -990,6 +999,102 @@ async function updateSystemSetting(key, value) {
   return await getSystemSettings();
 }
 
+/* ==========================================================================
+   PS List (Police Stations) Methods
+   ========================================================================== */
+
+async function getPSList() {
+  return (memoryStore.psList || []).map(p => {
+    const val = (p.psName || p.ps || p.name || '').toString().trim();
+    return {
+      id: p.id,
+      psName: val,
+      ps: val,
+      district: (p.district || '').toString().trim(),
+      state: (p.state || '').toString().trim(),
+      createdBy: p.createdBy || 'Admin',
+      createdDate: p.createdDate || '',
+      updatedDate: p.updatedDate || ''
+    };
+  });
+}
+
+async function addPSEntry(entryObj) {
+  const newId = memoryStore.psList.length > 0 ? Math.max(...memoryStore.psList.map(p => p.id || 0)) + 1 : 1;
+  const cleanPS = (entryObj.psName || entryObj.ps || entryObj.name || '').toString().trim();
+  const newEntry = {
+    id: newId,
+    psName: cleanPS,
+    ps: cleanPS,
+    district: (entryObj.district || '').toString().trim(),
+    state: (entryObj.state || '').toString().trim(),
+    createdBy: entryObj.createdBy || 'Admin',
+    createdDate: entryObj.createdDate || getFormattedDateTime(),
+    updatedDate: ''
+  };
+
+  memoryStore.psList.unshift(newEntry);
+  await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  return newEntry;
+}
+
+async function updatePSEntry(id, entryObj) {
+  const target = memoryStore.psList.find(p => p.id === parseInt(id, 10));
+  if (!target) return false;
+
+  const cleanPS = entryObj.psName !== undefined ? entryObj.psName : entryObj.ps;
+  if (cleanPS !== undefined) {
+    target.psName = (cleanPS || '').toString().trim();
+    target.ps = target.psName;
+  }
+  if (entryObj.district !== undefined) target.district = (entryObj.district || '').toString().trim();
+  if (entryObj.state !== undefined) target.state = (entryObj.state || '').toString().trim();
+  target.updatedDate = getFormattedDateTime();
+
+  await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  return target;
+}
+
+async function deletePSEntry(id) {
+  const idNum = parseInt(id, 10);
+  const initialLen = memoryStore.psList.length;
+  memoryStore.psList = memoryStore.psList.filter(p => p.id !== idNum);
+  if (memoryStore.psList.length !== initialLen) {
+    await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+    return true;
+  }
+  return false;
+}
+
+async function batchAddPS(entriesArr) {
+  if (!Array.isArray(entriesArr) || entriesArr.length === 0) return true;
+  let maxId = memoryStore.psList.length > 0 ? Math.max(...memoryStore.psList.map(p => p.id || 0)) : 0;
+  const now = getFormattedDateTime();
+
+  for (const item of entriesArr) {
+    const psName = (item.psName || item.ps || item.name || item['PS Name'] || item['ps_name'] || item['PS'] || '').toString().trim();
+    const district = (item.district || item['District'] || '').toString().trim();
+    const state = (item.state || item['State'] || '').toString().trim();
+
+    if (!psName && !district) continue;
+
+    maxId++;
+    memoryStore.psList.push({
+      id: maxId,
+      psName,
+      ps: psName,
+      district,
+      state,
+      createdBy: item.createdBy || 'Admin',
+      createdDate: item.createdDate || now,
+      updatedDate: ''
+    });
+  }
+
+  await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  return true;
+}
+
 module.exports = {
   initCloudflareStorage,
   initGoogleSheets: initCloudflareStorage, // Backward compatibility alias
@@ -1022,6 +1127,11 @@ module.exports = {
   toggleRemarkOptionAadhar,
   getSystemSettings,
   updateSystemSetting,
+  getPSList,
+  addPSEntry,
+  updatePSEntry,
+  deletePSEntry,
+  batchAddPS,
   getIsConnected: () => isConnected,
   getConnectionError: () => connectionError
 };

@@ -555,6 +555,26 @@ main {
   overflow-y: auto;
 }
 
+/* Police Station (PS) List Table Scroll Container (Active after 10 rows) */
+.ps-table-scroll-container {
+  max-height: 540px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.ps-table-scroll-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #ffffff;
+  box-shadow: inset 0 -1px 0 var(--card-border, rgba(0, 0, 0, 0.08));
+}
+
+body.dark-theme .ps-table-scroll-container thead th {
+  background-color: var(--dark-card, #1e293b);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
 /* Mobile Sidebar Slide Behavior */
 @media (max-width: 767.98px) {
   #sidebar {

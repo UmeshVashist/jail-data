@@ -23,8 +23,8 @@ router.get('/', async (req, res) => {
 // POST /api/users - Create User
 router.post('/', async (req, res) => {
   try {
-    const { newUsername, password, role, importPermission, fullAccess, deleteRequestPermission, status } = req.body;
-    const cleanUsername = (newUsername || '').trim();
+    const { username, password, role, importPermission, fullAccess, deleteRequestPermission, psListPermission, status } = req.body;
+    const cleanUsername = (username || req.body.newUsername || '').trim();
 
     if (!cleanUsername) return res.status(400).json({ success: false, message: 'Username is required.' });
     if (!password) return res.status(400).json({ success: false, message: 'Password is required.' });
@@ -41,6 +41,7 @@ router.post('/', async (req, res) => {
       importPermission: !!importPermission,
       fullAccess: !!fullAccess,
       deleteRequestPermission: !!deleteRequestPermission,
+      psListPermission: !!psListPermission,
       status: status || 'Active'
     });
 
@@ -59,13 +60,14 @@ router.put('/:id', async (req, res) => {
 
     if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
 
-    const { role, importPermission, fullAccess, deleteRequestPermission, status } = req.body;
+    const { role, importPermission, fullAccess, deleteRequestPermission, psListPermission, status } = req.body;
 
     await updateUser(rowIndex, {
       role: role || targetUser.role,
       importPermission: importPermission !== undefined ? !!importPermission : targetUser.importPermission,
       fullAccess: fullAccess !== undefined ? !!fullAccess : targetUser.fullAccess,
       deleteRequestPermission: deleteRequestPermission !== undefined ? !!deleteRequestPermission : targetUser.deleteRequestPermission,
+      psListPermission: psListPermission !== undefined ? !!psListPermission : targetUser.psListPermission,
       status: status || targetUser.status
     });
 
@@ -129,6 +131,19 @@ router.patch('/:id/delete-request-permission', async (req, res) => {
     res.json({ success: true, message: 'Delete request permission updated.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Toggle delete request permission error: ' + err.message });
+  }
+});
+
+// PATCH /api/users/:id/ps-permission - Toggle PS List Permission
+router.patch('/:id/ps-permission', async (req, res) => {
+  try {
+    const rowIndex = parseInt(req.params.id, 10);
+    const isEnabled = req.body.enabled !== undefined ? req.body.enabled : (req.body.psListPermission !== undefined ? req.body.psListPermission : false);
+
+    await updateUser(rowIndex, { psListPermission: !!isEnabled });
+    res.json({ success: true, message: 'PS List permission updated.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Toggle PS List permission error: ' + err.message });
   }
 });
 

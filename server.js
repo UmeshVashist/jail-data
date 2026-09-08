@@ -20,6 +20,7 @@ const exportRoutes = require('./routes/exportRoutes');
 const deleteRequestRoutes = require('./routes/deleteRequestRoutes');
 const editRequestRoutes = require('./routes/editRequestRoutes');
 const listAddRequestRoutes = require('./routes/listAddRequestRoutes');
+const psRoutes = require('./routes/psRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/delete-requests', deleteRequestRoutes);
 app.use('/api/edit-requests', editRequestRoutes);
 app.use('/api/list-add-requests', listAddRequestRoutes);
+app.use('/api/ps', psRoutes);
 
 // Fallback Route to serve Single Page Application
 app.get('*', (req, res) => {

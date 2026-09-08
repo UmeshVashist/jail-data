@@ -12,6 +12,8 @@ let confirmModalInstance = null;
 let userModalInstance = null;
 let resetPasswordModalInstance = null;
 let importDetailsModalInstance = null;
+let psModalInstance = null;
+let psImportModalInstance = null;
 
 let lastImportResult = {
   type: '',
@@ -67,6 +69,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (todayModalEl) todayRecordsModalInstance = new bootstrap.Modal(todayModalEl);
   const totalUsersModalEl = document.getElementById('totalUsersModal');
   if (totalUsersModalEl) totalUsersModalInstance = new bootstrap.Modal(totalUsersModalEl);
+  const psModalEl = document.getElementById('psModal');
+  if (psModalEl) psModalInstance = new bootstrap.Modal(psModalEl);
+  const psImportModalEl = document.getElementById('psImportModal');
+  if (psImportModalEl) psImportModalInstance = new bootstrap.Modal(psImportModalEl);
 
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
@@ -346,10 +352,27 @@ function initializeAuthenticatedApp() {
   fetchSystemSettings();
   navigateToView('dashboard');
   startInactivityMonitor();
+
+  // Periodic permission refresh in background so changes granted by Admin reflect dynamically
+  if (window.userPermissionInterval) clearInterval(window.userPermissionInterval);
+  window.userPermissionInterval = setInterval(refreshCurrentUserPermissions, 10000);
+}
+
+async function refreshCurrentUserPermissions() {
+  if (!currentUserState) return;
+  try {
+    const res = await fetch('/api/auth/session');
+    const data = await res.json();
+    if (data.success && data.data) {
+      currentUserState = { ...currentUserState, ...data.data };
+      updateUIForRolePermissions();
+    }
+  } catch (e) {}
 }
 
 async function handleLogout() {
   stopInactivityMonitor();
+  if (window.userPermissionInterval) clearInterval(window.userPermissionInterval);
   await fetch('/api/auth/logout', { method: 'POST' });
   currentUserState = null;
   document.getElementById('login-form').reset();
@@ -358,29 +381,31 @@ async function handleLogout() {
 }
 
 function updateUIForRolePermissions() {
-  const role = currentUserState.role;
-  const canImport = role === 'Admin' || (role === 'Add' && (currentUserState.importPermission || currentUserState.fullAccess));
-  const canAddRecords = role === 'Admin' || role === 'Add';
-  const canAccessDeleteRequests = role === 'Admin' || currentUserState.deleteRequestPermission;
+  if (!currentUserState) return;
+  const role = currentUserState.role || '';
+  const isAdmin = String(role).trim().toLowerCase() === 'admin';
+  const canImport = isAdmin || (role === 'Add' && (currentUserState.importPermission || currentUserState.fullAccess));
+  const canAddRecords = isAdmin || role === 'Add';
+  const canAccessDeleteRequests = isAdmin || Boolean(currentUserState.deleteRequestPermission);
 
   if (canAddRecords) {
-    document.getElementById('dash-btn-add-record').classList.remove('d-none');
-    document.getElementById('btn-add-record-main').classList.remove('d-none');
+    document.getElementById('dash-btn-add-record')?.classList.remove('d-none');
+    document.getElementById('btn-add-record-main')?.classList.remove('d-none');
   } else {
-    document.getElementById('dash-btn-add-record').classList.add('d-none');
-    document.getElementById('btn-add-record-main').classList.add('d-none');
+    document.getElementById('dash-btn-add-record')?.classList.add('d-none');
+    document.getElementById('btn-add-record-main')?.classList.add('d-none');
   }
 
   if (canImport) {
-    document.getElementById('nav-import').classList.remove('d-none');
+    document.getElementById('nav-import')?.classList.remove('d-none');
   } else {
-    document.getElementById('nav-import').classList.add('d-none');
+    document.getElementById('nav-import')?.classList.add('d-none');
   }
 
   if (canAccessDeleteRequests) {
     const allReqEl = document.getElementById('nav-item-all-requests');
     if (allReqEl) allReqEl.classList.remove('d-none');
-    fetchAllPendingRequestsCounts();
+    if (typeof fetchAllPendingRequestsCounts === 'function') fetchAllPendingRequestsCounts();
   } else {
     const allReqEl = document.getElementById('nav-item-all-requests');
     if (allReqEl) allReqEl.classList.add('d-none');
@@ -397,14 +422,44 @@ function updateUIForRolePermissions() {
   const reactiveNavEl = document.getElementById('nav-item-reactive-list');
   const dashTotalUsersCard = document.getElementById('dash-card-total-users');
 
-  if (role === 'Admin') {
-    document.getElementById('nav-users').classList.remove('d-none');
+  const canAccessPSList = isAdmin || Boolean(currentUserState.psListPermission);
+  const psNavEl = document.getElementById('nav-item-ps-list');
+  if (psNavEl) {
+    if (canAccessPSList) {
+      psNavEl.classList.remove('d-none');
+    } else {
+      psNavEl.classList.add('d-none');
+    }
+  }
+
+  const btnAddPS = document.getElementById('btn-add-ps');
+  const btnImportPS = document.getElementById('btn-import-ps');
+  const btnSamplePS = document.getElementById('btn-sample-ps');
+  if (btnAddPS) {
+    if (isAdmin) btnAddPS.classList.remove('d-none');
+    else btnAddPS.classList.add('d-none');
+  }
+  if (btnImportPS) {
+    if (isAdmin) btnImportPS.classList.remove('d-none');
+    else btnImportPS.classList.add('d-none');
+  }
+  if (btnSamplePS) {
+    if (isAdmin) btnSamplePS.classList.remove('d-none');
+    else btnSamplePS.classList.add('d-none');
+  }
+  document.querySelectorAll('.ps-admin-col').forEach(el => {
+    if (isAdmin) el.classList.remove('d-none');
+    else el.classList.add('d-none');
+  });
+
+  if (isAdmin) {
+    document.getElementById('nav-users')?.classList.remove('d-none');
     const dropNav = document.getElementById('nav-item-dropdowns');
     if (dropNav) dropNav.classList.remove('d-none');
     if (reactiveNavEl) reactiveNavEl.classList.add('d-none');
     if (dashTotalUsersCard) dashTotalUsersCard.classList.remove('d-none');
   } else {
-    document.getElementById('nav-users').classList.add('d-none');
+    document.getElementById('nav-users')?.classList.add('d-none');
     const dropNav = document.getElementById('nav-item-dropdowns');
     if (dropNav) dropNav.classList.add('d-none');
     if (reactiveNavEl) reactiveNavEl.classList.remove('d-none');
@@ -415,6 +470,15 @@ function updateUIForRolePermissions() {
 function navigateToView(viewName) {
   if (viewName === 'reactive-list' && currentUserState && currentUserState.role === 'Admin') {
     viewName = 'dashboard';
+  }
+
+  if (viewName === 'ps-list') {
+    const isAdmin = currentUserState && String(currentUserState.role || '').trim().toLowerCase() === 'admin';
+    const canAccessPS = isAdmin || (currentUserState && Boolean(currentUserState.psListPermission));
+    if (!canAccessPS) {
+      showToast('danger', 'Access Denied', 'You do not have permission to view the PS List.');
+      viewName = 'dashboard';
+    }
   }
 
   document.querySelectorAll('.view-section').forEach(el => el.classList.add('d-none'));
@@ -430,7 +494,8 @@ function navigateToView(viewName) {
     'my-requests': 'My Sent Requests',
     'reactive-list': 'Reactive Dropdown Requests',
     'users': 'Admin User Management',
-    'dropdowns': 'Dropdown Options Settings'
+    'dropdowns': 'Dropdown Options Settings',
+    'ps-list': 'Police Station Directory'
   };
 
   document.getElementById('page-title-display').innerText = titleMap[viewName] || 'Data Portal';
@@ -460,6 +525,8 @@ function navigateToView(viewName) {
     loadUsersList();
   } else if (viewName === 'dropdowns' && currentUserState.role === 'Admin') {
     loadDropdownsView();
+  } else if (viewName === 'ps-list') {
+    loadPSListView();
   }
 }
 
@@ -2262,7 +2329,7 @@ function filterUsersTable() {
 function renderUsersTable(usersList) {
   const tbody = document.getElementById('users-table-body');
   if (!usersList || usersList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No users found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No users found.</td></tr>';
     return;
   }
 
@@ -2296,6 +2363,12 @@ function renderUsersTable(usersList) {
         </td>
         <td>
           <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" ${(u.role === 'Admin' || u.psListPermission) ? 'checked' : ''} ${u.role === 'Admin' ? 'disabled' : ''} onchange="togglePSPermissionServer(${u.id}, this.checked)">
+            <span class="small ${(u.role === 'Admin' || u.psListPermission) ? 'text-info fw-semibold' : 'text-muted'}">${(u.role === 'Admin' || u.psListPermission) ? 'Granted' : 'None'}</span>
+          </div>
+        </td>
+        <td>
+          <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" ${u.status === 'Active' ? 'checked' : ''} onchange="toggleUserStatusServer(${u.id}, this.checked)">
             <span class="badge ${statusBadge}">${escapeHtml(u.status)}</span>
           </div>
@@ -2321,6 +2394,8 @@ function showAddUserModal() {
   document.getElementById('modal-user-password-container').classList.remove('d-none');
   document.getElementById('modal-user-password').required = true;
   document.getElementById('modal-user-deleterequest').checked = false;
+  const psPermEl = document.getElementById('modal-user-pspermission');
+  if (psPermEl) psPermEl.checked = false;
   userModalInstance.show();
 }
 
@@ -2340,6 +2415,8 @@ function showEditUserModal(encodedUserJson) {
   document.getElementById('modal-user-import').checked = u.importPermission;
   document.getElementById('modal-user-fullaccess').checked = u.fullAccess;
   document.getElementById('modal-user-deleterequest').checked = !!u.deleteRequestPermission;
+  const psPermEl = document.getElementById('modal-user-pspermission');
+  if (psPermEl) psPermEl.checked = u.role === 'Admin' || !!u.psListPermission;
   document.getElementById('modal-user-status').value = u.status;
 
   userModalInstance.show();
@@ -2349,6 +2426,29 @@ function handleRoleSelectChange(val) {
   if (val === 'Admin') {
     document.getElementById('modal-user-import').checked = true;
     document.getElementById('modal-user-fullaccess').checked = true;
+    const psPermEl = document.getElementById('modal-user-pspermission');
+    if (psPermEl) psPermEl.checked = true;
+  }
+}
+
+async function togglePSPermissionServer(userId, enabled) {
+  try {
+    const res = await fetch(`/api/users/${userId}/ps-permission`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ psListPermission: enabled })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', 'Permission Updated', data.message || 'PS List permission updated.');
+      loadUsersList();
+    } else {
+      showToast('danger', 'Error', data.message || 'Failed to update PS List permission.');
+      loadUsersList();
+    }
+  } catch (err) {
+    showToast('danger', 'Network Error', err.message);
+    loadUsersList();
   }
 }
 
@@ -2356,6 +2456,7 @@ async function handleUserFormSubmit(event) {
   event.preventDefault();
   const mode = document.getElementById('user-edit-mode').value;
   const userId = document.getElementById('user-id').value;
+  const psPermEl = document.getElementById('modal-user-pspermission');
 
   const userData = {
     newUsername: document.getElementById('modal-user-username').value.trim(),
@@ -2364,6 +2465,7 @@ async function handleUserFormSubmit(event) {
     importPermission: document.getElementById('modal-user-import').checked,
     fullAccess: document.getElementById('modal-user-fullaccess').checked,
     deleteRequestPermission: document.getElementById('modal-user-deleterequest').checked,
+    psListPermission: psPermEl ? psPermEl.checked : false,
     status: document.getElementById('modal-user-status').value
   };
 
@@ -4096,5 +4198,379 @@ document.addEventListener('DOMContentLoaded', () => {
   if (remarkInput2) {
     remarkInput2.addEventListener('input', handleProperCaseInput);
   }
+
+  const psNameInp = document.getElementById('modal-ps-name');
+  const psDistInp = document.getElementById('modal-ps-district');
+  const psStateInp = document.getElementById('modal-ps-state');
+  if (psNameInp) psNameInp.addEventListener('input', handleProperCaseInput);
+  if (psDistInp) psDistInp.addEventListener('input', handleProperCaseInput);
+  if (psStateInp) psStateInp.addEventListener('input', handleProperCaseInput);
 });
+
+/* ==========================================================
+   POLICE STATION (PS) LIST MODULE
+   ========================================================== */
+
+let psSearchState = {
+  ps: '',
+  district: '',
+  state: '',
+  page: 1,
+  limit: 25,
+  total: 0,
+  totalPages: 1
+};
+let psSearchDebounceTimer = null;
+
+function loadPSListView() {
+  updateUIForRolePermissions();
+  fetchPSList(false);
+}
+
+function handlePSInstantSearch() {
+  if (psSearchDebounceTimer) clearTimeout(psSearchDebounceTimer);
+  psSearchDebounceTimer = setTimeout(() => {
+    const nameEl = document.getElementById('ps-search-name');
+    const distEl = document.getElementById('ps-search-district');
+    const stateEl = document.getElementById('ps-search-state');
+
+    psSearchState.ps = (nameEl ? nameEl.value : '').trim();
+    psSearchState.district = (distEl ? distEl.value : '').trim();
+    psSearchState.state = (stateEl ? stateEl.value : '').trim();
+    psSearchState.page = 1;
+
+    fetchPSList(true);
+  }, 200);
+}
+
+function clearPSFilters() {
+  const nameInput = document.getElementById('ps-search-name');
+  const districtInput = document.getElementById('ps-search-district');
+  const stateInput = document.getElementById('ps-search-state');
+  if (nameInput) nameInput.value = '';
+  if (districtInput) districtInput.value = '';
+  if (stateInput) stateInput.value = '';
+
+  psSearchState.ps = '';
+  psSearchState.district = '';
+  psSearchState.state = '';
+  psSearchState.page = 1;
+
+  fetchPSList(false);
+}
+
+async function fetchPSList(isInstant = false) {
+  const tbody = document.getElementById('ps-table-body');
+  if (!tbody) return;
+
+  if (isInstant) {
+    tbody.style.opacity = '0.5';
+    tbody.style.transition = 'opacity 0.15s ease';
+  } else {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Loading police stations...</td></tr>`;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      page: psSearchState.page,
+      limit: psSearchState.limit,
+      ps: psSearchState.ps,
+      district: psSearchState.district,
+      state: psSearchState.state
+    });
+
+    const res = await fetch(`/api/ps?${params.toString()}`);
+    const data = await res.json();
+    tbody.style.opacity = '1';
+
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">${escapeHtml(data.message || 'Failed to load records')}</td></tr>`;
+      return;
+    }
+
+    const records = data.data || [];
+    psSearchState.total = (data.pagination && data.pagination.total) || 0;
+    psSearchState.totalPages = (data.pagination && data.pagination.totalPages) || 1;
+
+    const countBadge = document.getElementById('ps-records-count');
+    if (countBadge) countBadge.innerText = `${psSearchState.total} Records`;
+
+    renderPSTable(records);
+    renderPSPagination();
+  } catch (err) {
+    tbody.style.opacity = '1';
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Error loading data: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderPSTable(records) {
+  const tbody = document.getElementById('ps-table-body');
+  if (!tbody) return;
+  const isAdmin = currentUserState && currentUserState.role === 'Admin';
+
+  if (!records || records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-shield-x fs-1 d-block mb-2 text-secondary opacity-50"></i>No police stations found matching your search.</td></tr>`;
+    return;
+  }
+
+  const startIndex = (psSearchState.page - 1) * psSearchState.limit;
+  let html = '';
+
+  records.forEach((item, idx) => {
+    const rowNum = startIndex + idx + 1;
+    const itemJson = encodeURIComponent(JSON.stringify(item));
+
+    html += `
+      <tr>
+        <td class="text-muted fw-semibold">${rowNum}</td>
+        <td class="fw-bold text-dark">
+          <i class="bi bi-shield-shaded text-primary me-2"></i>${escapeHtml(item.ps || '')}
+        </td>
+        <td class="text-secondary fw-medium">
+          <i class="bi bi-geo-alt text-danger opacity-75 me-1"></i>${escapeHtml(item.district || '')}
+        </td>
+        <td>
+          <span class="badge bg-light text-dark border px-2 py-1">
+            <i class="bi bi-pin-map text-success me-1"></i>${escapeHtml(item.state || '')}
+          </span>
+        </td>
+        ${isAdmin ? `
+        <td class="text-end ps-admin-col">
+          <button class="btn btn-sm btn-outline-primary me-1" title="Edit Police Station" onclick="showEditPSModal('${itemJson}')">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete Police Station" onclick="confirmDeletePS('${item.id}', '${escapeHtml(item.ps)}')">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>` : '<td class="d-none ps-admin-col"></td>'}
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function renderPSPagination() {
+  const infoEl = document.getElementById('ps-pagination-info');
+  const pagesEl = document.getElementById('ps-pagination-pages');
+  if (!infoEl || !pagesEl) return;
+
+  const total = psSearchState.total;
+  const page = psSearchState.page;
+  const limit = psSearchState.limit;
+  const totalPages = psSearchState.totalPages;
+
+  if (total === 0) {
+    infoEl.innerText = 'Showing 0 of 0';
+    pagesEl.innerHTML = '';
+    return;
+  }
+
+  const start = (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
+  infoEl.innerText = `Showing ${start} to ${end} of ${total} entries`;
+
+  let html = '';
+  html += `<li class="page-item ${page <= 1 ? 'disabled' : ''}">
+    <a class="page-link" href="#" onclick="changePSPage(${page - 1}); return false;" aria-label="Previous">&laquo;</a>
+  </li>`;
+
+  let startPage = Math.max(1, page - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  if (endPage - startPage < 4) {
+    startPage = Math.max(1, endPage - 4);
+  }
+
+  for (let p = startPage; p <= endPage; p++) {
+    html += `<li class="page-item ${p === page ? 'active' : ''}">
+      <a class="page-link" href="#" onclick="changePSPage(${p}); return false;">${p}</a>
+    </li>`;
+  }
+
+  html += `<li class="page-item ${page >= totalPages ? 'disabled' : ''}">
+    <a class="page-link" href="#" onclick="changePSPage(${page + 1}); return false;" aria-label="Next">&raquo;</a>
+  </li>`;
+
+  pagesEl.innerHTML = html;
+}
+
+function changePSPage(newPage) {
+  if (newPage < 1 || newPage > psSearchState.totalPages) return;
+  psSearchState.page = newPage;
+  fetchPSList(false);
+}
+
+function showAddPSModal() {
+  const form = document.getElementById('psForm');
+  if (form) form.reset();
+  document.getElementById('ps-id').value = '';
+  document.getElementById('ps-edit-mode').value = 'add';
+  document.getElementById('psModalTitle').innerText = 'Add Police Station';
+  const saveBtn = document.getElementById('btn-save-ps');
+  if (saveBtn) saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1" id="save-ps-icon"></i> Save Record';
+  if (psModalInstance) psModalInstance.show();
+}
+
+function showEditPSModal(encodedItemJson) {
+  const item = JSON.parse(decodeURIComponent(encodedItemJson));
+  document.getElementById('ps-id').value = item.id;
+  document.getElementById('ps-edit-mode').value = 'edit';
+  document.getElementById('psModalTitle').innerText = 'Edit Police Station';
+  document.getElementById('modal-ps-name').value = item.ps || '';
+  document.getElementById('modal-ps-district').value = item.district || '';
+  document.getElementById('modal-ps-state').value = item.state || '';
+  const saveBtn = document.getElementById('btn-save-ps');
+  if (saveBtn) saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1" id="save-ps-icon"></i> Update Record';
+  if (psModalInstance) psModalInstance.show();
+}
+
+async function handlePSFormSubmit(event) {
+  event.preventDefault();
+  const mode = document.getElementById('ps-edit-mode').value;
+  const id = document.getElementById('ps-id').value;
+  const psName = document.getElementById('modal-ps-name').value.trim();
+  const district = document.getElementById('modal-ps-district').value.trim();
+  const state = document.getElementById('modal-ps-state').value.trim();
+
+  if (!psName || !district || !state) {
+    showToast('danger', 'Validation', 'PS Name, District, and State are all required.');
+    return;
+  }
+
+  const spinner = document.getElementById('save-ps-spinner');
+  const icon = document.getElementById('save-ps-icon');
+  const btn = document.getElementById('btn-save-ps');
+  if (spinner) spinner.classList.remove('d-none');
+  if (icon) icon.classList.add('d-none');
+  if (btn) btn.disabled = true;
+
+  try {
+    const url = mode === 'edit' ? `/api/ps/${id}` : '/api/ps';
+    const method = mode === 'edit' ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ps: psName, district, state })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      if (psModalInstance) psModalInstance.hide();
+      showToast('success', 'Success', data.message || 'Police Station saved successfully.');
+      fetchPSList(false);
+    } else {
+      showToast('danger', 'Error', data.message || 'Failed to save Police Station.');
+    }
+  } catch (err) {
+    showToast('danger', 'Network Error', err.message);
+  } finally {
+    if (spinner) spinner.classList.add('d-none');
+    if (icon) icon.classList.remove('d-none');
+    if (btn) btn.disabled = false;
+  }
+}
+
+function confirmDeletePS(id, psName) {
+  document.getElementById('confirmModalTitle').innerText = 'Delete Police Station?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to delete "${psName}"? This action cannot be undone.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+  executeBtn.innerText = 'Yes, Delete';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Deleting police station...');
+    try {
+      const res = await fetch(`/api/ps/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Deleted', data.message || 'Police Station deleted.');
+        fetchPSList(false);
+      } else {
+        showToast('danger', 'Error', data.message || 'Failed to delete record.');
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Network Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+function showPSImportModal() {
+  const form = document.getElementById('psImportForm');
+  if (form) form.reset();
+  if (psImportModalInstance) psImportModalInstance.show();
+}
+
+async function handlePSImportSubmit(event) {
+  event.preventDefault();
+  const fileInput = document.getElementById('ps-import-file-input');
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    showToast('danger', 'File Required', 'Please select an Excel or CSV file to upload.');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const spinner = document.getElementById('upload-ps-spinner');
+  const icon = document.getElementById('upload-ps-icon');
+  const btn = document.getElementById('btn-upload-ps-submit');
+  if (spinner) spinner.classList.remove('d-none');
+  if (icon) icon.classList.add('d-none');
+  if (btn) btn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = async function (e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const parsedRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+      if (!parsedRows || parsedRows.length === 0) {
+        showToast('danger', 'Empty File', 'The selected spreadsheet contains no data rows.');
+        return;
+      }
+
+      const res = await fetch('/api/ps/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: parsedRows })
+      });
+      const resData = await res.json();
+
+      if (resData.success) {
+        if (psImportModalInstance) psImportModalInstance.hide();
+        showToast('success', 'Import Successful', resData.message || `Successfully imported ${resData.count} police stations.`);
+        fetchPSList(false);
+      } else {
+        showToast('danger', 'Import Failed', resData.message || 'Failed to process file.');
+      }
+    } catch (err) {
+      showToast('danger', 'Processing Error', err.message);
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+      if (icon) icon.classList.remove('d-none');
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  reader.onerror = function () {
+    showToast('danger', 'File Error', 'Failed to read file from disk.');
+    if (spinner) spinner.classList.add('d-none');
+    if (icon) icon.classList.remove('d-none');
+    if (btn) btn.disabled = false;
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function downloadPSSampleTemplate() {
+  window.location.href = '/api/ps/sample-template';
+}
 

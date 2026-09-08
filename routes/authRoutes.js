@@ -65,8 +65,10 @@ router.post('/login', async (req, res) => {
     req.session.user = {
       username: user.username,
       role: user.role,
-      importPermission: user.importPermission,
-      fullAccess: user.fullAccess,
+      importPermission: !!user.importPermission,
+      fullAccess: !!user.fullAccess,
+      deleteRequestPermission: !!user.deleteRequestPermission,
+      psListPermission: !!user.psListPermission,
       status: user.status
     };
 
@@ -87,8 +89,10 @@ router.get('/session', requireAuth, (req, res) => {
     data: {
       username: req.user.username,
       role: req.user.role,
-      importPermission: req.user.importPermission,
-      fullAccess: req.user.fullAccess,
+      importPermission: !!req.user.importPermission,
+      fullAccess: !!req.user.fullAccess,
+      deleteRequestPermission: !!req.user.deleteRequestPermission,
+      psListPermission: !!req.user.psListPermission,
       status: req.user.status
     }
   });

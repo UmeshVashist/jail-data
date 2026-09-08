@@ -139,6 +139,12 @@
             <span>User Management</span>
           </a>
         </li>
+        <li class="nav-item d-none" id="nav-item-ps-list">
+          <a class="nav-link" id="nav-ps-list" href="#" onclick="navigateToView('ps-list'); return false;">
+            <i class="bi bi-shield-check text-info"></i>
+            <span>PS List</span>
+          </a>
+        </li>
         <li class="nav-item d-none" id="nav-item-dropdowns">
           <a class="nav-link" id="nav-dropdowns" href="#" onclick="navigateToView('dropdowns'); return false;">
             <i class="bi bi-gear-wide-connected text-primary"></i>
@@ -577,13 +583,14 @@
                     <th>Import Permission</th>
                     <th>Full Access</th>
                     <th>Delete Request Access</th>
+                    <th>PS List Access</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="users-table-body">
                   <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">Loading users list...</td>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading users list...</td>
                   </tr>
                 </tbody>
               </table>
@@ -1103,6 +1110,99 @@
 
         </div>
 
+        <!-- PS List View -->
+        <div id="ps-list-view" class="view-section d-none">
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+              <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-primary"></i> Police Station Directory
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-6 px-3" id="ps-records-count">0 Records</span>
+              </h3>
+              <p class="text-muted small mb-0">Search and explore police stations across districts and states</p>
+            </div>
+            <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2">
+              <button class="btn btn-outline-secondary btn-sm rounded-2 shadow-sm d-none" id="btn-sample-ps" onclick="downloadPSSampleTemplate()">
+                <i class="bi bi-file-earmark-arrow-down-fill me-1 text-success"></i> Download Sample File
+              </button>
+              <button class="btn btn-success btn-sm rounded-2 shadow-sm d-none" id="btn-import-ps" onclick="showPSImportModal()">
+                <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Upload Data
+              </button>
+              <button class="btn btn-primary btn-sm rounded-2 shadow-sm d-none" id="btn-add-ps" onclick="showAddPSModal()">
+                <i class="bi bi-plus-lg me-1"></i> Add Police Station
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 Search Bars Filter Card -->
+          <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 14px;">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-4">
+                <label for="ps-search-name" class="form-label small fw-bold text-secondary mb-1">
+                  <i class="bi bi-shield-shaded me-1 text-primary"></i> Police Station (PS)
+                </label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="ps-search-name" placeholder="Search by PS Name..." oninput="handlePSInstantSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();return false;}" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-3">
+                <label for="ps-search-district" class="form-label small fw-bold text-secondary mb-1">
+                  <i class="bi bi-geo-alt-fill me-1 text-danger"></i> District
+                </label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="ps-search-district" placeholder="Search by District..." oninput="handlePSInstantSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();return false;}" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-3">
+                <label for="ps-search-state" class="form-label small fw-bold text-secondary mb-1">
+                  <i class="bi bi-pin-map-fill me-1 text-success"></i> State
+                </label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="ps-search-state" placeholder="Search by State..." oninput="handlePSInstantSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();return false;}" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-12 col-md-2 d-flex align-items-end pt-md-3">
+                <button class="btn btn-outline-secondary btn-sm w-100 rounded-2" id="btn-clear-ps-filters" onclick="clearPSFilters()">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Police Stations Data Table -->
+          <div class="custom-table-card">
+            <div class="table-responsive ps-table-scroll-container">
+              <table class="table table-hover align-middle mb-0" id="ps-table">
+                <thead class="sticky-top">
+                  <tr>
+                    <th style="width: 70px;">#</th>
+                    <th>Police Station (PS Name)</th>
+                    <th>District</th>
+                    <th>State</th>
+                    <th class="text-end ps-admin-col d-none" style="width: 140px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="ps-table-body">
+                  <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                      Loading police stations...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Container -->
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between p-3 border-top gap-2" id="ps-pagination-container">
+              <div class="small text-muted" id="ps-pagination-info">Showing 0 of 0</div>
+              <ul class="pagination pagination-sm mb-0 justify-content-center" id="ps-pagination-pages"></ul>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -1336,22 +1436,28 @@
             </div>
 
             <div class="row g-2 mb-3">
-              <div class="col-4">
+              <div class="col-6 col-sm-3">
                 <div class="form-check form-switch card p-2 bg-light border-0">
                   <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-import">
                   <label class="form-check-label small fw-semibold text-dark" for="modal-user-import">Import</label>
                 </div>
               </div>
-              <div class="col-4">
+              <div class="col-6 col-sm-3">
                 <div class="form-check form-switch card p-2 bg-light border-0">
                   <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-fullaccess">
                   <label class="form-check-label small fw-semibold text-dark" for="modal-user-fullaccess">Full Access</label>
                 </div>
               </div>
-              <div class="col-4">
+              <div class="col-6 col-sm-3">
                 <div class="form-check form-switch card p-2 bg-light border-0">
                   <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-deleterequest">
                   <label class="form-check-label small fw-semibold text-dark" for="modal-user-deleterequest" title="Grant access to view and manage delete requests">Delete Access</label>
+                </div>
+              </div>
+              <div class="col-6 col-sm-3">
+                <div class="form-check form-switch card p-2 bg-light border-0">
+                  <input class="form-check-input ms-0 me-2" type="checkbox" id="modal-user-pspermission">
+                  <label class="form-check-label small fw-semibold text-dark" for="modal-user-pspermission" title="Grant access to view PS List page">PS List</label>
                 </div>
               </div>
             </div>
@@ -1689,6 +1795,114 @@
           <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-danger btn-sm px-3" id="confirmModalExecuteBtn">Yes, Delete</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Police Station Modal -->
+  <div class="modal fade" id="psModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow border-0 rounded-4">
+        <div class="modal-header border-bottom px-4 py-3">
+          <div class="d-flex align-items-center">
+            <div class="stat-icon bg-primary text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+              <i class="bi bi-shield-plus fs-5" id="ps-modal-header-icon"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-dark" id="psModalTitle">Add Police Station</h5>
+              <span class="text-muted small">Configure police station directory record</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="psForm" onsubmit="handlePSFormSubmit(event)" autocomplete="off">
+          <div class="modal-body px-4 py-3">
+            <input type="hidden" id="ps-id">
+            <input type="hidden" id="ps-edit-mode" value="add">
+
+            <div class="mb-3">
+              <label for="modal-ps-name" class="form-label small fw-semibold text-secondary">Police Station (PS Name) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-shaded"></i></span>
+                <input type="text" class="form-control" id="modal-ps-name" placeholder="e.g. Connaught Place" required autocomplete="off">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="modal-ps-district" class="form-label small fw-semibold text-secondary">District <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
+                <input type="text" class="form-control" id="modal-ps-district" placeholder="e.g. New Delhi" required autocomplete="off">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="modal-ps-state" class="form-label small fw-semibold text-secondary">State <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-pin-map"></i></span>
+                <input type="text" class="form-control" id="modal-ps-state" placeholder="e.g. Delhi" required autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light px-4 py-2 border-top">
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btn-save-ps">
+              <span class="spinner-border spinner-border-sm me-1 d-none" id="save-ps-spinner" role="status"></span>
+              <i class="bi bi-check2-circle me-1" id="save-ps-icon"></i> Save Record
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload PS Excel Modal -->
+  <div class="modal fade" id="psImportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow border-0 rounded-4">
+        <div class="modal-header border-bottom px-4 py-3">
+          <div class="d-flex align-items-center">
+            <div class="stat-icon bg-success text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+              <i class="bi bi-file-earmark-arrow-up-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-dark">Upload Police Stations</h5>
+              <span class="text-muted small">Bulk import police station records from Excel or CSV</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="psImportForm" onsubmit="handlePSImportSubmit(event)">
+          <div class="modal-body px-4 py-3">
+            <div class="alert alert-info d-flex align-items-center small py-2 mb-3">
+              <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+              <div>
+                File must contain columns: <strong>PS Name</strong>, <strong>District</strong>, and <strong>State</strong>.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="ps-import-file-input" class="form-label small fw-semibold text-secondary">Choose File (.xlsx, .xls, .csv)</label>
+              <input class="form-control" type="file" id="ps-import-file-input" accept=".xlsx, .xls, .csv" required>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
+              <div class="small text-muted">
+                <i class="bi bi-file-earmark-spreadsheet text-success me-1"></i> Don't have the template?
+              </div>
+              <button type="button" class="btn btn-outline-success btn-sm rounded-pill" onclick="downloadPSSampleTemplate()">
+                <i class="bi bi-download me-1"></i> Download Sample
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer bg-light px-4 py-2 border-top">
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success rounded-pill px-4 shadow-sm" id="btn-upload-ps-submit">
+              <span class="spinner-border spinner-border-sm me-1 d-none" id="upload-ps-spinner" role="status"></span>
+              <i class="bi bi-cloud-arrow-up-fill me-1" id="upload-ps-icon"></i> Upload Data
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
