@@ -98,6 +98,11 @@ router.post('/', async (req, res) => {
     const reqDate = getFormattedDate(now);
     const reqTime = getFormattedTime(now);
 
+    const propDate = (proposedData.date || '').trim();
+    if (propDate && propDate > reqDate) {
+      return res.status(400).json({ success: false, message: 'Enter valid date. Future dates are not allowed. Today or previous dates are allowed.' });
+    }
+
     const propRemark = (proposedData.remark || '').trim();
     const isDisabledRemark = await isAadharDisabledRemark(propRemark);
     let propAadhar = isDisabledRemark ? '' : (proposedData.aadharNo || '').trim();

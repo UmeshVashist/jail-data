@@ -42,7 +42,8 @@
     "importPermission": false,
     "fullAccess": false,
     "deleteRequestPermission": false,
-    "status": "Active"
+    "status": "Active",
+    "psListPermission": false
   },
   {
     "id": 5,

@@ -118,7 +118,7 @@ function getFormattedTime(d = new Date()) {
  * - If provided -> requires min 12 digits, formats as 'XXXX XXXX XXXX'
  */
 function processAadharInput(inputStr) {
-  if (!inputStr || inputStr.trim() === '' || inputStr.trim() === '#N/A') {
+  if (!inputStr || inputStr.trim() === '' || inputStr.trim() === '#N/A' || /^n\/?a$/i.test(inputStr.trim()) || /^none$/i.test(inputStr.trim()) || /^null$/i.test(inputStr.trim())) {
     return { valid: true, value: '#N/A', cleanDigits: '' };
   }
 
@@ -388,6 +388,18 @@ router.post('/', requireAuth, async (req, res) => {
     }
     if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
+    const now = new Date();
+    const createdDate = getFormattedDate(now);
+    const createdTime = getFormattedTime(now);
+    const recordDate = (date || createdDate).trim();
+
+    if (recordDate > createdDate) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Enter valid date. Future dates are not allowed. Today or previous dates are allowed.' 
+      });
+    }
+
     // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
     const isDisabledRemark = await isAadharDisabledRemark(cleanRemark);
     const effectiveAadharNo = isDisabledRemark ? '' : aadharNo;
@@ -395,8 +407,11 @@ router.post('/', requireAuth, async (req, res) => {
     // Fetch system settings to check mandatory Aadhar requirement
     const sysSettings = await getSystemSettings();
     if (sysSettings.aadharMandatory && !isDisabledRemark) {
-      if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A') {
-        return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
+      if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A' || /^n\/?a$/i.test(effectiveAadharNo.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aadhar No. is mandatory according to system settings. Please enter a 12-digit Aadhar Number or select an exempt remark (e.g. Aadhar Not Made, Not Available, Foreigner).'
+        });
       }
     }
 
@@ -427,11 +442,6 @@ router.post('/', requireAuth, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Aadhar No already exists.' });
       }
     }
-
-    const now = new Date();
-    const createdDate = getFormattedDate(now);
-    const createdTime = getFormattedTime(now);
-    const recordDate = date || createdDate;
 
     const createdRec = await addRecord({
       pid: cleanPid,
@@ -566,6 +576,14 @@ router.put('/:id', requireAuth, async (req, res) => {
     const now = new Date();
     const updatedDate = getFormattedDate(now);
     const updatedTime = getFormattedTime(now);
+    const targetDate = (date || existingRecord.date || '').trim();
+
+    if (targetDate && targetDate > updatedDate) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Enter valid date. Future dates are not allowed. Today or previous dates are allowed.' 
+      });
+    }
 
     await updateRecord(rowIndex, {
       pid: cleanPid,

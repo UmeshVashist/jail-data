@@ -178,6 +178,66 @@ async function readFromR2(key) {
   return readLocal(key);
 }
 
+/* Dynamic Sync Cache Tracking for Multi-User & Multi-Computer Real-Time Sync */
+const lastSyncTimestamps = {
+  users: 0,
+  records: 0,
+  deleteRequests: 0,
+  editRequests: 0,
+  listAddRequests: 0,
+  remarkOptions: 0,
+  settings: 0,
+  psList: 0
+};
+const SYNC_CACHE_TTL = 3000; // 3 seconds cache TTL ensures instant updates across all computers without excess network calls
+
+async function ensureRecordsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.records > SYNC_CACHE_TTL)) {
+    const remote = await readFromR2(R2_KEYS.RECORDS);
+    if (remote && Array.isArray(remote)) {
+      memoryStore.records = remote;
+      lastSyncTimestamps.records = now;
+    }
+  }
+}
+
+async function ensurePSSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.psList > SYNC_CACHE_TTL)) {
+    const remote = await readFromR2(R2_KEYS.PS_LIST);
+    if (remote && Array.isArray(remote)) {
+      memoryStore.psList = remote.filter(p => {
+        const name = (p.psName || p.ps || '').trim().toLowerCase();
+        return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+      });
+      lastSyncTimestamps.psList = now;
+    }
+  }
+}
+
+async function ensureUsersSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.users > SYNC_CACHE_TTL)) {
+    const remote = await readFromR2(R2_KEYS.USERS);
+    if (remote && Array.isArray(remote)) {
+      memoryStore.users = remote;
+      lastSyncTimestamps.users = now;
+    }
+  }
+}
+
+async function ensureSettingsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.settings > SYNC_CACHE_TTL)) {
+    const remote = await readFromR2(R2_KEYS.SETTINGS);
+    if (remote && typeof remote === 'object') {
+      memoryStore.settings = remote;
+      lastSyncTimestamps.settings = now;
+    }
+  }
+}
+
 /* Helper: Date-Time formatter */
 function getFormattedDateTime(d = new Date()) {
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -399,14 +459,15 @@ async function syncAllCollections() {
    ========================================================================== */
 
 async function getUsers() {
+  await ensureUsersSynced();
   return memoryStore.users.map(u => {
     const isAdmin = (u.role || '').trim().toLowerCase() === 'admin';
     return {
       id: u.id || u.rowIndex,
       rowIndex: u.rowIndex || u.id,
       username: (u.username || '').trim(),
-      password: (u.password || '').trim(),
-      role: (u.role || 'View').trim(),
+      password: u.password,
+      role: u.role || 'View',
       importPermission: !!u.importPermission,
       fullAccess: !!u.fullAccess,
       deleteRequestPermission: !!u.deleteRequestPermission,
@@ -417,12 +478,14 @@ async function getUsers() {
 }
 
 async function getUserByUsername(username) {
+  await ensureUsersSynced();
   const users = await getUsers();
   const target = (username || '').toLowerCase().trim();
   return users.find(u => u.username.toLowerCase() === target) || null;
 }
 
 async function createUser(userObj) {
+  await ensureUsersSynced(true);
   const newId = memoryStore.users.length > 0 ? Math.max(...memoryStore.users.map(u => u.id || 0)) + 1 : 1;
   const newUser = {
     id: newId,
@@ -441,10 +504,12 @@ async function createUser(userObj) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.USERS, memoryStore.users);
+  lastSyncTimestamps.users = Date.now();
   return newUser;
 }
 
 async function updateUser(rowIndex, updateFields) {
+  await ensureUsersSynced(true);
   const target = memoryStore.users.find(u => (u.id === parseInt(rowIndex, 10) || u.rowIndex === parseInt(rowIndex, 10)));
   if (!target) return false;
 
@@ -459,8 +524,8 @@ async function updateUser(rowIndex, updateFields) {
   // Sync to local SQLite
   try {
     const { dbRun } = require('./database');
-    let sql = 'UPDATE users SET role = ?, import_permission = ?, full_access = ?, delete_request_permission = ?, status = ?';
-    let params = [target.role, target.importPermission ? 1 : 0, target.fullAccess ? 1 : 0, target.deleteRequestPermission ? 1 : 0, target.status];
+    let sql = 'UPDATE users SET role = ?, import_permission = ?, full_access = ?, delete_request_permission = ?, ps_list_permission = ?, status = ?';
+    let params = [target.role, target.importPermission ? 1 : 0, target.fullAccess ? 1 : 0, target.deleteRequestPermission ? 1 : 0, target.psListPermission ? 1 : 0, target.status];
     if (updateFields.password) {
       sql += ', password = ?';
       params.push(bcrypt.hashSync(updateFields.password, 10));
@@ -472,10 +537,12 @@ async function updateUser(rowIndex, updateFields) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.USERS, memoryStore.users);
+  lastSyncTimestamps.users = Date.now();
   return true;
 }
 
 async function deleteUser(rowIndex) {
+  await ensureUsersSynced(true);
   const target = memoryStore.users.find(u => (u.id === parseInt(rowIndex, 10) || u.rowIndex === parseInt(rowIndex, 10)));
   if (!target) return false;
 
@@ -489,6 +556,7 @@ async function deleteUser(rowIndex) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.USERS, memoryStore.users);
+  lastSyncTimestamps.users = Date.now();
   return true;
 }
 
@@ -497,6 +565,7 @@ async function deleteUser(rowIndex) {
    ========================================================================== */
 
 async function getRecords() {
+  await ensureRecordsSynced();
   return memoryStore.records.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -518,6 +587,8 @@ async function getRecords() {
 }
 
 async function addRecord(recObj) {
+  // Always fetch latest from Cloudflare R2 first to prevent overwriting multi-computer data
+  await ensureRecordsSynced(true);
   const newId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => r.id || 0)) + 1 : 1;
   const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
 
@@ -553,10 +624,12 @@ async function addRecord(recObj) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
+  lastSyncTimestamps.records = Date.now();
   return newRec;
 }
 
 async function updateRecord(rowIndex, recObj) {
+  await ensureRecordsSynced(true);
   const target = memoryStore.records.find(r => (r.id === parseInt(rowIndex, 10) || r.rowIndex === parseInt(rowIndex, 10)));
   if (!target) return false;
 
@@ -585,10 +658,12 @@ async function updateRecord(rowIndex, recObj) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
+  lastSyncTimestamps.records = Date.now();
   return true;
 }
 
 async function deleteRecord(rowIndex) {
+  await ensureRecordsSynced(true);
   const idNum = parseInt(rowIndex, 10);
   memoryStore.records = memoryStore.records.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
 
@@ -600,6 +675,7 @@ async function deleteRecord(rowIndex) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
+  lastSyncTimestamps.records = Date.now();
   return true;
 }
 
@@ -1027,17 +1103,20 @@ async function deleteRemarkOption(optionValue) {
    ========================================================================== */
 
 async function getSystemSettings() {
+  await ensureSettingsSynced();
   const raw = memoryStore.settings ? (memoryStore.settings.aadhar_mandatory ?? memoryStore.settings.aadharMandatory) : false;
   const aadharMandatory = String(raw).trim().toLowerCase() === 'true' || String(raw).trim() === '1';
   return { aadharMandatory };
 }
 
 async function updateSystemSetting(key, value) {
+  await ensureSettingsSynced(true);
   const strVal = (String(value).toLowerCase() === 'true' || String(value) === '1') ? 'true' : 'false';
   if (!memoryStore.settings) memoryStore.settings = {};
   memoryStore.settings[key] = strVal;
 
   await saveToR2(R2_KEYS.SETTINGS, memoryStore.settings);
+  lastSyncTimestamps.settings = Date.now();
   return await getSystemSettings();
 }
 
@@ -1046,6 +1125,7 @@ async function updateSystemSetting(key, value) {
    ========================================================================== */
 
 async function getPSList() {
+  await ensurePSSynced();
   return (memoryStore.psList || []).map(p => {
     const val = (p.psName || p.ps || p.name || '').toString().trim();
     return {
@@ -1062,6 +1142,7 @@ async function getPSList() {
 }
 
 async function addPSEntry(entryObj) {
+  await ensurePSSynced(true);
   const newId = memoryStore.psList.length > 0 ? Math.max(...memoryStore.psList.map(p => p.id || 0)) + 1 : 1;
   const cleanPS = (entryObj.psName || entryObj.ps || entryObj.name || '').toString().trim();
   const newEntry = {
@@ -1088,10 +1169,12 @@ async function addPSEntry(entryObj) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  lastSyncTimestamps.psList = Date.now();
   return newEntry;
 }
 
 async function updatePSEntry(id, entryObj) {
+  await ensurePSSynced(true);
   const idNum = parseInt(id, 10);
   const target = memoryStore.psList.find(p => p.id === idNum);
   if (!target) return false;
@@ -1116,10 +1199,12 @@ async function updatePSEntry(id, entryObj) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  lastSyncTimestamps.psList = Date.now();
   return target;
 }
 
 async function deletePSEntry(id) {
+  await ensurePSSynced(true);
   const idNum = parseInt(id, 10);
   const initialLen = memoryStore.psList.length;
   memoryStore.psList = memoryStore.psList.filter(p => p.id !== idNum);
@@ -1132,6 +1217,7 @@ async function deletePSEntry(id) {
 
     // Sync to Cloudflare R2
     await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+    lastSyncTimestamps.psList = Date.now();
     return true;
   }
   return false;
@@ -1139,6 +1225,7 @@ async function deletePSEntry(id) {
 
 async function batchAddPS(entriesArr) {
   if (!Array.isArray(entriesArr) || entriesArr.length === 0) return true;
+  await ensurePSSynced(true);
   let maxId = memoryStore.psList.length > 0 ? Math.max(...memoryStore.psList.map(p => p.id || 0)) : 0;
   const now = getFormattedDateTime();
 
@@ -1174,6 +1261,7 @@ async function batchAddPS(entriesArr) {
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+  lastSyncTimestamps.psList = Date.now();
   return true;
 }
 

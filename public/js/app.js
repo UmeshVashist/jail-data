@@ -77,6 +77,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
 
+  const recDateEl = document.getElementById('modal-record-date');
+  if (recDateEl) {
+    recDateEl.addEventListener('input', () => validateRecordDate(false));
+    recDateEl.addEventListener('change', () => validateRecordDate(true));
+  }
+
   const editRemarkEl = document.getElementById('send-edit-remark');
   if (editRemarkEl) editRemarkEl.addEventListener('change', handleSendEditRemarkChange);
 
@@ -200,7 +206,7 @@ function resetInactivityTimer() {
   lastActivityTimestamp = Date.now();
   try {
     localStorage.setItem('informaction_last_activity', lastActivityTimestamp.toString());
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function handleUserActivity() {
@@ -256,7 +262,7 @@ function checkInactivity() {
     if (val) {
       storedLastActivity = Math.max(lastActivityTimestamp, parseInt(val, 10) || 0);
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const idleTime = Date.now() - storedLastActivity;
   if (idleTime >= INACTIVITY_TIMEOUT_MS) {
@@ -268,7 +274,7 @@ function checkInactivity() {
 async function performAutoLogoutDueToInactivity() {
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
-  } catch (e) {}
+  } catch (e) { }
   currentUserState = null;
   document.getElementById('login-form').reset();
   showLoginScreen();
@@ -367,7 +373,7 @@ async function refreshCurrentUserPermissions() {
       currentUserState = { ...currentUserState, ...data.data };
       updateUIForRolePermissions();
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function handleLogout() {
@@ -978,7 +984,7 @@ function renderRecordsTable(records, highlightPid = null) {
     const recJson = encodeURIComponent(JSON.stringify(rec));
     const isHighlighted = (highlightPid && (String(rec.pid) === String(highlightPid) || String(rec.id) === String(highlightPid)));
     const highlightClass = isHighlighted ? 'highlight-new-row' : '';
-    
+
     let menuItems = [];
 
     // Edit option
@@ -1373,7 +1379,7 @@ function populateRemarkDropdown(selectedValue = '') {
 
   let html = '<option value="">-- Select Remark --</option>';
   const optionsList = [...currentRemarkOptions];
-  
+
   if (selectedValue && !optionsList.some(opt => (typeof opt === 'object' ? opt.optionValue : opt) === selectedValue)) {
     optionsList.unshift({ optionValue: selectedValue, disableAadhar: isAadharDisabledRemark(selectedValue) });
   }
@@ -1549,8 +1555,48 @@ async function checkAddRecordPidExists(forceServerCheck = false) {
 
 /* Record Modals */
 
+function getTodayDateStr() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const y = parts.find(p => p.type === 'year').value;
+    const m = parts.find(p => p.type === 'month').value;
+    const d = parts.find(p => p.type === 'day').value;
+    return `${y}-${m}-${d}`;
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+}
+
+function validateRecordDate(showToastWarning = false) {
+  const dateInput = document.getElementById('modal-record-date');
+  if (!dateInput) return true;
+  const errorEl = document.getElementById('modal-record-date-error');
+  const todayStr = getTodayDateStr();
+  const val = (dateInput.value || '').trim();
+
+  if (!val) {
+    dateInput.classList.add('is-invalid');
+    if (errorEl) errorEl.innerText = 'Enter valid date.';
+    if (showToastWarning) showToast('danger', 'Validation Error', 'Enter valid date.');
+    return false;
+  }
+
+  if (val > todayStr) {
+    dateInput.classList.add('is-invalid');
+    const msg = 'Enter valid date: Future dates are not allowed. Today or previous dates are allowed.';
+    if (errorEl) errorEl.innerText = msg;
+    if (showToastWarning) showToast('danger', 'Validation Error', msg);
+    return false;
+  }
+
+  dateInput.classList.remove('is-invalid');
+  return true;
+}
+
 async function showAddRecordModal() {
   await loadRemarkOptions();
+  await fetchSystemSettings();
   document.getElementById('recordModalTitle').innerText = 'Add New Data Record';
   document.getElementById('recordForm').reset();
   document.getElementById('record-edit-mode').value = 'add';
@@ -1564,7 +1610,15 @@ async function showAddRecordModal() {
   if (successMsg) successMsg.classList.add('d-none');
   const badge = document.getElementById('pid-status-badge');
   if (badge) badge.innerHTML = '';
-  document.getElementById('modal-record-date').value = new Date().toISOString().split('T')[0];
+
+  const todayStr = getTodayDateStr();
+  const dateInput = document.getElementById('modal-record-date');
+  if (dateInput) {
+    dateInput.max = todayStr;
+    dateInput.value = todayStr;
+    dateInput.classList.remove('is-invalid');
+  }
+
   const typeSelect = document.getElementById('modal-record-type');
   if (typeSelect) typeSelect.value = '';
   populateRemarkDropdown('');
@@ -1598,7 +1652,14 @@ async function showEditRecordModal(encodedRecJson) {
   }
 
   document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : rec.aadharNo);
-  document.getElementById('modal-record-date').value = rec.date;
+
+  const todayStr = getTodayDateStr();
+  const dateInput = document.getElementById('modal-record-date');
+  if (dateInput) {
+    dateInput.max = todayStr;
+    dateInput.value = rec.date || todayStr;
+    dateInput.classList.remove('is-invalid');
+  }
 
   populateRemarkDropdown(rec.remark || '');
   handleRecordRemarkChange();
@@ -1647,6 +1708,13 @@ async function handleRecordFormSubmit(event) {
     }
   }
 
+  // Validate record date (must be today or past date, future dates rejected)
+  if (!validateRecordDate(true)) {
+    const dateInput = document.getElementById('modal-record-date');
+    if (dateInput) dateInput.focus();
+    return;
+  }
+
   let rawUt = document.getElementById('modal-record-ut').value.trim();
   const recType = document.getElementById('modal-record-type') ? document.getElementById('modal-record-type').value : 'UT';
 
@@ -1661,7 +1729,7 @@ async function handleRecordFormSubmit(event) {
     utNo: rawUt,
     recordType: recType,
     aadharNo: aadharInput,
-    date: document.getElementById('modal-record-date').value,
+    date: document.getElementById('modal-record-date').value.trim(),
     remark: document.getElementById('modal-record-remark').value.trim()
   };
 
@@ -1759,7 +1827,7 @@ async function viewRecordByPid(pid, fallbackInput = null) {
     try {
       fallbackObj = JSON.parse(decodeURIComponent(fallbackInput));
     } catch (e) {
-      try { fallbackObj = JSON.parse(fallbackInput); } catch (e2) {}
+      try { fallbackObj = JSON.parse(fallbackInput); } catch (e2) { }
     }
   }
 
@@ -1897,7 +1965,7 @@ function processSelectedImportFile() {
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      
+
       const rawRecords = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
       if (!rawRecords || rawRecords.length === 0) {
@@ -2028,7 +2096,7 @@ function showFailedItemsModal() {
 function downloadImportIssueReport() {
   const type = lastImportResult.type;
   const items = type === 'duplicates' ? lastImportResult.duplicateItems : lastImportResult.failedItems;
-  
+
   if (!items || items.length === 0) {
     showToast('info', 'No Data', 'No records available to export.');
     return;
@@ -2077,11 +2145,11 @@ async function exportDataToExcel() {
         return newRow;
       });
       const sheetRows = [exportData.headers, ...processedRows];
-      
+
       const worksheet = XLSX.utils.aoa_to_sheet(sheetRows);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Records");
-      
+
       XLSX.writeFile(workbook, `Data_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
       showToast('success', 'Export Ready', 'Search results exported to Excel.');
     } else {
@@ -2318,7 +2386,7 @@ function filterUsersTable() {
   }
 
   if (q) {
-    filtered = filtered.filter(u => 
+    filtered = filtered.filter(u =>
       (u.username || '').toLowerCase().includes(q)
     );
   }
@@ -2572,7 +2640,7 @@ async function fetchPendingDeleteRequestsCount() {
         else badge.classList.add('d-none');
       }
     }
-  } catch (err) {}
+  } catch (err) { }
 }
 
 function openSendDeleteRequestModal(recordId, pid) {
@@ -2648,7 +2716,7 @@ function filterDeleteRequestsTable() {
   }
 
   if (q) {
-    filtered = filtered.filter(r => 
+    filtered = filtered.filter(r =>
       (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
     );
   }
@@ -2773,7 +2841,7 @@ async function fetchPendingDeleteRequestsCount() {
         else badge.classList.add('d-none');
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function fetchPendingEditRequestsCount() {
@@ -2789,7 +2857,7 @@ async function fetchPendingEditRequestsCount() {
         else badge.classList.add('d-none');
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function openSendEditRequestModal(encodedRecJson) {
@@ -2801,7 +2869,12 @@ async function openSendEditRequestModal(encodedRecJson) {
   document.getElementById('send-edit-father').value = rec.father || '';
   document.getElementById('send-edit-ut').value = rec.utNo || rec.ut_no || '';
   document.getElementById('send-edit-aadhar').value = rec.aadharNo || rec.aadhar_no || '';
-  document.getElementById('send-edit-date').value = rec.date || '';
+  const sendEditDate = document.getElementById('send-edit-date');
+  if (sendEditDate) {
+    sendEditDate.max = getTodayDateStr();
+    sendEditDate.value = rec.date || '';
+    sendEditDate.classList.remove('is-invalid');
+  }
   document.getElementById('send-edit-reason').value = '';
 
   const typeSelect = document.getElementById('send-edit-type');
@@ -2856,6 +2929,17 @@ async function handleSendEditRequestSubmit(event) {
       showToast('danger', 'Validation Error', 'Aadhar No. is mandatory according to system settings.');
       return;
     }
+  }
+
+  const todayStr = getTodayDateStr();
+  const editDateInput = document.getElementById('send-edit-date');
+  if (date && date.trim() > todayStr) {
+    if (editDateInput) editDateInput.classList.add('is-invalid');
+    showToast('danger', 'Validation Error', 'Enter valid date: Future dates are not allowed.');
+    if (editDateInput) editDateInput.focus();
+    return;
+  } else if (editDateInput) {
+    editDateInput.classList.remove('is-invalid');
   }
 
   if (!reason) {
@@ -2927,7 +3011,7 @@ function filterEditRequestsTable() {
   }
 
   if (q) {
-    filtered = filtered.filter(r => 
+    filtered = filtered.filter(r =>
       (r.pid || '').toLowerCase().includes(q) || (r.utNo || '').toLowerCase().includes(q)
     );
   }
@@ -3240,8 +3324,8 @@ function filterMyRequestsTable() {
   }
 
   if (q) {
-    filtered = filtered.filter(r => 
-      (r.pid || '').toLowerCase().includes(q) || 
+    filtered = filtered.filter(r =>
+      (r.pid || '').toLowerCase().includes(q) ||
       (r.utNo || '').toLowerCase().includes(q) ||
       (r.optionValue || '').toLowerCase().includes(q) ||
       (r.name || '').toLowerCase().includes(q)
@@ -3262,7 +3346,7 @@ function renderMyRequestsTable(requests) {
   requests.forEach(req => {
     const reqJson = encodeURIComponent(JSON.stringify(req));
     const statusBadge = req.status === 'Approved' ? 'bg-success' : req.status === 'Rejected' ? 'bg-secondary' : 'bg-warning text-dark';
-    
+
     let typeBadge = '';
     let pidDisplay = '-';
     let nameDisplay = '-';
@@ -3358,7 +3442,7 @@ async function fetchAllPendingRequestsCounts() {
     const elList = document.getElementById('admin-pending-listadd');
     if (elList) elList.innerText = listAddCount;
 
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function loadAllRequestsList() {
@@ -3418,8 +3502,8 @@ function filterAllRequestsTable() {
   }
 
   if (q) {
-    filtered = filtered.filter(r => 
-      (r.pid || '').toLowerCase().includes(q) || 
+    filtered = filtered.filter(r =>
+      (r.pid || '').toLowerCase().includes(q) ||
       (r.utNo || '').toLowerCase().includes(q) ||
       (r.optionValue || '').toLowerCase().includes(q) ||
       (r.name || '').toLowerCase().includes(q) ||
@@ -4136,6 +4220,19 @@ function updateAadharMandatoryUI() {
     labelEl.className = `form-check-label fs-6 fw-bold ms-2 align-middle mb-0 ${isMandatory ? 'text-primary' : 'text-secondary'}`;
   }
 
+  const aadharHelpText = document.getElementById('modal-record-aadhar-help');
+  const aadharLabel = document.getElementById('modal-record-aadhar-label');
+  if (aadharLabel) {
+    aadharLabel.innerHTML = isMandatory
+      ? 'Aadhar No. <span class="text-danger">*</span>'
+      : 'Aadhar No.';
+  }
+  if (aadharHelpText) {
+    aadharHelpText.innerText = isMandatory
+      ? ''
+      : 'Leave empty for #N/A';
+  }
+
   handleRecordRemarkChange();
   handleSendEditRemarkChange();
 }
@@ -4169,7 +4266,7 @@ async function toggleAadharMandatorySetting(checked) {
 // Proper Case Helper Function
 function toProperCase(str) {
   if (!str) return '';
-  return str.replace(/\b\w/g, function(txt) {
+  return str.replace(/\b\w/g, function (txt) {
     return txt.toUpperCase();
   });
 }
@@ -4179,7 +4276,7 @@ function handleProperCaseInput(e) {
   const end = e.target.selectionEnd;
   const val = e.target.value;
   // Convert words: first letter uppercase, rest lowercase per word as user types
-  const formatted = val.replace(/\b\w+/g, function(word) {
+  const formatted = val.replace(/\b\w+/g, function (word) {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   });
   if (e.target.value !== formatted) {

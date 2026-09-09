@@ -1315,8 +1315,8 @@
 
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label for="modal-record-pid" class="form-label small fw-semibold text-secondary">PID <span class="text-danger">* (Numbers Only)</span> <span id="pid-status-badge"></span></label>
-                <input type="text" class="form-control" id="modal-record-pid" placeholder="Numeric PID (e.g. 1001)" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkAddRecordPidExists();" onblur="checkAddRecordPidExists(true);" onkeydown="if(event.key==='Tab'||event.key==='Enter') checkAddRecordPidExists(true);" required>
+                <label for="modal-record-pid" class="form-label small fw-semibold text-secondary">PID <span class="text-danger">* </span> <span id="pid-status-badge"></span></label>
+                <input type="text" class="form-control" id="modal-record-pid" placeholder="PID (e.g. 1001)" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkAddRecordPidExists();" onblur="checkAddRecordPidExists(true);" onkeydown="if(event.key==='Tab'||event.key==='Enter') checkAddRecordPidExists(true);" required>
                 <div id="pid-error-msg" class="text-danger small mt-1 d-none fw-semibold"><i class="bi bi-exclamation-circle me-1"></i>This PID already exists!</div>
                 <div id="pid-success-msg" class="text-success small mt-1 d-none fw-semibold"><i class="bi bi-check-circle me-1"></i>PID is available!</div>
               </div>
@@ -1345,13 +1345,14 @@
                 </div>
               </div>
               <div class="col-12 col-md-6">
-                <label for="modal-record-aadhar" class="form-label small fw-semibold text-secondary">Aadhar No.</label>
+                <label for="modal-record-aadhar" id="modal-record-aadhar-label" class="form-label small fw-semibold text-secondary">Aadhar No.</label>
                 <input type="text" class="form-control" id="modal-record-aadhar" placeholder="Min 12 digits or leave blank for #N/A" autocomplete="off">
-                <div class="form-text text-muted small opacity-75">Leave empty for #N/A</div>
+                <div class="form-text text-muted small opacity-75" id="modal-record-aadhar-help">Leave empty for #N/A</div>
               </div>
               <div class="col-12 col-md-6">
                 <label for="modal-record-date" class="form-label small fw-semibold text-secondary">Date</label>
                 <input type="date" class="form-control" id="modal-record-date" autocomplete="off">
+                <div class="invalid-feedback" id="modal-record-date-error">Enter valid date. Future dates are not allowed.</div>
               </div>
               <div class="col-12">
                 <label for="modal-record-remark" class="form-label small fw-semibold text-secondary">Remark <span class="text-primary">(Select from List)</span></label>
@@ -1624,6 +1625,7 @@
               <div class="col-md-6">
                 <label for="send-edit-date" class="form-label small fw-semibold text-secondary">Record Date</label>
                 <input type="date" class="form-control" id="send-edit-date">
+                <div class="invalid-feedback" id="send-edit-date-error">Enter valid date. Future dates are not allowed.</div>
               </div>
               <div class="col-md-6">
                 <label for="send-edit-remark" class="form-label small fw-semibold text-secondary">Remark</label>

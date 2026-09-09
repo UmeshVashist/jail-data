@@ -219,6 +219,14 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
         continue;
       }
 
+      if (formattedRecordDate > createdDate) {
+        failedCount++;
+        const msg = `Row ${rowNum} (PID ${pid || '-'}): Enter valid date. Future dates are not allowed (${formattedRecordDate}).`;
+        failedDetails.push(msg);
+        failedItems.push({ row: rowNum, pid: pid || '-', name: name || '-', reason: 'Future date not allowed' });
+        continue;
+      }
+
       if (!pid) {
         failedCount++;
         const msg = `Row ${rowNum}: Missing PID`;

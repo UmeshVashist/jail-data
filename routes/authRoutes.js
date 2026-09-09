@@ -83,7 +83,23 @@ router.post('/login', async (req, res) => {
 });
 
 // Check Session Status
-router.get('/session', requireAuth, (req, res) => {
+router.get('/session', requireAuth, async (req, res) => {
+  try {
+    const freshUser = await getUserByUsername(req.user.username);
+    if (freshUser) {
+      req.user = freshUser;
+      req.session.user = {
+        username: freshUser.username,
+        role: freshUser.role,
+        importPermission: !!freshUser.importPermission,
+        fullAccess: !!freshUser.fullAccess,
+        deleteRequestPermission: !!freshUser.deleteRequestPermission,
+        psListPermission: !!freshUser.psListPermission,
+        status: freshUser.status
+      };
+    }
+  } catch (e) {}
+
   res.json({
     success: true,
     data: {

@@ -52,6 +52,9 @@ const dbAll = (sql, params = []) => {
 
 // Initialize database schema and default records
 async function initDatabase() {
+  if (!db) {
+    return;
+  }
   try {
     // Create Users table
     await dbRun(`
@@ -63,17 +66,19 @@ async function initDatabase() {
         import_permission INTEGER DEFAULT 0,
         full_access INTEGER DEFAULT 0,
         delete_request_permission INTEGER DEFAULT 0,
+        ps_list_permission INTEGER DEFAULT 0,
         status TEXT DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Ensure delete_request_permission column exists in existing DB
+    // Ensure delete_request_permission and ps_list_permission columns exist in existing DB
     try {
       await dbRun(`ALTER TABLE users ADD COLUMN delete_request_permission INTEGER DEFAULT 0`);
-    } catch (e) {
-      // Column already exists
-    }
+    } catch (e) {}
+    try {
+      await dbRun(`ALTER TABLE users ADD COLUMN ps_list_permission INTEGER DEFAULT 0`);
+    } catch (e) {}
 
     // Create Delete Requests table
     await dbRun(`
