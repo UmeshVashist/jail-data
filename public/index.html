@@ -1346,7 +1346,7 @@
               </div>
               <div class="col-12 col-md-6">
                 <label for="modal-record-aadhar" id="modal-record-aadhar-label" class="form-label small fw-semibold text-secondary">Aadhar No.</label>
-                <input type="text" class="form-control" id="modal-record-aadhar" placeholder="Min 12 digits or leave blank for #N/A" autocomplete="off">
+                <input type="text" class="form-control" id="modal-record-aadhar" placeholder="Min 12 digits or leave blank for #N/A" autocomplete="off" inputmode="numeric" maxlength="12" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                 <div class="form-text text-muted small opacity-75" id="modal-record-aadhar-help">Leave empty for #N/A</div>
               </div>
               <div class="col-12 col-md-6">
@@ -1620,7 +1620,7 @@
               </div>
               <div class="col-md-6">
                 <label for="send-edit-aadhar" class="form-label small fw-semibold text-secondary">Aadhar No</label>
-                <input type="text" class="form-control" id="send-edit-aadhar" placeholder="12 digit Aadhar number" maxlength="14" autocomplete="off">
+                <input type="text" class="form-control" id="send-edit-aadhar" placeholder="12 digit Aadhar number" maxlength="12" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '');" autocomplete="off">
               </div>
               <div class="col-md-6">
                 <label for="send-edit-date" class="form-label small fw-semibold text-secondary">Record Date</label>

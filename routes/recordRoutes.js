@@ -102,6 +102,22 @@ function getFormattedDate(d = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeToYMD(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const s = dateStr.trim();
+  // Format: YYYY-MM-DD or YYYY/MM/DD
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (m) {
+    return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  }
+  // Format: DD-MM-YYYY or DD/MM/YYYY
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return s;
+}
+
 function getFormattedTime(d = new Date()) {
   return d.toLocaleTimeString('en-US', {
     timeZone: 'Asia/Kolkata',
@@ -123,15 +139,19 @@ function processAadharInput(inputStr) {
   }
 
   const str = inputStr.trim();
+  if (/[^\d\s]/.test(str)) {
+    return { valid: false, error: 'Aadhar No must contain numbers only.' };
+  }
+
   const cleanDigits = str.replace(/\D/g, '');
 
   if (cleanDigits.length < 12) {
     return { valid: false, error: 'Aadhar No must contain at least 12 digits.' };
   }
 
-  // Format 12+ digits as 'XXXX XXXX XXXX'
-  const formatted = cleanDigits.replace(/^(\d{4})(\d{4})(\d{4})(.*)$/, '$1 $2 $3$4').trim();
-  return { valid: true, value: formatted, cleanDigits: cleanDigits };
+  // Format 12 digits as 'XXXX XXXX XXXX'
+  const formatted = cleanDigits.slice(0, 12).replace(/^(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3').trim();
+  return { valid: true, value: formatted, cleanDigits: cleanDigits.slice(0, 12) };
 }
 
 async function isAadharDisabledRemark(remarkValue) {
@@ -391,7 +411,7 @@ router.post('/', requireAuth, async (req, res) => {
     const now = new Date();
     const createdDate = getFormattedDate(now);
     const createdTime = getFormattedTime(now);
-    const recordDate = (date || createdDate).trim();
+    const recordDate = normalizeToYMD(date) || createdDate;
 
     if (recordDate > createdDate) {
       return res.status(400).json({ 
@@ -576,7 +596,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const now = new Date();
     const updatedDate = getFormattedDate(now);
     const updatedTime = getFormattedTime(now);
-    const targetDate = (date || existingRecord.date || '').trim();
+    const targetDate = normalizeToYMD(date || existingRecord.date);
 
     if (targetDate && targetDate > updatedDate) {
       return res.status(400).json({ 

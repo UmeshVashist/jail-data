@@ -80,11 +80,35 @@ document.addEventListener('DOMContentLoaded', function () {
   const recDateEl = document.getElementById('modal-record-date');
   if (recDateEl) {
     recDateEl.addEventListener('input', () => validateRecordDate(false));
-    recDateEl.addEventListener('change', () => validateRecordDate(true));
+    recDateEl.addEventListener('change', () => validateRecordDate(false));
+  }
+
+  const aadharInputEl = document.getElementById('modal-record-aadhar');
+  if (aadharInputEl) {
+    aadharInputEl.addEventListener('input', function () {
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+    });
+    aadharInputEl.addEventListener('paste', function () {
+      setTimeout(() => {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+      }, 0);
+    });
   }
 
   const editRemarkEl = document.getElementById('send-edit-remark');
   if (editRemarkEl) editRemarkEl.addEventListener('change', handleSendEditRemarkChange);
+
+  const sendEditAadharEl = document.getElementById('send-edit-aadhar');
+  if (sendEditAadharEl) {
+    sendEditAadharEl.addEventListener('input', function () {
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+    });
+    sendEditAadharEl.addEventListener('paste', function () {
+      setTimeout(() => {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+      }, 0);
+    });
+  }
 
   checkSessionOnLoad();
   setupDropzone();
@@ -1555,6 +1579,22 @@ async function checkAddRecordPidExists(forceServerCheck = false) {
 
 /* Record Modals */
 
+function normalizeToYMD(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const s = dateStr.trim();
+  // Format: YYYY-MM-DD or YYYY/MM/DD
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (m) {
+    return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  }
+  // Format: DD-MM-YYYY or DD/MM/YYYY
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return s;
+}
+
 function getTodayDateStr() {
   try {
     const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
@@ -1573,23 +1613,42 @@ function validateRecordDate(showToastWarning = false) {
   if (!dateInput) return true;
   const errorEl = document.getElementById('modal-record-date-error');
   const todayStr = getTodayDateStr();
-  const val = (dateInput.value || '').trim();
+  const rawVal = (dateInput.value || '').trim();
 
-  if (!val) {
-    dateInput.classList.add('is-invalid');
-    if (errorEl) errorEl.innerText = 'Enter valid date.';
-    if (showToastWarning) showToast('danger', 'Validation Error', 'Enter valid date.');
-    return false;
+  // If empty: only show error if submitting form (showToastWarning === true)
+  if (!rawVal) {
+    if (showToastWarning) {
+      dateInput.classList.add('is-invalid');
+      if (errorEl) errorEl.innerText = 'Enter valid date.';
+      showToast('danger', 'Validation Error', 'Enter valid date.');
+      return false;
+    }
+    // Don't disturb user with red border while typing/editing
+    dateInput.classList.remove('is-invalid');
+    return true;
   }
 
-  if (val > todayStr) {
+  const normalizedVal = normalizeToYMD(rawVal);
+  if (!normalizedVal) {
+    if (showToastWarning) {
+      dateInput.classList.add('is-invalid');
+      if (errorEl) errorEl.innerText = 'Enter valid date.';
+      showToast('danger', 'Validation Error', 'Enter valid date.');
+      return false;
+    }
+    return true;
+  }
+
+  // Future date check
+  if (normalizedVal > todayStr) {
     dateInput.classList.add('is-invalid');
-    const msg = 'Enter valid date: Future dates are not allowed. Today or previous dates are allowed.';
+    const msg = 'Enter valid date';
     if (errorEl) errorEl.innerText = msg;
     if (showToastWarning) showToast('danger', 'Validation Error', msg);
     return false;
   }
 
+  // Valid date (today or past date)
   dateInput.classList.remove('is-invalid');
   return true;
 }
@@ -1651,7 +1710,7 @@ async function showEditRecordModal(encodedRecJson) {
     }
   }
 
-  document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : rec.aadharNo);
+  document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : (rec.aadharNo || '').replace(/\D/g, ''));
 
   const todayStr = getTodayDateStr();
   const dateInput = document.getElementById('modal-record-date');
@@ -1701,19 +1760,43 @@ async function handleRecordFormSubmit(event) {
   }
 
   if (!isAadharDisabledRemark(remark) && aadharInput !== '' && aadharInput !== '#N/A') {
+    if (!/^\d+$/.test(aadharInput)) {
+      showToast('danger', 'Validation Error', 'Aadhar No must contain numbers only.');
+      document.getElementById('modal-record-aadhar').focus();
+      return;
+    }
     const cleanDigits = aadharInput.replace(/\D/g, '');
     if (cleanDigits.length < 12) {
       showToast('danger', 'Validation Error', 'Aadhar No must contain at least 12 digits.');
+      document.getElementById('modal-record-aadhar').focus();
       return;
     }
   }
 
   // Validate record date (must be today or past date, future dates rejected)
-  if (!validateRecordDate(true)) {
-    const dateInput = document.getElementById('modal-record-date');
-    if (dateInput) dateInput.focus();
+  const dateInput = document.getElementById('modal-record-date');
+  const rawDate = dateInput ? dateInput.value.trim() : '';
+  const normalizedDate = normalizeToYMD(rawDate);
+  const todayStr = getTodayDateStr();
+
+  if (!rawDate || !normalizedDate) {
+    if (dateInput) {
+      dateInput.classList.add('is-invalid');
+      dateInput.focus();
+    }
+    showToast('danger', 'Validation Error', 'Enter valid date.');
     return;
   }
+
+  if (normalizedDate > todayStr) {
+    if (dateInput) {
+      dateInput.classList.add('is-invalid');
+      dateInput.focus();
+    }
+    showToast('danger', 'Validation Error', 'Enter valid date');
+    return;
+  }
+  if (dateInput) dateInput.classList.remove('is-invalid');
 
   let rawUt = document.getElementById('modal-record-ut').value.trim();
   const recType = document.getElementById('modal-record-type') ? document.getElementById('modal-record-type').value : 'UT';
@@ -1729,7 +1812,7 @@ async function handleRecordFormSubmit(event) {
     utNo: rawUt,
     recordType: recType,
     aadharNo: aadharInput,
-    date: document.getElementById('modal-record-date').value.trim(),
+    date: normalizedDate,
     remark: document.getElementById('modal-record-remark').value.trim()
   };
 
@@ -2868,7 +2951,7 @@ async function openSendEditRequestModal(encodedRecJson) {
   document.getElementById('send-edit-name').value = rec.name;
   document.getElementById('send-edit-father').value = rec.father || '';
   document.getElementById('send-edit-ut').value = rec.utNo || rec.ut_no || '';
-  document.getElementById('send-edit-aadhar').value = rec.aadharNo || rec.aadhar_no || '';
+  document.getElementById('send-edit-aadhar').value = (rec.aadharNo === '#N/A' ? '' : (rec.aadharNo || rec.aadhar_no || '').replace(/\D/g, ''));
   const sendEditDate = document.getElementById('send-edit-date');
   if (sendEditDate) {
     sendEditDate.max = getTodayDateStr();
@@ -2927,6 +3010,14 @@ async function handleSendEditRequestSubmit(event) {
   if (window.systemSettings && window.systemSettings.aadharMandatory && !isAadharDisabledRemark(remark)) {
     if (!aadharNo || aadharNo === '#N/A') {
       showToast('danger', 'Validation Error', 'Aadhar No. is mandatory according to system settings.');
+      return;
+    }
+  }
+
+  if (!isAadharDisabledRemark(remark) && aadharNo !== '' && aadharNo !== '#N/A') {
+    if (!/^\d+$/.test(aadharNo)) {
+      showToast('danger', 'Validation Error', 'Aadhar No must contain numbers only.');
+      document.getElementById('send-edit-aadhar').focus();
       return;
     }
   }

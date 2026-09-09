@@ -52,6 +52,16 @@ function getFormattedDate(d = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeToYMD(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const s = dateStr.trim();
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return s;
+}
+
 function getFormattedTime(d = new Date()) {
   return d.toLocaleTimeString('en-US', {
     timeZone: 'Asia/Kolkata',
@@ -98,7 +108,7 @@ router.post('/', async (req, res) => {
     const reqDate = getFormattedDate(now);
     const reqTime = getFormattedTime(now);
 
-    const propDate = (proposedData.date || '').trim();
+    const propDate = normalizeToYMD(proposedData.date);
     if (propDate && propDate > reqDate) {
       return res.status(400).json({ success: false, message: 'Enter valid date. Future dates are not allowed. Today or previous dates are allowed.' });
     }
@@ -112,6 +122,10 @@ router.post('/', async (req, res) => {
       if (!propAadhar || propAadhar === '' || propAadhar === '#N/A') {
         return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
       }
+    }
+
+    if (propAadhar && propAadhar !== '#N/A' && /[^\d\s]/.test(propAadhar)) {
+      return res.status(400).json({ success: false, message: 'Aadhar No must contain numbers only.' });
     }
 
     await createEditRequest({
