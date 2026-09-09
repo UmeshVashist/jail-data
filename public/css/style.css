@@ -222,41 +222,161 @@ body::after {
 }
 
 #sidebar .nav-link {
-  color: var(--sidebar-text);
-  padding: 0.7rem 0.9rem;
-  border-radius: 12px;
-  margin: 0.25rem 0.6rem;
+  color: var(--sidebar-text, #94a3b8);
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  margin: 0.28rem 0.6rem;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.88rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  transition: all 0.2s ease-in-out;
-}
-
-#sidebar .nav-link i {
-  font-size: 1.15rem;
-  transition: transform 0.2s ease;
+  gap: 0.85rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
 }
 
 #sidebar .nav-link:hover {
-  background-color: var(--sidebar-hover);
-  color: var(--sidebar-active-text);
-}
-
-#sidebar .nav-link:hover i {
-  transform: translateX(2px);
+  background-color: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 #sidebar .nav-link.active {
-  background: var(--primary-gradient);
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.45);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 6px 16px var(--primary-glow);
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.25);
 }
 
-#sidebar .nav-link.active i {
+/* 3D Colorful Icon Container */
+.nav-icon-3d {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.25);
+}
+
+.nav-icon-3d i {
+  font-size: 1.05rem !important;
   color: #ffffff !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#sidebar .nav-link:hover .nav-icon-3d {
+  transform: translateY(-2px) scale(1.08);
+}
+
+#sidebar .nav-link:hover .nav-icon-3d i {
+  transform: scale(1.1);
+}
+
+#sidebar .nav-link.active .nav-icon-3d {
+  transform: translateY(-1px) scale(1.06);
+}
+
+/* 1. Dashboard: 3D Royal Purple & Indigo */
+.nav-icon-dashboard {
+  background: linear-gradient(135deg, #818cf8 0%, #4f46e5 50%, #3730a3 100%);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-dashboard {
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 2. Data Records: 3D Emerald & Jade */
+.nav-icon-records {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-records {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 3. Import Data: 3D Golden Amber & Vibrant Orange */
+.nav-icon-import {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #c2410c 100%);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-import {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 4. All Requests: 3D Coral Crimson & Rose */
+.nav-icon-all-requests {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #be123c 100%);
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-all-requests {
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 5. My Requests: 3D Electric Cyan & Sky Blue */
+.nav-icon-my-requests {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0369a1 100%);
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-my-requests {
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 6. Reactive List: 3D Vivid Magenta & Fuchsia */
+.nav-icon-reactive {
+  background: linear-gradient(135deg, #f472b6 0%, #d946ef 50%, #a21caf 100%);
+  box-shadow: 0 4px 10px rgba(217, 70, 239, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-reactive {
+  box-shadow: 0 0 16px rgba(217, 70, 239, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 7. User Management: 3D Royal Sapphire & Blue */
+.nav-icon-users {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-users {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 8. PS List: 3D Turquoise & Deep Teal */
+.nav-icon-ps {
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #0f766e 100%);
+  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-ps {
+  box-shadow: 0 0 16px rgba(20, 184, 166, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 9. System Settings: 3D Electric Violet & Amethyst */
+.nav-icon-settings {
+  background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 50%, #5b21b6 100%);
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-settings {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 10. Logout 3D Button */
+.nav-icon-logout {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #b91c1c 100%);
+  box-shadow: 0 3px 6px rgba(239, 68, 68, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+.nav-icon-logout i {
+  font-size: 0.85rem !important;
 }
 
 /* Top Navbar Header */
@@ -425,51 +545,459 @@ body::after {
   border: 1px solid #cbd5e1;
 }
 
-/* Buttons Polish */
-.btn-primary {
-  background: var(--primary-gradient);
-  border: none;
-  box-shadow: 0 4px 12px var(--primary-glow);
-  transition: all 0.2s ease-in-out;
-}
+/* ==========================================================================
+   Comprehensive 3D Colorful Buttons System with Tactile Animations
+   ========================================================================== */
 
-.btn-primary:hover, .btn-primary:focus {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px var(--primary-glow);
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.btn-success:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-}
-
-/* Action Dropdown Dots Button */
-.action-dots-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+/* Universal 3D Button Base */
+.btn {
+  position: relative;
+  overflow: hidden;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  transition: all 0.15s ease-in-out;
+  gap: 0.45rem;
+  vertical-align: middle;
+  text-decoration: none !important;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              background 0.22s ease, 
+              color 0.15s ease,
+              border-color 0.2s ease !important;
+}
+
+/* 3D Button Gloss / Shimmer Micro-Animation Sweep */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    65deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  transition: left 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  z-index: 3;
+}
+
+.btn:hover::after {
+  left: 150%;
+  opacity: 1;
+}
+
+/* Tactile Physical Depression on Click (Push Down 3D Effect) */
+.btn:active {
+  transform: translateY(3px) scale(0.97) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* 1. Primary Button: 3D Vivid Royal Indigo & Violet */
+.btn-primary {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 45%, #4f46e5 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 0 #3730a3, 
+              0 6px 14px rgba(79, 70, 229, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(180deg, #939bf9 0%, #6d70f7 45%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #312e81, 
+              0 12px 24px rgba(79, 70, 229, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-primary:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #312e81, 
+              0 2px 6px rgba(79, 70, 229, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 2. Success Button: 3D Vivid Emerald & Mint Green */
+.btn-success {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 45%, #059669 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 0 #047857, 
+              0 6px 14px rgba(16, 185, 129, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-success:hover, .btn-success:focus {
+  background: linear-gradient(180deg, #4ade80 0%, #10b981 45%, #047857 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #065f46, 
+              0 12px 24px rgba(16, 185, 129, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-success:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #065f46, 
+              0 2px 6px rgba(16, 185, 129, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 3. Danger Button: 3D Vivid Ruby Crimson & Coral */
+.btn-danger {
+  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 45%, #e11d48 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 0 #9f1239, 
+              0 6px 14px rgba(244, 63, 94, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-danger:hover, .btn-danger:focus {
+  background: linear-gradient(180deg, #fda4af 0%, #fb7185 45%, #be123c 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #881337, 
+              0 12px 24px rgba(244, 63, 94, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-danger:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #881337, 
+              0 2px 6px rgba(244, 63, 94, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 4. Warning Button: 3D Radiant Amber Gold & Tangerine */
+.btn-warning {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 45%, #d97706 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(120, 53, 15, 0.65);
+  box-shadow: 0 4px 0 #b45309, 
+              0 6px 14px rgba(245, 158, 11, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.65), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-warning:hover, .btn-warning:focus {
+  background: linear-gradient(180deg, #fef08a 0%, #fbbf24 45%, #b45309 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #92400e, 
+              0 12px 24px rgba(245, 158, 11, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-warning:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #92400e, 
+              0 2px 6px rgba(245, 158, 11, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 5. Info Button: 3D Electric Cyan & Neon Sky */
+.btn-info {
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 45%, #0284c7 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(3, 105, 161, 0.55);
+  box-shadow: 0 4px 0 #0369a1, 
+              0 6px 14px rgba(14, 165, 233, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.55), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-info:hover, .btn-info:focus {
+  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #075985, 
+              0 12px 24px rgba(14, 165, 233, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.75), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-info:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #075985, 
+              0 2px 6px rgba(14, 165, 233, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 6. Secondary Button: 3D Titanium Slate & Graphite */
+.btn-secondary {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 45%, #475569 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 0 #334155, 
+              0 6px 14px rgba(71, 85, 105, 0.35), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.45), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-secondary:hover, .btn-secondary:focus {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 45%, #334155 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #1e293b, 
+              0 12px 22px rgba(71, 85, 105, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.65), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-secondary:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #1e293b, 
+              0 2px 5px rgba(71, 85, 105, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 7. Light Button: 3D Pearl Frosted Bevel */
+.btn-light {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #e2e8f0 100%) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 5px 12px rgba(0, 0, 0, 0.07), 
+              inset 0 1px 1px #ffffff, 
+              inset 0 -2px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-light:hover, .btn-light:focus {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 0 #94a3b8, 
+              0 8px 18px rgba(0, 0, 0, 0.12), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.btn-light:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #94a3b8, 
+              0 2px 4px rgba(0, 0, 0, 0.1), 
+              inset 0 2px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 8. 3D Colorful Outline Buttons */
+.btn-outline-primary {
+  background: rgba(99, 102, 241, 0.06) !important;
+  border: 1.5px solid #6366f1 !important;
+  color: #4f46e5 !important;
+  box-shadow: 0 3px 0 #6366f1, 
+              0 4px 10px rgba(99, 102, 241, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 45%, #4f46e5 100%) !important;
+  border-color: #4f46e5 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #3730a3, 
+              0 10px 20px rgba(79, 70, 229, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-primary:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #3730a3, 
+              0 2px 4px rgba(79, 70, 229, 0.3) !important;
+}
+
+.btn-outline-success {
+  background: rgba(16, 185, 129, 0.06) !important;
+  border: 1.5px solid #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 3px 0 #10b981, 
+              0 4px 10px rgba(16, 185, 129, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-success:hover, .btn-outline-success:focus {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 45%, #059669 100%) !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #047857, 
+              0 10px 20px rgba(16, 185, 129, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-success:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #047857, 
+              0 2px 4px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-outline-danger {
+  background: rgba(244, 63, 94, 0.06) !important;
+  border: 1.5px solid #f43f5e !important;
+  color: #e11d48 !important;
+  box-shadow: 0 3px 0 #f43f5e, 
+              0 4px 10px rgba(244, 63, 94, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-danger:hover, .btn-outline-danger:focus {
+  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 45%, #e11d48 100%) !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #9f1239, 
+              0 10px 20px rgba(244, 63, 94, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-danger:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #9f1239, 
+              0 2px 4px rgba(244, 63, 94, 0.3) !important;
+}
+
+.btn-outline-secondary {
+  background: rgba(100, 116, 139, 0.05) !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #475569 !important;
+  box-shadow: 0 3px 0 #94a3b8, 
+              0 4px 8px rgba(0, 0, 0, 0.06), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 45%, #475569 100%) !important;
+  border-color: #475569 !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #334155, 
+              0 10px 18px rgba(71, 85, 105, 0.35), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-secondary:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #334155, 
+              0 2px 4px rgba(71, 85, 105, 0.25) !important;
+}
+
+/* 9. Action Dropdown Dots Button (3D Micro-Dial) */
+.action-dots-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 4px 8px rgba(0, 0, 0, 0.06), 
+              inset 0 1px 1px #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  cursor: pointer;
 }
 
 .action-dots-btn:hover, .show > .action-dots-btn {
-  background-color: #e0e7ff !important;
+  background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%) !important;
   border-color: var(--primary-color) !important;
   color: var(--primary-color) !important;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 0 #4f46e5, 
+              0 6px 14px rgba(99, 102, 241, 0.35), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.action-dots-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #4f46e5, 
+              inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 10. Theme Toggle Button (3D Sun/Moon Spherical Dial) */
+.theme-toggle-btn {
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%) !important;
+  border: 1.5px solid #f59e0b !important;
+  color: #d97706 !important;
+  box-shadow: 0 3px 0 #b45309, 
+              0 4px 10px rgba(245, 158, 11, 0.35), 
+              inset 0 1px 1px #ffffff !important;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  cursor: pointer;
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-2.5px) rotate(15deg) scale(1.08) !important;
+  box-shadow: 0 5px 0 #92400e, 
+              0 8px 18px rgba(245, 158, 11, 0.5), 
+              inset 0 1px 1px #ffffff !important;
+  color: #b45309 !important;
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #92400e !important;
+}
+
+/* 11. 3D Pagination Buttons */
+.pagination .page-link {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px !important;
+  margin: 0 3px;
+  color: #475569;
+  font-weight: 600;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 3px 6px rgba(0, 0, 0, 0.04), 
+              inset 0 1px 1px #ffffff;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pagination .page-link:hover {
+  transform: translateY(-2px);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 0 #94a3b8, 
+              0 6px 12px rgba(99, 102, 241, 0.15);
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 100%) !important;
+  border-color: #6366f1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 0 #3730a3, 
+              0 4px 12px rgba(99, 102, 241, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px);
 }
 
 /* Drag and Dropzone Container */
@@ -575,6 +1103,12 @@ body.dark-theme .ps-table-scroll-container thead th {
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* Police Station (PS) List Table text uppercase */
+#ps-table-body td,
+#ps-table-body td .badge {
+  text-transform: uppercase !important;
+}
+
 /* Mobile Sidebar Slide Behavior */
 @media (max-width: 767.98px) {
   #sidebar {
@@ -587,12 +1121,12 @@ body.dark-theme .ps-table-scroll-container thead th {
   }
 }
 
-/* Modern Close & Cross Buttons for Modals */
+/* 3D Modern Close & Cross Buttons for Modals */
 .btn-close-modern {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
   border: 1px solid #cbd5e1;
   color: #64748b;
   display: inline-flex;
@@ -601,19 +1135,25 @@ body.dark-theme .ps-table-scroll-container thead th {
   font-size: 0.85rem;
   cursor: pointer;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 0 #cbd5e1, 0 3px 6px rgba(0, 0, 0, 0.08), inset 0 1px 1px #ffffff;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .btn-close-modern:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-  transform: rotate(90deg);
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(-2px) rotate(90deg) scale(1.08);
+  box-shadow: 0 4px 0 #9f1239, 0 6px 14px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.btn-close-modern:active {
+  transform: translateY(2px) rotate(90deg) scale(0.95) !important;
+  box-shadow: 0 1px 0 #9f1239;
 }
 
 .btn-modern-close {
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
   color: #475569;
   border: 1px solid #cbd5e1;
   font-weight: 600;
@@ -623,9 +1163,9 @@ body.dark-theme .ps-table-scroll-container thead th {
   outline: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  gap: 0.45rem;
+  box-shadow: 0 3px 0 #cbd5e1, 0 3px 6px rgba(0, 0, 0, 0.05), inset 0 1px 1px #ffffff;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .btn-modern-close i {
@@ -634,15 +1174,20 @@ body.dark-theme .ps-table-scroll-container thead th {
 }
 
 .btn-modern-close:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 0 #9f1239, 0 6px 14px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
 .btn-modern-close:hover i {
   transform: rotate(90deg);
+}
+
+.btn-modern-close:active {
+  transform: translateY(2px) scale(0.96) !important;
+  box-shadow: 0 1px 0 #9f1239;
 }
 
 /* ==========================================================================
@@ -736,24 +1281,55 @@ body.dark-theme .badge.bg-light {
 }
 
 body.dark-theme .btn-light {
-  background-color: #1e293b !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   color: #f8fafc !important;
+  box-shadow: 0 3px 0 #0f172a, 
+              0 4px 10px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
 }
 
 body.dark-theme .btn-light:hover {
-  background-color: #334155 !important;
+  background: linear-gradient(180deg, #475569 0%, #334155 100%) !important;
   color: #ffffff !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 0 #020617, 
+              0 8px 16px rgba(0, 0, 0, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .btn-light:active {
+  transform: translateY(2px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #020617 !important;
 }
 
 body.dark-theme .action-dots-btn {
-  background-color: #0f172a !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
   color: #cbd5e1 !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 4px 8px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
 body.dark-theme .action-dots-btn i {
   color: #cbd5e1 !important;
+}
+
+body.dark-theme .action-dots-btn:hover,
+body.dark-theme .show > .action-dots-btn {
+  background: linear-gradient(180deg, #4338ca 0%, #3730a3 100%) !important;
+  border-color: #818cf8 !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 0 #1e1b4b, 
+              0 6px 14px rgba(99, 102, 241, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-theme .action-dots-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #1e1b4b !important;
 }
 
 body.dark-theme .pagination-container,
@@ -823,9 +1399,24 @@ body.dark-theme .searchable-select-menu .dropdown-item.active {
 }
 
 body.dark-theme .theme-toggle-btn {
-  background-color: #1e293b !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(251, 191, 36, 0.4) !important;
   color: #fbbf24 !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 4px 12px rgba(251, 191, 36, 0.2), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .theme-toggle-btn:hover {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+  box-shadow: 0 5px 0 #020617, 
+              0 8px 18px rgba(251, 191, 36, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .theme-toggle-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #020617 !important;
 }
 
 /* Dark Theme Calendar Picker Indicator (Date input calendar icon) */
@@ -850,27 +1441,49 @@ body.dark-theme .btn-close:hover {
 }
 
 body.dark-theme .btn-close-modern {
-  background: #0f172a !important;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   color: #f8fafc !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 3px 6px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
 body.dark-theme .btn-close-modern:hover {
-  background: #ef4444 !important;
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 0 #881337, 
+              0 6px 14px rgba(239, 68, 68, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-theme .btn-close-modern:active {
+  transform: translateY(2px) rotate(90deg) scale(0.95) !important;
+  box-shadow: 0 1px 0 #881337 !important;
 }
 
 body.dark-theme .btn-modern-close {
-  background: #0f172a !important;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   color: #f8fafc !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 3px 6px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
 body.dark-theme .btn-modern-close:hover {
-  background: #ef4444 !important;
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 0 #881337, 
+              0 6px 14px rgba(239, 68, 68, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-theme .btn-modern-close:active {
+  transform: translateY(2px) scale(0.96) !important;
+  box-shadow: 0 1px 0 #881337 !important;
 }
 
 /* Print Media Styles for PDF Report */

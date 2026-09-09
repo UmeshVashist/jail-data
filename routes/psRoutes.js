@@ -46,9 +46,17 @@ router.get('/', requirePSListPermission, async (req, res) => {
       paginated = filtered.slice(start, start + pageSize);
     }
 
+    const paginatedUppercase = paginated.map(item => ({
+      ...item,
+      ps: String(item.psName || item.ps || '').toUpperCase(),
+      psName: String(item.psName || item.ps || '').toUpperCase(),
+      district: String(item.district || '').toUpperCase(),
+      state: String(item.state || '').toUpperCase()
+    }));
+
     res.json({
       success: true,
-      data: paginated,
+      data: paginatedUppercase,
       pagination: {
         total,
         page,
@@ -65,9 +73,9 @@ router.get('/', requirePSListPermission, async (req, res) => {
 // POST /api/ps - Add new PS (Admin Only)
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const psName = (req.body.psName || req.body.ps || '').trim();
-    const district = (req.body.district || '').trim();
-    const state = (req.body.state || '').trim();
+    const psName = (req.body.psName || req.body.ps || '').trim().toUpperCase();
+    const district = (req.body.district || '').trim().toUpperCase();
+    const state = (req.body.state || '').trim().toUpperCase();
 
     if (!psName) {
       return res.status(400).json({ success: false, message: 'Police Station (PS Name) is required.' });
@@ -95,9 +103,9 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const psName = (req.body.psName || req.body.ps || '').trim();
-    const district = (req.body.district || '').trim();
-    const state = (req.body.state || '').trim();
+    const psName = (req.body.psName || req.body.ps || '').trim().toUpperCase();
+    const district = (req.body.district || '').trim().toUpperCase();
+    const state = (req.body.state || '').trim().toUpperCase();
 
     if (!psName) {
       return res.status(400).json({ success: false, message: 'Police Station (PS Name) is required.' });
@@ -149,9 +157,9 @@ router.post('/import', requireAdmin, async (req, res) => {
 
     const cleanRecords = [];
     for (const r of records) {
-      const psName = (r.psName || r.ps || r.name || r['PS Name'] || r['Police Station'] || r['PS'] || '').toString().trim();
-      const district = (r.district || r['District'] || '').toString().trim();
-      const state = (r.state || r['State'] || '').toString().trim();
+      const psName = (r.psName || r.ps || r.name || r['PS Name'] || r['Police Station'] || r['PS'] || '').toString().trim().toUpperCase();
+      const district = (r.district || r['District'] || '').toString().trim().toUpperCase();
+      const state = (r.state || r['State'] || '').toString().trim().toUpperCase();
 
       if (psName) {
         cleanRecords.push({
@@ -204,10 +212,10 @@ router.get('/sample-template', requireAdmin, async (req, res) => {
     }
 
     // Sample data rows
-    worksheet.addRow({ psName: 'Sadar Bazar', district: 'North Delhi', state: 'Delhi' });
-    worksheet.addRow({ psName: 'Civil Lines', district: 'Central', state: 'Delhi' });
-    worksheet.addRow({ psName: 'Indirapuram', district: 'Ghaziabad', state: 'Uttar Pradesh' });
-    worksheet.addRow({ psName: 'Sector 14', district: 'Gurugram', state: 'Haryana' });
+    worksheet.addRow({ psName: 'SADAR BAZAR', district: 'NORTH DELHI', state: 'DELHI' });
+    worksheet.addRow({ psName: 'CIVIL LINES', district: 'CENTRAL', state: 'DELHI' });
+    worksheet.addRow({ psName: 'INDIRAPURAM', district: 'GHAZIABAD', state: 'UTTAR PRADESH' });
+    worksheet.addRow({ psName: 'SECTOR 14', district: 'GURUGRAM', state: 'HARYANA' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="PS_List_Sample_Template.xlsx"');

@@ -97,57 +97,75 @@
       <ul class="nav flex-column my-3">
         <li class="nav-item">
           <a class="nav-link active" id="nav-dashboard" href="#" onclick="navigateToView('dashboard'); return false;">
-            <i class="bi bi-grid-1x2-fill"></i>
+            <div class="nav-icon-3d nav-icon-dashboard">
+              <i class="bi bi-grid-1x2-fill"></i>
+            </div>
             <span>Dashboard</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="nav-records" href="#" onclick="navigateToView('records'); return false;">
-            <i class="bi bi-table"></i>
+            <div class="nav-icon-3d nav-icon-records">
+              <i class="bi bi-table"></i>
+            </div>
             <span>Data Records</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="nav-import" href="#" onclick="navigateToView('import'); return false;">
-            <i class="bi bi-file-earmark-arrow-up-fill"></i>
+            <div class="nav-icon-3d nav-icon-import">
+              <i class="bi bi-file-earmark-arrow-up-fill"></i>
+            </div>
             <span>Import Data</span>
           </a>
         </li>
         <li class="nav-item d-none" id="nav-item-all-requests">
           <a class="nav-link" id="nav-all-requests" href="#" onclick="navigateToView('all-requests'); return false;">
-            <i class="bi bi-inbox-fill text-warning"></i>
+            <div class="nav-icon-3d nav-icon-all-requests">
+              <i class="bi bi-inbox-fill"></i>
+            </div>
             <span>All Requests</span>
             <span class="badge bg-danger rounded-pill ms-auto d-none" id="nav-all-requests-badge">0</span>
           </a>
         </li>
         <li class="nav-item" id="nav-item-my-requests">
           <a class="nav-link" id="nav-my-requests" href="#" onclick="navigateToView('my-requests'); return false;">
-            <i class="bi bi-send-fill text-info"></i>
+            <div class="nav-icon-3d nav-icon-my-requests">
+              <i class="bi bi-send-fill"></i>
+            </div>
             <span>My Requests</span>
           </a>
         </li>
         <li class="nav-item" id="nav-item-reactive-list">
           <a class="nav-link" id="nav-reactive-list" href="#" onclick="navigateToView('reactive-list'); return false;">
-            <i class="bi bi-arrow-counterclockwise text-warning"></i>
+            <div class="nav-icon-3d nav-icon-reactive">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </div>
             <span>Reactive List</span>
             <span class="badge bg-warning text-dark rounded-pill ms-auto d-none" id="nav-reactive-list-badge">0</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="nav-users" href="#" onclick="navigateToView('users'); return false;">
-            <i class="bi bi-people-fill"></i>
+            <div class="nav-icon-3d nav-icon-users">
+              <i class="bi bi-people-fill"></i>
+            </div>
             <span>User Management</span>
           </a>
         </li>
         <li class="nav-item d-none" id="nav-item-ps-list">
           <a class="nav-link" id="nav-ps-list" href="#" onclick="navigateToView('ps-list'); return false;">
-            <i class="bi bi-shield-check text-info"></i>
+            <div class="nav-icon-3d nav-icon-ps">
+              <i class="bi bi-shield-check"></i>
+            </div>
             <span>PS List</span>
           </a>
         </li>
         <li class="nav-item d-none" id="nav-item-dropdowns">
           <a class="nav-link" id="nav-dropdowns" href="#" onclick="navigateToView('dropdowns'); return false;">
-            <i class="bi bi-gear-wide-connected text-primary"></i>
+            <div class="nav-icon-3d nav-icon-settings">
+              <i class="bi bi-gear-wide-connected"></i>
+            </div>
             <span>System Settings</span>
           </a>
         </li>
@@ -155,7 +173,9 @@
 
       <div class="mt-auto p-3 border-top border-secondary border-opacity-25">
         <button class="btn btn-outline-danger w-100 btn-sm rounded-3 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium" onclick="handleLogout()">
-          <i class="bi bi-box-arrow-left"></i>
+          <div class="nav-icon-3d nav-icon-logout">
+            <i class="bi bi-box-arrow-left"></i>
+          </div>
           <span>Sign Out</span>
         </button>
       </div>
@@ -1826,7 +1846,7 @@
               <label for="modal-ps-name" class="form-label small fw-semibold text-secondary">Police Station (PS Name) <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-shaded"></i></span>
-                <input type="text" class="form-control" id="modal-ps-name" placeholder="e.g. Connaught Place" required autocomplete="off">
+                <input type="text" class="form-control" id="modal-ps-name" placeholder="e.g. Connaught Place" required autocomplete="off" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
               </div>
             </div>
 
@@ -1834,7 +1854,7 @@
               <label for="modal-ps-district" class="form-label small fw-semibold text-secondary">District <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
-                <input type="text" class="form-control" id="modal-ps-district" placeholder="e.g. New Delhi" required autocomplete="off">
+                <input type="text" class="form-control" id="modal-ps-district" placeholder="e.g. New Delhi" required autocomplete="off" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
               </div>
             </div>
 
@@ -1842,7 +1862,7 @@
               <label for="modal-ps-state" class="form-label small fw-semibold text-secondary">State <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="bi bi-pin-map"></i></span>
-                <input type="text" class="form-control" id="modal-ps-state" placeholder="e.g. Delhi" required autocomplete="off">
+                <input type="text" class="form-control" id="modal-ps-state" placeholder="e.g. Delhi" required autocomplete="off" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
               </div>
             </div>
           </div>

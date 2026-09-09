@@ -4506,20 +4506,23 @@ function renderPSTable(records) {
 
   records.forEach((item, idx) => {
     const rowNum = startIndex + idx + 1;
-    const itemJson = encodeURIComponent(JSON.stringify(item));
+    const psName = String(item.psName || item.ps || '').toUpperCase();
+    const district = String(item.district || '').toUpperCase();
+    const state = String(item.state || '').toUpperCase();
+    const itemJson = encodeURIComponent(JSON.stringify({ ...item, ps: psName, psName, district, state }));
 
     html += `
       <tr>
         <td class="text-muted fw-semibold">${rowNum}</td>
-        <td class="fw-bold text-dark">
-          <i class="bi bi-shield-shaded text-primary me-2"></i>${escapeHtml(item.ps || '')}
+        <td class="fw-bold text-dark text-uppercase">
+          <i class="bi bi-shield-shaded text-primary me-2"></i>${escapeHtml(psName)}
         </td>
-        <td class="text-secondary fw-medium">
-          <i class="bi bi-geo-alt text-danger opacity-75 me-1"></i>${escapeHtml(item.district || '')}
+        <td class="text-secondary fw-medium text-uppercase">
+          <i class="bi bi-geo-alt text-danger opacity-75 me-1"></i>${escapeHtml(district)}
         </td>
-        <td>
-          <span class="badge bg-light text-dark border px-2 py-1">
-            <i class="bi bi-pin-map text-success me-1"></i>${escapeHtml(item.state || '')}
+        <td class="text-uppercase">
+          <span class="badge bg-light text-dark border px-2 py-1 text-uppercase" style="letter-spacing: 0.3px;">
+            <i class="bi bi-pin-map text-success me-1"></i>${escapeHtml(state)}
           </span>
         </td>
         ${isAdmin ? `
@@ -4527,7 +4530,7 @@ function renderPSTable(records) {
           <button class="btn btn-sm btn-outline-primary me-1" title="Edit Police Station" onclick="showEditPSModal('${itemJson}')">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger" title="Delete Police Station" onclick="confirmDeletePS('${item.id}', '${escapeHtml(item.ps)}')">
+          <button class="btn btn-sm btn-outline-danger" title="Delete Police Station" onclick="confirmDeletePS('${item.id}', '${escapeHtml(psName)}')">
             <i class="bi bi-trash"></i>
           </button>
         </td>` : '<td class="d-none ps-admin-col"></td>'}
@@ -4558,28 +4561,45 @@ function renderPSPagination() {
   const end = Math.min(page * limit, total);
   infoEl.innerText = `Showing ${start} to ${end} of ${total} entries`;
 
-  let html = '';
-  html += `<li class="page-item ${page <= 1 ? 'disabled' : ''}">
-    <a class="page-link" href="#" onclick="changePSPage(${page - 1}); return false;" aria-label="Previous">&laquo;</a>
-  </li>`;
+  let paginationHtml = '';
+  paginationHtml += `
+    <li class="page-item ${page === 1 ? 'disabled' : ''}">
+      <button class="page-link" onclick="changePSPage(${page - 1})" aria-label="Previous">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    </li>
+  `;
 
   let startPage = Math.max(1, page - 2);
-  let endPage = Math.min(totalPages, startPage + 4);
-  if (endPage - startPage < 4) {
-    startPage = Math.max(1, endPage - 4);
+  let endPage = Math.min(totalPages, page + 2);
+
+  if (startPage > 1) {
+    paginationHtml += `<li class="page-item"><button class="page-link" onclick="changePSPage(1)">1</button></li>`;
+    if (startPage > 2) paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
   }
 
-  for (let p = startPage; p <= endPage; p++) {
-    html += `<li class="page-item ${p === page ? 'active' : ''}">
-      <a class="page-link" href="#" onclick="changePSPage(${p}); return false;">${p}</a>
-    </li>`;
+  for (let i = startPage; i <= endPage; i++) {
+    paginationHtml += `
+      <li class="page-item ${i === page ? 'active' : ''}">
+        <button class="page-link" onclick="changePSPage(${i})">${i}</button>
+      </li>
+    `;
   }
 
-  html += `<li class="page-item ${page >= totalPages ? 'disabled' : ''}">
-    <a class="page-link" href="#" onclick="changePSPage(${page + 1}); return false;" aria-label="Next">&raquo;</a>
-  </li>`;
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    paginationHtml += `<li class="page-item"><button class="page-link" onclick="changePSPage(${totalPages})">${totalPages}</button></li>`;
+  }
 
-  pagesEl.innerHTML = html;
+  paginationHtml += `
+    <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+      <button class="page-link" onclick="changePSPage(${page + 1})" aria-label="Next">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </li>
+  `;
+
+  pagesEl.innerHTML = paginationHtml;
 }
 
 function changePSPage(newPage) {
@@ -4604,9 +4624,9 @@ function showEditPSModal(encodedItemJson) {
   document.getElementById('ps-id').value = item.id;
   document.getElementById('ps-edit-mode').value = 'edit';
   document.getElementById('psModalTitle').innerText = 'Edit Police Station';
-  document.getElementById('modal-ps-name').value = item.ps || '';
-  document.getElementById('modal-ps-district').value = item.district || '';
-  document.getElementById('modal-ps-state').value = item.state || '';
+  document.getElementById('modal-ps-name').value = String(item.psName || item.ps || '').toUpperCase();
+  document.getElementById('modal-ps-district').value = String(item.district || '').toUpperCase();
+  document.getElementById('modal-ps-state').value = String(item.state || '').toUpperCase();
   const saveBtn = document.getElementById('btn-save-ps');
   if (saveBtn) saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1" id="save-ps-icon"></i> Update Record';
   if (psModalInstance) psModalInstance.show();
@@ -4616,9 +4636,9 @@ async function handlePSFormSubmit(event) {
   event.preventDefault();
   const mode = document.getElementById('ps-edit-mode').value;
   const id = document.getElementById('ps-id').value;
-  const psName = document.getElementById('modal-ps-name').value.trim();
-  const district = document.getElementById('modal-ps-district').value.trim();
-  const state = document.getElementById('modal-ps-state').value.trim();
+  const psName = document.getElementById('modal-ps-name').value.trim().toUpperCase();
+  const district = document.getElementById('modal-ps-district').value.trim().toUpperCase();
+  const state = document.getElementById('modal-ps-state').value.trim().toUpperCase();
 
   if (!psName || !district || !state) {
     showToast('danger', 'Validation', 'PS Name, District, and State are all required.');
@@ -4639,7 +4659,7 @@ async function handlePSFormSubmit(event) {
     const res = await fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ps: psName, district, state })
+      body: JSON.stringify({ ps: psName, psName, district, state })
     });
 
     const data = await res.json();
