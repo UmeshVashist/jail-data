@@ -4,14 +4,54 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/cloudflareStorage');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getListAddRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/cloudflareStorage');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
-// GET /api/records/remark-options - Fetch dynamic remark options from Google Sheet tab
+// GET /api/records/remark-options - Fetch dynamic remark options (Permanent + Active Pending List-Add Requests)
 router.get('/remark-options', requireAuth, async (req, res) => {
   try {
-    const options = await getRemarkOptions();
-    res.json({ success: true, data: options });
+    const permanentOnly = req.query.permanentOnly === 'true';
+    const [options, listRequests] = await Promise.all([
+      getRemarkOptions(),
+      permanentOnly ? Promise.resolve([]) : getListAddRequests()
+    ]);
+
+    const existingValues = new Set();
+    const result = [];
+
+    // 1. Permanent/Approved remark options
+    (options || []).forEach(opt => {
+      const val = (typeof opt === 'object' ? opt.optionValue : opt) || '';
+      const clean = val.toString().trim();
+      if (clean && !existingValues.has(clean.toLowerCase())) {
+        existingValues.add(clean.toLowerCase());
+        result.push({
+          optionValue: clean,
+          disableAadhar: typeof opt === 'object' ? !!opt.disableAadhar : false,
+          isPending: false
+        });
+      }
+    });
+
+    // 2. Pending list add requests so users can immediately use the option in all dropdowns
+    if (!permanentOnly && Array.isArray(listRequests)) {
+      listRequests.forEach(req => {
+        if (req.status === 'Pending' && req.optionValue) {
+          const clean = req.optionValue.toString().trim();
+          if (clean && !existingValues.has(clean.toLowerCase())) {
+            existingValues.add(clean.toLowerCase());
+            result.push({
+              optionValue: clean,
+              disableAadhar: false,
+              isPending: true,
+              requestedBy: req.requestedBy || ''
+            });
+          }
+        }
+      });
+    }
+
+    res.json({ success: true, data: result });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Fetch remark options error: ' + err.message });
   }

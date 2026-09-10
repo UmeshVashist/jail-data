@@ -1109,6 +1109,19 @@ body.dark-theme .ps-table-scroll-container thead th {
   text-transform: uppercase !important;
 }
 
+/* Police Station (PS) Row Selection Highlight */
+#ps-table-body tr.table-danger-subtle {
+  background-color: rgba(254, 226, 226, 0.55) !important;
+}
+
+#ps-table-body tr.table-danger-subtle td {
+  background-color: transparent !important;
+}
+
+body.dark-theme #ps-table-body tr.table-danger-subtle {
+  background-color: rgba(239, 68, 68, 0.22) !important;
+}
+
 /* Mobile Sidebar Slide Behavior */
 @media (max-width: 767.98px) {
   #sidebar {

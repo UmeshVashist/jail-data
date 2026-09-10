@@ -1,5 +1,57 @@
 [
   {
+    "id": 8,
+    "rowIndex": 8,
+    "optionValue": "Special Live Remark",
+    "requestedBy": "addut",
+    "requestedDate": "2026-09-10",
+    "requestedTime": "09:06:15 PM",
+    "reason": "Special Live Remark",
+    "status": "Approved",
+    "actionBy": "admin",
+    "actionDate": "2026-09-10 09:08:47 PM",
+    "createdAt": 1789054576143
+  },
+  {
+    "id": 7,
+    "rowIndex": 7,
+    "optionValue": "Text Remark",
+    "requestedBy": "addut",
+    "requestedDate": "2026-09-10",
+    "requestedTime": "09:03:58 PM",
+    "reason": "",
+    "status": "Rejected",
+    "actionBy": "admin",
+    "actionDate": "2026-09-10 10:12:31 PM",
+    "createdAt": 1789054438930
+  },
+  {
+    "id": 6,
+    "rowIndex": 6,
+    "optionValue": "Special Live Remark",
+    "requestedBy": "addct",
+    "requestedDate": "2026-09-10",
+    "requestedTime": "04:43:53 PM",
+    "reason": "Requesting special live remark option",
+    "status": "Approved",
+    "actionBy": "admin",
+    "actionDate": "2026-09-10 09:02:19 PM",
+    "createdAt": 1789038833988
+  },
+  {
+    "id": 5,
+    "rowIndex": 5,
+    "optionValue": "TEST NEW REMARK 1789036627466",
+    "requestedBy": "addct",
+    "requestedDate": "2026-09-10",
+    "requestedTime": "04:07:07 PM",
+    "reason": "Testing dropdown auto-appear",
+    "status": "Approved",
+    "actionBy": "admin",
+    "actionDate": "2026-09-10 04:07:10 PM",
+    "createdAt": 1789036628460
+  },
+  {
     "id": 1,
     "rowIndex": 1,
     "optionValue": "Foreigner",

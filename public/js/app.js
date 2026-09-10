@@ -465,6 +465,7 @@ function updateUIForRolePermissions() {
   const btnAddPS = document.getElementById('btn-add-ps');
   const btnImportPS = document.getElementById('btn-import-ps');
   const btnSamplePS = document.getElementById('btn-sample-ps');
+  const btnDeleteAllPS = document.getElementById('btn-delete-all-ps');
   if (btnAddPS) {
     if (isAdmin) btnAddPS.classList.remove('d-none');
     else btnAddPS.classList.add('d-none');
@@ -476,6 +477,10 @@ function updateUIForRolePermissions() {
   if (btnSamplePS) {
     if (isAdmin) btnSamplePS.classList.remove('d-none');
     else btnSamplePS.classList.add('d-none');
+  }
+  if (btnDeleteAllPS) {
+    if (isAdmin) btnDeleteAllPS.classList.remove('d-none');
+    else btnDeleteAllPS.classList.add('d-none');
   }
   document.querySelectorAll('.ps-admin-col').forEach(el => {
     if (isAdmin) el.classList.remove('d-none');
@@ -1182,7 +1187,7 @@ function clearFilters() {
 
 async function loadRemarkOptions() {
   try {
-    const res = await fetch('/api/records/remark-options');
+    const res = await fetch('/api/records/remark-options?t=' + Date.now());
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
       currentRemarkOptions = data.data;
@@ -3457,13 +3462,14 @@ function renderMyRequestsTable(requests) {
     }
 
     let actionCol = '-';
-    if (req.status === 'Pending') {
+    const isPending = String(req.status || '').toLowerCase() === 'pending';
+    if (isPending) {
       if (req.requestType === 'Delete') {
-        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Withdraw / Cancel Request" onclick="cancelMyDeleteRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Withdraw</button>`;
       } else if (req.requestType === 'Edit') {
-        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Withdraw / Cancel Request" onclick="cancelMyEditRequest(${req.id}, '${escapeHtml(req.pid)}')"><i class="bi bi-trash me-1"></i>Withdraw</button>`;
       } else if (req.requestType === 'List Add') {
-        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Cancel Request" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')"><i class="bi bi-trash me-1"></i>Cancel</button>`;
+        actionCol = `<button class="btn btn-sm btn-outline-danger" title="Withdraw / Cancel Request" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')"><i class="bi bi-trash me-1"></i>Withdraw</button>`;
       }
     }
 
@@ -3493,9 +3499,9 @@ function renderMyRequestsTable(requests) {
 async function fetchAllPendingRequestsCounts() {
   try {
     const [delRes, editRes, listAddRes] = await Promise.all([
-      fetch('/api/delete-requests/pending').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/edit-requests/pending').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/list-add-requests/pending').then(r => r.json()).catch(() => ({ data: [] }))
+      fetch('/api/delete-requests/pending?t=' + Date.now()).then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('/api/edit-requests/pending?t=' + Date.now()).then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('/api/list-add-requests/pending?t=' + Date.now()).then(r => r.json()).catch(() => ({ data: [] }))
     ]);
 
     const delCount = (delRes.success && delRes.data ? delRes.data : []).length;
@@ -3540,9 +3546,9 @@ async function loadAllRequestsList() {
   showLoader('Loading all incoming requests...');
   try {
     const [delRes, editRes, listAddRes] = await Promise.all([
-      fetch('/api/delete-requests/all').then(r => r.json()),
-      fetch('/api/edit-requests/all').then(r => r.json()),
-      fetch('/api/list-add-requests/all').then(r => r.json())
+      fetch('/api/delete-requests/all?t=' + Date.now()).then(r => r.json()),
+      fetch('/api/edit-requests/all?t=' + Date.now()).then(r => r.json()),
+      fetch('/api/list-add-requests/all?t=' + Date.now()).then(r => r.json())
     ]);
     hideLoader();
 
@@ -3749,6 +3755,7 @@ async function rejectListAddRequest(requestId, optionValue) {
         showToast('info', 'Request Rejected', data.message);
         loadAllRequestsList();
         loadReactiveList();
+        loadRemarkOptions();
       } else {
         showToast('danger', 'Error', data.message);
       }
@@ -3842,21 +3849,31 @@ async function loadReactiveList() {
             : `<span class="badge bg-warning text-dark"><i class="bi bi-arrow-counterclockwise me-1"></i>Reactive / Pending</span>`;
 
           let actionButtons = '-';
+          const isPending = String(req.status || '').toLowerCase() === 'pending';
+
           if (canApprove) {
-            actionButtons = `
-              <button class="btn btn-sm btn-success fw-semibold rounded-2 me-1 shadow-sm" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                <i class="bi bi-check-lg me-1"></i>Approve & Add Permanent
-              </button>
-              <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                <i class="bi bi-x-lg me-1"></i>Reject
-              </button>
-            `;
+            if (isPending) {
+              actionButtons = `
+                <button class="btn btn-sm btn-success fw-semibold rounded-2 me-1 shadow-sm" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                  <i class="bi bi-check-lg me-1"></i>Approve & Add Permanent
+                </button>
+                <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                  <i class="bi bi-x-lg me-1"></i>Reject
+                </button>
+              `;
+            } else {
+              actionButtons = `<span class="small text-muted"><i class="bi bi-dash-circle me-1"></i>-</span>`;
+            }
           } else if (String(req.requestedBy || '').toLowerCase() === String(currentUserState.username || '').toLowerCase()) {
-            actionButtons = `
-              <button class="btn btn-sm btn-outline-danger rounded-2" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                <i class="bi bi-trash me-1"></i>Withdraw
-              </button>
-            `;
+            if (isPending) {
+              actionButtons = `
+                <button class="btn btn-sm btn-outline-danger rounded-2" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                  <i class="bi bi-trash me-1"></i>Withdraw
+                </button>
+              `;
+            } else {
+              actionButtons = `<span class="small text-muted"><i class="bi bi-dash-circle me-1"></i>-</span>`;
+            }
           }
 
           reqHtml += `
@@ -4096,7 +4113,7 @@ async function loadDropdownsView() {
   fetchSystemSettings();
   showLoader('Loading remark options...');
   try {
-    const res = await fetch('/api/records/remark-options');
+    const res = await fetch('/api/records/remark-options?permanentOnly=true&t=' + Date.now());
     const data = await res.json();
     hideLoader();
 
@@ -4410,26 +4427,33 @@ let psSearchState = {
 };
 let psSearchDebounceTimer = null;
 
+// PS Multiple Selection State
+const selectedPSIds = new Set();
+let isSelectAllPSAcrossAllPages = false;
+let currentVisiblePSRecords = [];
+
 function loadPSListView() {
   updateUIForRolePermissions();
   fetchPSList(false);
 }
 
-function handlePSInstantSearch() {
+function executePSSearch() {
   if (psSearchDebounceTimer) clearTimeout(psSearchDebounceTimer);
-  psSearchDebounceTimer = setTimeout(() => {
-    const nameEl = document.getElementById('ps-search-name');
-    const distEl = document.getElementById('ps-search-district');
-    const stateEl = document.getElementById('ps-search-state');
+  const nameEl = document.getElementById('ps-search-name');
+  const distEl = document.getElementById('ps-search-district');
+  const stateEl = document.getElementById('ps-search-state');
 
-    psSearchState.ps = (nameEl ? nameEl.value : '').trim();
-    psSearchState.district = (distEl ? distEl.value : '').trim();
-    psSearchState.state = (stateEl ? stateEl.value : '').trim();
-    psSearchState.page = 1;
+  psSearchState.ps = (nameEl ? nameEl.value : '').trim();
+  psSearchState.district = (distEl ? distEl.value : '').trim();
+  psSearchState.state = (stateEl ? stateEl.value : '').trim();
+  psSearchState.page = 1;
 
-    fetchPSList(true);
-  }, 200);
+  clearPSSelection();
+  fetchPSList(false);
 }
+
+// Alias for backwards compatibility
+const handlePSInstantSearch = executePSSearch;
 
 function clearPSFilters() {
   const nameInput = document.getElementById('ps-search-name');
@@ -4444,6 +4468,7 @@ function clearPSFilters() {
   psSearchState.state = '';
   psSearchState.page = 1;
 
+  clearPSSelection();
   fetchPSList(false);
 }
 
@@ -4495,9 +4520,11 @@ function renderPSTable(records) {
   const tbody = document.getElementById('ps-table-body');
   if (!tbody) return;
   const isAdmin = currentUserState && currentUserState.role === 'Admin';
+  currentVisiblePSRecords = records || [];
 
   if (!records || records.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-shield-x fs-1 d-block mb-2 text-secondary opacity-50"></i>No police stations found matching your search.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-shield-x fs-1 d-block mb-2 text-secondary opacity-50"></i>No police stations found matching your search.</td></tr>`;
+    updatePSBulkActionBar();
     return;
   }
 
@@ -4510,9 +4537,14 @@ function renderPSTable(records) {
     const district = String(item.district || '').toUpperCase();
     const state = String(item.state || '').toUpperCase();
     const itemJson = encodeURIComponent(JSON.stringify({ ...item, ps: psName, psName, district, state }));
+    const isChecked = selectedPSIds.has(item.id) || isSelectAllPSAcrossAllPages;
 
     html += `
-      <tr>
+      <tr class="${isChecked ? 'table-danger-subtle' : ''}">
+        ${isAdmin ? `
+        <td class="text-center ps-admin-col">
+          <input type="checkbox" class="form-check-input ps-row-checkbox" value="${item.id}" ${isChecked ? 'checked' : ''} onchange="handlePSRowSelect(this, ${item.id})" style="cursor: pointer; transform: scale(1.15);">
+        </td>` : ''}
         <td class="text-muted fw-semibold">${rowNum}</td>
         <td class="fw-bold text-dark text-uppercase">
           <i class="bi bi-shield-shaded text-primary me-2"></i>${escapeHtml(psName)}
@@ -4539,6 +4571,7 @@ function renderPSTable(records) {
   });
 
   tbody.innerHTML = html;
+  updatePSBulkActionBar();
 }
 
 function renderPSPagination() {
@@ -4679,6 +4712,236 @@ async function handlePSFormSubmit(event) {
   }
 }
 
+function handlePSRowSelect(checkbox, id) {
+  const numId = parseInt(id, 10);
+  if (checkbox.checked) {
+    selectedPSIds.add(numId);
+  } else {
+    selectedPSIds.delete(numId);
+    isSelectAllPSAcrossAllPages = false;
+  }
+  updatePSBulkActionBar();
+}
+
+function toggleSelectAllPS(isChecked) {
+  if (isChecked) {
+    currentVisiblePSRecords.forEach(item => {
+      if (item && item.id) selectedPSIds.add(parseInt(item.id, 10));
+    });
+  } else {
+    currentVisiblePSRecords.forEach(item => {
+      if (item && item.id) selectedPSIds.delete(parseInt(item.id, 10));
+    });
+    isSelectAllPSAcrossAllPages = false;
+  }
+
+  // Update DOM row checkboxes
+  document.querySelectorAll('.ps-row-checkbox').forEach(cb => {
+    cb.checked = isChecked;
+  });
+
+  updatePSBulkActionBar();
+}
+
+function clearPSSelection() {
+  selectedPSIds.clear();
+  isSelectAllPSAcrossAllPages = false;
+
+  const headerCb = document.getElementById('ps-select-all-checkbox');
+  if (headerCb) {
+    headerCb.checked = false;
+    headerCb.indeterminate = false;
+  }
+
+  document.querySelectorAll('.ps-row-checkbox').forEach(cb => {
+    cb.checked = false;
+    const tr = cb.closest('tr');
+    if (tr) tr.classList.remove('table-danger-subtle');
+  });
+
+  updatePSBulkActionBar();
+}
+
+function selectAllPSEverywhere() {
+  isSelectAllPSAcrossAllPages = true;
+  // Also ensure all visible checkboxes are checked
+  currentVisiblePSRecords.forEach(item => {
+    if (item && item.id) selectedPSIds.add(parseInt(item.id, 10));
+  });
+  document.querySelectorAll('.ps-row-checkbox').forEach(cb => {
+    cb.checked = true;
+  });
+  updatePSBulkActionBar();
+}
+
+function updatePSBulkActionBar() {
+  const bar = document.getElementById('ps-bulk-actions-bar');
+  const countBadge = document.getElementById('ps-selected-count-badge');
+  const countBtn = document.getElementById('ps-selected-count-btn');
+  const selectedText = document.getElementById('ps-selected-text');
+  const allPagesContainer = document.getElementById('ps-select-all-pages-container');
+  const allPagesLink = document.getElementById('ps-select-all-pages-link');
+  const headerCb = document.getElementById('ps-select-all-checkbox');
+
+  const visibleCount = currentVisiblePSRecords.length;
+  const checkedVisibleCount = currentVisiblePSRecords.filter(item => selectedPSIds.has(parseInt(item.id, 10))).length;
+  const totalRecords = psSearchState.total || 0;
+
+  // Header checkbox state
+  if (headerCb) {
+    if (visibleCount > 0 && checkedVisibleCount === visibleCount) {
+      headerCb.checked = true;
+      headerCb.indeterminate = false;
+    } else if (checkedVisibleCount > 0) {
+      headerCb.checked = false;
+      headerCb.indeterminate = true;
+    } else {
+      headerCb.checked = false;
+      headerCb.indeterminate = false;
+    }
+  }
+
+  const effectiveCount = isSelectAllPSAcrossAllPages ? totalRecords : selectedPSIds.size;
+
+  if (effectiveCount > 0) {
+    if (bar) {
+      bar.classList.remove('d-none');
+      bar.classList.add('d-flex');
+    }
+    if (countBadge) countBadge.innerText = effectiveCount;
+    if (countBtn) countBtn.innerText = effectiveCount;
+    if (selectedText) {
+      selectedText.innerText = isSelectAllPSAcrossAllPages 
+        ? `All ${totalRecords} Police Stations in Directory Selected`
+        : `${effectiveCount} Police Station(s) Selected`;
+    }
+
+    // Check if we should offer "Select all in directory"
+    if (allPagesContainer && allPagesLink) {
+      if (!isSelectAllPSAcrossAllPages && totalRecords > visibleCount && checkedVisibleCount === visibleCount) {
+        allPagesContainer.classList.remove('d-none');
+        allPagesLink.innerText = `Select all ${totalRecords} police stations in directory`;
+      } else {
+        allPagesContainer.classList.add('d-none');
+      }
+    }
+  } else {
+    if (bar) {
+      bar.classList.add('d-none');
+      bar.classList.remove('d-flex');
+    }
+    if (allPagesContainer) allPagesContainer.classList.add('d-none');
+  }
+
+  // Update row highlight
+  document.querySelectorAll('.ps-row-checkbox').forEach(cb => {
+    const tr = cb.closest('tr');
+    if (tr) {
+      if (cb.checked) tr.classList.add('table-danger-subtle');
+      else tr.classList.remove('table-danger-subtle');
+    }
+  });
+}
+
+function confirmBulkDeletePS() {
+  const effectiveCount = isSelectAllPSAcrossAllPages ? psSearchState.total : selectedPSIds.size;
+  if (effectiveCount === 0) {
+    showToast('warning', 'Selection Required', 'Please select at least one police station to delete.');
+    return;
+  }
+
+  const modalTitle = document.getElementById('confirmModalTitle');
+  const modalMsg = document.getElementById('confirmModalMessage');
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+
+  if (isSelectAllPSAcrossAllPages) {
+    modalTitle.innerText = `Delete ALL ${effectiveCount} Police Stations?`;
+    modalMsg.innerText = `Are you sure you want to delete ALL ${effectiveCount} police stations in the directory? This will permanently wipe all police station data and CANNOT be undone!`;
+  } else {
+    modalTitle.innerText = `Delete ${effectiveCount} Police Station${effectiveCount === 1 ? '' : 's'}?`;
+    modalMsg.innerText = `Are you sure you want to delete the ${effectiveCount} selected police station${effectiveCount === 1 ? '' : 's'}? This action cannot be undone.`;
+  }
+
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+  executeBtn.innerText = isSelectAllPSAcrossAllPages ? 'Yes, Delete All' : 'Yes, Delete Selected';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader(isSelectAllPSAcrossAllPages ? 'Deleting all police stations...' : `Deleting ${effectiveCount} police stations...`);
+
+    try {
+      let res, data;
+      if (isSelectAllPSAcrossAllPages) {
+        res = await fetch('/api/ps/delete-all', { method: 'POST' });
+        data = await res.json();
+      } else {
+        res = await fetch('/api/ps/bulk-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: Array.from(selectedPSIds) })
+        });
+        data = await res.json();
+      }
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Deleted Successfully', data.message || `${effectiveCount} police stations deleted.`);
+        clearPSSelection();
+        fetchPSList(false);
+      } else {
+        showToast('danger', 'Deletion Failed', data.message || 'Failed to delete selected police stations.');
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Network Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+function confirmDeleteAllPS() {
+  const total = psSearchState.total || 0;
+  if (total === 0) {
+    showToast('info', 'No Data', 'Police Station directory is already empty.');
+    return;
+  }
+
+  const modalTitle = document.getElementById('confirmModalTitle');
+  const modalMsg = document.getElementById('confirmModalMessage');
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+
+  modalTitle.innerText = `Delete All Police Stations?`;
+  modalMsg.innerText = `Are you sure you want to delete ALL ${total} police stations from the directory? This will permanently erase all police stations from database and Cloudflare storage. This action CANNOT be undone!`;
+
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+  executeBtn.innerText = 'Yes, Delete All Data';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Deleting all police stations from database...');
+
+    try {
+      const res = await fetch('/api/ps/delete-all', { method: 'POST' });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'All Deleted', data.message || 'All police station records deleted successfully.');
+        clearPSSelection();
+        fetchPSList(false);
+      } else {
+        showToast('danger', 'Error', data.message || 'Failed to delete all police stations.');
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Network Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
 function confirmDeletePS(id, psName) {
   document.getElementById('confirmModalTitle').innerText = 'Delete Police Station?';
   document.getElementById('confirmModalMessage').innerText = `Are you sure you want to delete "${psName}"? This action cannot be undone.`;
@@ -4696,6 +4959,8 @@ function confirmDeletePS(id, psName) {
 
       if (data.success) {
         showToast('success', 'Deleted', data.message || 'Police Station deleted.');
+        selectedPSIds.delete(parseInt(id, 10));
+        updatePSBulkActionBar();
         fetchPSList(false);
       } else {
         showToast('danger', 'Error', data.message || 'Failed to delete record.');

@@ -58,5 +58,15 @@
     "id": 12,
     "optionValue": "Already Linked But Not Showing In Database",
     "disableAadhar": false
+  },
+  {
+    "id": 13,
+    "optionValue": "Pending For Aadhar Link",
+    "disableAadhar": false
+  },
+  {
+    "id": 14,
+    "optionValue": "Special Live Remark",
+    "disableAadhar": false
   }
 ]

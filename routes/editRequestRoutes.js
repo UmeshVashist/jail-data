@@ -295,6 +295,10 @@ router.delete('/:id/cancel', async (req, res) => {
       return res.status(403).json({ success: false, message: 'You can only cancel your own edit requests.' });
     }
 
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot withdraw request that has already been ${targetReq.status.toLowerCase()}.` });
+    }
+
     await deleteEditRequest(requestId);
 
     res.json({ success: true, message: `Edit request for PID ${targetReq.pid} canceled.` });

@@ -197,6 +197,10 @@ router.delete('/:id/cancel', async (req, res) => {
       return res.status(403).json({ success: false, message: 'You can only cancel your own delete requests.' });
     }
 
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot withdraw request that has already been ${targetReq.status.toLowerCase()}.` });
+    }
+
     await deleteDeleteRequest(requestId);
 
     res.json({ success: true, message: `Delete request for PID ${targetReq.pid} canceled.` });

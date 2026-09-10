@@ -238,6 +238,136 @@ async function ensureSettingsSynced(force = false) {
   }
 }
 
+async function ensureDeleteRequestsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.deleteRequests > SYNC_CACHE_TTL)) {
+    let remote = await readFromR2(R2_KEYS.DELETE_REQUESTS);
+    if (!remote || !Array.isArray(remote) || remote.length === 0) {
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM delete_requests ORDER BY id DESC');
+        if (rows && rows.length > 0) {
+          remote = rows.map(r => ({
+            id: r.id,
+            rowIndex: r.id,
+            recordId: (r.record_id || r.recordId || r.id).toString(),
+            pid: (r.pid || '').toString().trim(),
+            name: (r.name || '').toString().trim(),
+            father: (r.father || '').toString().trim(),
+            utNo: (r.ut_no || r.utNo || '').toString().trim(),
+            aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
+            requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
+            requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
+            requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
+            reason: (r.reason || r.remark || '').toString().trim(),
+            remark: (r.remark || r.reason || '').toString().trim(),
+            status: (r.status || 'Pending').toString().trim(),
+            actionBy: (r.action_by || r.actionBy || '').toString().trim(),
+            actionDate: (r.action_date || r.actionDate || '').toString().trim()
+          }));
+        }
+      } catch (e) {}
+    }
+    if (remote && Array.isArray(remote)) {
+      memoryStore.deleteRequests = remote;
+      lastSyncTimestamps.deleteRequests = now;
+    }
+  }
+}
+
+async function ensureEditRequestsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.editRequests > SYNC_CACHE_TTL)) {
+    let remote = await readFromR2(R2_KEYS.EDIT_REQUESTS);
+    if (!remote || !Array.isArray(remote) || remote.length === 0) {
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM edit_requests ORDER BY id DESC');
+        if (rows && rows.length > 0) {
+          remote = rows.map(r => ({
+            id: r.id,
+            rowIndex: r.id,
+            recordId: (r.record_id || r.recordId || r.id).toString(),
+            pid: (r.pid || '').toString().trim(),
+            name: (r.name || '').toString().trim(),
+            father: (r.father || '').toString().trim(),
+            utNo: (r.ut_no || r.utNo || '').toString().trim(),
+            aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
+            proposedData: typeof r.proposed_data === 'string' ? JSON.parse(r.proposed_data || '{}') : (r.proposed_data || r.proposedData || {}),
+            requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
+            requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
+            requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
+            reason: (r.reason || '').toString().trim(),
+            status: (r.status || 'Pending').toString().trim(),
+            actionBy: (r.action_by || r.actionBy || '').toString().trim(),
+            actionDate: (r.action_date || r.actionDate || '').toString().trim()
+          }));
+        }
+      } catch (e) {}
+    }
+    if (remote && Array.isArray(remote)) {
+      memoryStore.editRequests = remote;
+      lastSyncTimestamps.editRequests = now;
+    }
+  }
+}
+
+async function ensureListAddRequestsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.listAddRequests > SYNC_CACHE_TTL)) {
+    let remote = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS);
+    if (!remote || !Array.isArray(remote) || remote.length === 0) {
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
+        if (rows && rows.length > 0) {
+          remote = rows.map(r => ({
+            id: r.id,
+            rowIndex: r.id,
+            optionValue: r.option_value || r.optionValue,
+            requestedBy: r.requested_by || r.requestedBy,
+            requestedDate: r.requested_date || r.requestedDate,
+            requestedTime: r.requested_time || r.requestedTime,
+            reason: r.reason,
+            status: r.status || 'Pending',
+            actionBy: r.action_by || r.actionBy,
+            actionDate: r.action_date || r.actionDate,
+            createdAt: r.created_at || r.createdAt || Date.now()
+          }));
+        }
+      } catch (e) {}
+    }
+    if (remote && Array.isArray(remote)) {
+      memoryStore.listAddRequests = remote;
+      lastSyncTimestamps.listAddRequests = now;
+    }
+  }
+}
+
+async function ensureRemarkOptionsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - lastSyncTimestamps.remarkOptions > SYNC_CACHE_TTL)) {
+    let remote = await readFromR2(R2_KEYS.REMARK_OPTIONS);
+    if (!remote || !Array.isArray(remote) || remote.length === 0) {
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM remark_options ORDER BY id ASC');
+        if (rows && rows.length > 0) {
+          remote = rows.map(r => ({
+            id: r.id,
+            optionValue: r.option_value,
+            disableAadhar: !!r.disable_aadhar
+          }));
+        }
+      } catch (e) {}
+    }
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      memoryStore.remarkOptions = remote;
+      lastSyncTimestamps.remarkOptions = now;
+    }
+  }
+}
+
 /* Helper: Date-Time formatter */
 function getFormattedDateTime(d = new Date()) {
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -726,6 +856,7 @@ async function batchAddRecords(recordsArr) {
    ========================================================================== */
 
 async function getDeleteRequests() {
+  await ensureDeleteRequestsSynced();
   return memoryStore.deleteRequests.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -747,6 +878,7 @@ async function getDeleteRequests() {
 }
 
 async function createDeleteRequest(reqObj) {
+  await ensureDeleteRequestsSynced(true);
   const remarkVal = (reqObj.remark || reqObj.reason || '').toString().trim();
   const newId = memoryStore.deleteRequests.length > 0 ? Math.max(...memoryStore.deleteRequests.map(r => r.id || 0)) + 1 : 1;
 
@@ -769,7 +901,7 @@ async function createDeleteRequest(reqObj) {
     actionDate: ''
   };
 
-  memoryStore.deleteRequests.push(item);
+  memoryStore.deleteRequests.unshift(item);
 
   try {
     const { dbRun } = require('./database');
@@ -780,10 +912,12 @@ async function createDeleteRequest(reqObj) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastSyncTimestamps.deleteRequests = Date.now();
   return true;
 }
 
 async function updateDeleteRequestStatus(requestId, status, actionBy) {
+  await ensureDeleteRequestsSynced(true);
   const actionDate = getFormattedDateTime();
   const target = memoryStore.deleteRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
   if (target) {
@@ -801,10 +935,12 @@ async function updateDeleteRequestStatus(requestId, status, actionBy) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastSyncTimestamps.deleteRequests = Date.now();
   return true;
 }
 
 async function deleteDeleteRequest(requestId) {
+  await ensureDeleteRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
   memoryStore.deleteRequests = memoryStore.deleteRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
 
@@ -814,6 +950,7 @@ async function deleteDeleteRequest(requestId) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastSyncTimestamps.deleteRequests = Date.now();
   return true;
 }
 
@@ -822,6 +959,7 @@ async function deleteDeleteRequest(requestId) {
    ========================================================================== */
 
 async function getEditRequests() {
+  await ensureEditRequestsSynced();
   return memoryStore.editRequests.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -843,6 +981,7 @@ async function getEditRequests() {
 }
 
 async function createEditRequest(reqObj) {
+  await ensureEditRequestsSynced(true);
   const reasonVal = (reqObj.reason || '').toString().trim();
   const newId = memoryStore.editRequests.length > 0 ? Math.max(...memoryStore.editRequests.map(r => r.id || 0)) + 1 : 1;
 
@@ -865,7 +1004,7 @@ async function createEditRequest(reqObj) {
     actionDate: ''
   };
 
-  memoryStore.editRequests.push(item);
+  memoryStore.editRequests.unshift(item);
 
   try {
     const { dbRun } = require('./database');
@@ -877,10 +1016,12 @@ async function createEditRequest(reqObj) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastSyncTimestamps.editRequests = Date.now();
   return true;
 }
 
 async function updateEditRequestStatus(requestId, status, actionBy) {
+  await ensureEditRequestsSynced(true);
   const actionDate = getFormattedDateTime();
   const target = memoryStore.editRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
   if (target) {
@@ -898,10 +1039,12 @@ async function updateEditRequestStatus(requestId, status, actionBy) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastSyncTimestamps.editRequests = Date.now();
   return true;
 }
 
 async function deleteEditRequest(requestId) {
+  await ensureEditRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
   memoryStore.editRequests = memoryStore.editRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
 
@@ -911,6 +1054,7 @@ async function deleteEditRequest(requestId) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastSyncTimestamps.editRequests = Date.now();
   return true;
 }
 
@@ -919,6 +1063,7 @@ async function deleteEditRequest(requestId) {
    ========================================================================== */
 
 async function getListAddRequests() {
+  await ensureListAddRequestsSynced();
   return memoryStore.listAddRequests.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -935,6 +1080,7 @@ async function getListAddRequests() {
 }
 
 async function createListAddRequest(reqObj) {
+  await ensureListAddRequestsSynced(true);
   const newId = memoryStore.listAddRequests.length > 0 ? Math.max(...memoryStore.listAddRequests.map(r => r.id || 0)) + 1 : 1;
   const nowMs = Date.now();
 
@@ -952,7 +1098,7 @@ async function createListAddRequest(reqObj) {
     createdAt: nowMs
   };
 
-  memoryStore.listAddRequests.push(item);
+  memoryStore.listAddRequests.unshift(item);
 
   try {
     const { dbRun } = require('./database');
@@ -963,10 +1109,12 @@ async function createListAddRequest(reqObj) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastSyncTimestamps.listAddRequests = Date.now();
   return true;
 }
 
 async function updateListAddRequestStatus(requestId, status, actionBy) {
+  await ensureListAddRequestsSynced(true);
   const actionDate = getFormattedDateTime();
   const target = memoryStore.listAddRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
   if (target) {
@@ -984,10 +1132,12 @@ async function updateListAddRequestStatus(requestId, status, actionBy) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastSyncTimestamps.listAddRequests = Date.now();
   return true;
 }
 
 async function deleteListAddRequest(requestId) {
+  await ensureListAddRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
   memoryStore.listAddRequests = memoryStore.listAddRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
 
@@ -997,6 +1147,7 @@ async function deleteListAddRequest(requestId) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastSyncTimestamps.listAddRequests = Date.now();
   return true;
 }
 
@@ -1005,6 +1156,7 @@ async function deleteListAddRequest(requestId) {
    ========================================================================== */
 
 async function getRemarkOptions() {
+  await ensureRemarkOptionsSynced();
   return memoryStore.remarkOptions.map(opt => {
     if (typeof opt === 'string') {
       return { optionValue: opt.trim(), disableAadhar: false };
@@ -1017,6 +1169,7 @@ async function getRemarkOptions() {
 }
 
 async function addRemarkOption(optionValue, disableAadhar = false) {
+  await ensureRemarkOptionsSynced(true);
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
 
@@ -1031,11 +1184,13 @@ async function addRemarkOption(optionValue, disableAadhar = false) {
     } catch (e) {}
 
     await saveToR2(R2_KEYS.REMARK_OPTIONS, memoryStore.remarkOptions);
+    lastSyncTimestamps.remarkOptions = Date.now();
   }
   return true;
 }
 
 async function updateRemarkOption(oldValue, newValue) {
+  await ensureRemarkOptionsSynced(true);
   const cleanOld = (oldValue || '').toString().trim();
   const cleanNew = (newValue || '').toString().trim();
   if (!cleanOld || !cleanNew) return false;
@@ -1051,11 +1206,13 @@ async function updateRemarkOption(oldValue, newValue) {
     } catch (e) {}
 
     await saveToR2(R2_KEYS.REMARK_OPTIONS, memoryStore.remarkOptions);
+    lastSyncTimestamps.remarkOptions = Date.now();
   }
   return true;
 }
 
 async function toggleRemarkOptionAadhar(optionValue, disableAadhar) {
+  await ensureRemarkOptionsSynced(true);
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
 
@@ -1080,10 +1237,12 @@ async function toggleRemarkOptionAadhar(optionValue, disableAadhar) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.REMARK_OPTIONS, memoryStore.remarkOptions);
+  lastSyncTimestamps.remarkOptions = Date.now();
   return true;
 }
 
 async function deleteRemarkOption(optionValue) {
+  await ensureRemarkOptionsSynced(true);
   const cleanVal = (optionValue || '').toString().trim();
   if (!cleanVal) return false;
 
@@ -1095,6 +1254,7 @@ async function deleteRemarkOption(optionValue) {
   } catch (e) {}
 
   await saveToR2(R2_KEYS.REMARK_OPTIONS, memoryStore.remarkOptions);
+  lastSyncTimestamps.remarkOptions = Date.now();
   return true;
 }
 
@@ -1223,6 +1383,52 @@ async function deletePSEntry(id) {
   return false;
 }
 
+async function batchDeletePSEntries(ids) {
+  await ensurePSSynced(true);
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  const idNums = ids.map(id => parseInt(id, 10)).filter(n => !isNaN(n));
+  if (idNums.length === 0) return 0;
+  const idSet = new Set(idNums);
+  const initialLen = memoryStore.psList.length;
+  memoryStore.psList = memoryStore.psList.filter(p => !idSet.has(p.id));
+  const deletedCount = initialLen - memoryStore.psList.length;
+
+  if (deletedCount > 0) {
+    // Sync to local SQLite database
+    try {
+      const { dbRun } = require('./database');
+      const placeholders = idNums.map(() => '?').join(',');
+      await dbRun(`DELETE FROM police_stations WHERE id IN (${placeholders})`, idNums);
+    } catch (e) {
+      console.error('[batchDeletePSEntries SQLite error]', e);
+    }
+
+    // Sync to Cloudflare R2
+    await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
+    lastSyncTimestamps.psList = Date.now();
+  }
+  return deletedCount;
+}
+
+async function deleteAllPSEntries() {
+  await ensurePSSynced(true);
+  const initialLen = memoryStore.psList.length;
+  memoryStore.psList = [];
+
+  // Sync to local SQLite database
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(`DELETE FROM police_stations`);
+  } catch (e) {
+    console.error('[deleteAllPSEntries SQLite error]', e);
+  }
+
+  // Sync to Cloudflare R2
+  await saveToR2(R2_KEYS.PS_LIST, []);
+  lastSyncTimestamps.psList = Date.now();
+  return initialLen;
+}
+
 async function batchAddPS(entriesArr) {
   if (!Array.isArray(entriesArr) || entriesArr.length === 0) return true;
   await ensurePSSynced(true);
@@ -1301,6 +1507,8 @@ module.exports = {
   addPSEntry,
   updatePSEntry,
   deletePSEntry,
+  batchDeletePSEntries,
+  deleteAllPSEntries,
   batchAddPS,
   getIsConnected: () => isConnected,
   getConnectionError: () => connectionError

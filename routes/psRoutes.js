@@ -10,6 +10,8 @@ const {
   addPSEntry,
   updatePSEntry,
   deletePSEntry,
+  batchDeletePSEntries,
+  deleteAllPSEntries,
   batchAddPS
 } = require('../config/cloudflareStorage');
 const { requireAuth, requireAdmin, requirePSListPermission } = require('../middleware/auth');
@@ -144,6 +146,39 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     res.json({ success: true, message: 'Police Station deleted successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting PS: ' + err.message });
+  }
+});
+
+// POST /api/ps/bulk-delete - Delete multiple selected PS entries (Admin Only)
+router.post('/bulk-delete', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'No police station IDs provided for deletion.' });
+    }
+
+    const count = await batchDeletePSEntries(ids);
+    res.json({
+      success: true,
+      message: `Successfully deleted ${count} police station${count === 1 ? '' : 's'}.`,
+      deletedCount: count
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error deleting police stations: ' + err.message });
+  }
+});
+
+// POST /api/ps/delete-all - Delete all PS records from directory (Admin Only)
+router.post('/delete-all', requireAdmin, async (req, res) => {
+  try {
+    const count = await deleteAllPSEntries();
+    res.json({
+      success: true,
+      message: `Successfully deleted all ${count} police station records.`,
+      deletedCount: count
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error deleting all police stations: ' + err.message });
   }
 });
 
