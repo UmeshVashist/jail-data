@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ success: false, message: 'View users cannot send list add requests.' });
     }
 
-    const { optionValue, reason } = req.body;
+    const { optionValue, reason, disableAadhar } = req.body;
     const cleanOption = (optionValue || '').toString().trim();
 
     if (!cleanOption) {
@@ -83,7 +83,8 @@ router.post('/', async (req, res) => {
       requestedDate: reqDate,
       requestedTime: reqTime,
       createdAt: now.getTime(),
-      reason: (reason || '').toString().trim()
+      reason: (reason || '').toString().trim(),
+      disableAadhar: !!disableAadhar
     });
 
     res.json({ success: true, message: `Request to add "${cleanOption}" to dropdown list sent successfully!` });
@@ -127,17 +128,17 @@ router.get('/reactive', async (req, res) => {
       return val.trim().toLowerCase();
     }));
 
-    // Filter requests that are NOT Approved (Pending or Rejected/Reactive)
-    const unapprovedRequests = allRequests.filter(r => r.status !== 'Approved');
+    // Filter requests that are Pending for Dropdown Option Requests list
+    const pendingRequests = allRequests.filter(r => String(r.status || '').toLowerCase() === 'pending');
 
-    const unapprovedMap = new Map();
-    unapprovedRequests.forEach(r => {
+    const allRequestsMap = new Map();
+    allRequests.forEach(r => {
       if (r.optionValue) {
-        unapprovedMap.set(r.optionValue.trim().toLowerCase(), r);
+        allRequestsMap.set(r.optionValue.trim().toLowerCase(), r);
       }
     });
 
-    const formattedRequests = unapprovedRequests.map(r => {
+    const formattedRequests = pendingRequests.map(r => {
       let reqMs = r.createdAt;
       if (!reqMs && r.requestedDate) {
         try {
@@ -153,7 +154,7 @@ router.get('/reactive', async (req, res) => {
         ...r,
         isTempActive,
         hoursLeft,
-        tempStatusLabel: isTempActive ? `Temp Active (${hoursLeft}h left)` : (r.status === 'Pending' ? 'Temp Expired (Pending Approval)' : r.status)
+        tempStatusLabel: isTempActive ? `Temp Active (${hoursLeft}h left)` : 'Temp Expired (Pending Approval)'
       };
     });
 
@@ -162,7 +163,7 @@ router.get('/reactive', async (req, res) => {
     allRecords.forEach(rec => {
       const recRemark = (rec.remark || '').trim();
       if (recRemark && !permSet.has(recRemark.toLowerCase())) {
-        const matchingReq = unapprovedMap.get(recRemark.toLowerCase());
+        const matchingReq = allRequestsMap.get(recRemark.toLowerCase());
         affectedRecords.push({
           id: rec.id || rec.rowIndex,
           pid: rec.pid,
@@ -229,6 +230,7 @@ router.get('/my-requests', async (req, res) => {
 router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
+    const { disableAadhar } = req.body;
     const allRequests = await getListAddRequests();
     const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
 
@@ -240,15 +242,20 @@ router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => 
       return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
     }
 
+    const shouldDisableAadhar = disableAadhar !== undefined ? !!disableAadhar : !!targetReq.disableAadhar;
+
     // Add option to remark options sheet
     if (targetReq.optionValue) {
-      await addRemarkOption(targetReq.optionValue);
+      await addRemarkOption(targetReq.optionValue, shouldDisableAadhar);
     }
 
     // Update request status to Approved
     await updateListAddRequestStatus(requestId, 'Approved', req.user.username);
 
-    res.json({ success: true, message: `List add request approved. Option "${targetReq.optionValue}" added to dropdown list.` });
+    res.json({
+      success: true,
+      message: `List add request approved. Option "${targetReq.optionValue}" added to dropdown list (${shouldDisableAadhar ? 'Aadhar Not Editable' : 'Aadhar Editable'}).`
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Approve list add request error: ' + err.message });
   }

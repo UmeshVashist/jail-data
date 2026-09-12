@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const ExcelJS = require('exceljs');
-const { getRecords, batchAddRecords, getRemarkOptions, getSystemSettings } = require('../config/cloudflareStorage');
+const { getRecords, batchAddRecords, getRemarkOptions, getListAddRequests, getSystemSettings } = require('../config/cloudflareStorage');
 const { requireAuth, requireImportPermission } = require('../middleware/auth');
 
 async function isAadharDisabledRemark(remarkValue) {
@@ -17,6 +17,12 @@ async function isAadharDisabledRemark(remarkValue) {
     const match = options.find(opt => (opt.optionValue || opt).toString().trim().toLowerCase() === val);
     if (match && typeof match === 'object') {
       return !!match.disableAadhar;
+    }
+
+    const listRequests = await getListAddRequests();
+    const pendingMatch = (listRequests || []).find(r => r.status === 'Pending' && (r.optionValue || '').toString().trim().toLowerCase() === val);
+    if (pendingMatch) {
+      return !!pendingMatch.disableAadhar;
     }
   } catch (e) {}
 

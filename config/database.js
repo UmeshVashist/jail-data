@@ -139,12 +139,16 @@ async function initDatabase() {
         status TEXT DEFAULT 'Pending',
         action_by TEXT,
         action_date TEXT,
-        created_at INTEGER
+        created_at INTEGER,
+        disable_aadhar INTEGER DEFAULT 0
       )
     `);
 
     try {
       await dbRun(`ALTER TABLE list_add_requests ADD COLUMN created_at INTEGER`);
+    } catch (e) {}
+    try {
+      await dbRun(`ALTER TABLE list_add_requests ADD COLUMN disable_aadhar INTEGER DEFAULT 0`);
     } catch (e) {}
 
 

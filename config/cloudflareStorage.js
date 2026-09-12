@@ -332,13 +332,17 @@ async function ensureListAddRequestsSynced(force = false) {
             status: r.status || 'Pending',
             actionBy: r.action_by || r.actionBy,
             actionDate: r.action_date || r.actionDate,
-            createdAt: r.created_at || r.createdAt || Date.now()
+            createdAt: r.created_at || r.createdAt || Date.now(),
+            disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
           }));
         }
       } catch (e) {}
     }
     if (remote && Array.isArray(remote)) {
-      memoryStore.listAddRequests = remote;
+      memoryStore.listAddRequests = remote.map(r => ({
+        ...r,
+        disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
+      }));
       lastSyncTimestamps.listAddRequests = now;
     }
   }
@@ -1075,7 +1079,8 @@ async function getListAddRequests() {
     status: r.status || 'Pending',
     actionBy: r.actionBy || r.action_by,
     actionDate: r.actionDate || r.action_date,
-    createdAt: r.createdAt || r.created_at || Date.now()
+    createdAt: r.createdAt || r.created_at || Date.now(),
+    disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
   }));
 }
 
@@ -1095,17 +1100,25 @@ async function createListAddRequest(reqObj) {
     status: 'Pending',
     actionBy: '',
     actionDate: '',
-    createdAt: nowMs
+    createdAt: nowMs,
+    disableAadhar: !!reqObj.disableAadhar
   };
 
   memoryStore.listAddRequests.unshift(item);
 
   try {
     const { dbRun } = require('./database');
-    await dbRun(
-      `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [item.optionValue, item.requestedBy, item.requestedDate, item.requestedTime, item.reason, 'Pending', nowMs]
-    );
+    try {
+      await dbRun(
+        `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status, created_at, disable_aadhar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [item.optionValue, item.requestedBy, item.requestedDate, item.requestedTime, item.reason, 'Pending', nowMs, item.disableAadhar ? 1 : 0]
+      );
+    } catch (colErr) {
+      await dbRun(
+        `INSERT INTO list_add_requests (option_value, requested_by, requested_date, requested_time, reason, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [item.optionValue, item.requestedBy, item.requestedDate, item.requestedTime, item.reason, 'Pending', nowMs]
+      );
+    }
   } catch (e) {}
 
   await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);

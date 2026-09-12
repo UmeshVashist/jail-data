@@ -42,7 +42,7 @@ router.get('/remark-options', requireAuth, async (req, res) => {
             existingValues.add(clean.toLowerCase());
             result.push({
               optionValue: clean,
-              disableAadhar: false,
+              disableAadhar: !!req.disableAadhar,
               isPending: true,
               requestedBy: req.requestedBy || ''
             });
@@ -204,6 +204,13 @@ async function isAadharDisabledRemark(remarkValue) {
     if (match && typeof match === 'object') {
       return !!match.disableAadhar;
     }
+
+    // Also check pending list add requests so temporary options respect disableAadhar!
+    const listRequests = await getListAddRequests();
+    const pendingMatch = (listRequests || []).find(r => r.status === 'Pending' && (r.optionValue || '').toString().trim().toLowerCase() === val);
+    if (pendingMatch) {
+      return !!pendingMatch.disableAadhar;
+    }
   } catch (e) {}
 
   return (
@@ -264,21 +271,26 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     let todayRecordsCount = 0;
     let todayImportsCount = 0;
 
-    const recentActivities = [];
-
-    for (let i = records.length - 1; i >= 0; i--) {
-      const rec = records[i];
+    for (const rec of records) {
       if (rec.createdDate === todayStr) {
         todayRecordsCount++;
         if ((rec.remark || '').toLowerCase().includes('import') || (rec.createdBy || '').toLowerCase().includes('import')) {
           todayImportsCount++;
         }
       }
-
-      if (recentActivities.length < 10) {
-        recentActivities.push(rec);
-      }
     }
+
+    // Sort records descending by timestamp/id so the most recent records are at the top
+    const sortedRecords = [...records].sort((a, b) => {
+      const timeA = (a.createdDate || '') + ' ' + (a.createdTime || '');
+      const timeB = (b.createdDate || '') + ' ' + (b.createdTime || '');
+      if (timeA && timeB && timeA !== timeB) {
+        return timeB.localeCompare(timeA);
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
+
+    const recentActivities = sortedRecords.slice(0, 10);
 
     res.json({
       success: true,

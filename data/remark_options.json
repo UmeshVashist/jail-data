@@ -63,10 +63,5 @@
     "id": 13,
     "optionValue": "Pending For Aadhar Link",
     "disableAadhar": false
-  },
-  {
-    "id": 14,
-    "optionValue": "Special Live Remark",
-    "disableAadhar": false
   }
 ]

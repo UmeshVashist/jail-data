@@ -40,6 +40,7 @@ let remarkOptionModalInstance = null;
 let sendDeleteRequestModalInstance = null;
 let sendEditRequestModalInstance = null;
 let sendListAddRequestModalInstance = null;
+let approveListAddModalInstance = null;
 let viewEditComparisonModalInstance = null;
 let updateRecordRemarkModalInstance = null;
 let todayRecordsModalInstance = null;
@@ -63,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
   sendDeleteRequestModalInstance = new bootstrap.Modal(document.getElementById('sendDeleteRequestModal'));
   sendEditRequestModalInstance = new bootstrap.Modal(document.getElementById('sendEditRequestModal'));
   sendListAddRequestModalInstance = new bootstrap.Modal(document.getElementById('sendListAddRequestModal'));
+  const approveListEl = document.getElementById('approveListAddModal');
+  if (approveListEl) approveListAddModalInstance = new bootstrap.Modal(approveListEl);
   viewEditComparisonModalInstance = new bootstrap.Modal(document.getElementById('viewEditComparisonModal'));
   updateRecordRemarkModalInstance = new bootstrap.Modal(document.getElementById('updateRecordRemarkModal'));
   const todayModalEl = document.getElementById('todayRecordsModal');
@@ -1303,11 +1306,51 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
     input.addEventListener('click', showAllOrFiltered);
 
     input.addEventListener('input', () => {
-      if (input.value.trim() === '' && selectEl.value !== '') {
+      const typed = input.value.trim().toLowerCase();
+      let matchedOpt = null;
+      for (let i = 0; i < selectEl.options.length; i++) {
+        const opt = selectEl.options[i];
+        if (opt.value && (opt.value.toLowerCase() === typed || opt.text.toLowerCase() === typed)) {
+          matchedOpt = opt.value;
+          break;
+        }
+      }
+      if (matchedOpt) {
+        if (selectEl.value !== matchedOpt) {
+          selectEl.value = matchedOpt;
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else if (input.value.trim() === '' && selectEl.value !== '') {
         selectEl.value = '';
         selectEl.dispatchEvent(new Event('change', { bubbles: true }));
       }
+      handleRecordRemarkChange();
+      handleSendEditRemarkChange();
       renderMenuItems(input.value);
+    });
+
+    input.addEventListener('blur', () => {
+      const typed = input.value.trim().toLowerCase();
+      if (!typed) {
+        if (selectEl.value !== '') {
+          selectEl.value = '';
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+      for (let i = 0; i < selectEl.options.length; i++) {
+        const opt = selectEl.options[i];
+        if (opt.value && (opt.value.toLowerCase() === typed || opt.text.toLowerCase() === typed)) {
+          if (selectEl.value !== opt.value) {
+            selectEl.value = opt.value;
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          input.value = opt.text;
+          break;
+        }
+      }
+      handleRecordRemarkChange();
+      handleSendEditRemarkChange();
     });
 
     input.addEventListener('keydown', (e) => {
@@ -1459,7 +1502,11 @@ function handleRecordRemarkChange() {
   const aadharInput = document.getElementById('modal-record-aadhar');
   if (!remarkSelect || !aadharInput) return;
 
-  const selectedVal = (remarkSelect.value || '').trim();
+  const searchInput = remarkSelect.parentElement ? remarkSelect.parentElement.querySelector('.searchable-select-input') : null;
+  let selectedVal = (remarkSelect.value || '').trim();
+  if (!selectedVal && searchInput && searchInput.value) {
+    selectedVal = searchInput.value.trim();
+  }
   const isDisableRemark = isAadharDisabledRemark(selectedVal);
 
   if (isDisableRemark) {
@@ -1468,7 +1515,7 @@ function handleRecordRemarkChange() {
     aadharInput.readOnly = true;
     aadharInput.style.pointerEvents = 'none';
     aadharInput.style.backgroundColor = '#e9ecef';
-    aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
+    aadharInput.placeholder = `Not Editable (${selectedVal || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
     aadharInput.readOnly = false;
@@ -1485,7 +1532,11 @@ function handleSendEditRemarkChange() {
   const aadharInput = document.getElementById('send-edit-aadhar');
   if (!remarkSelect || !aadharInput) return;
 
-  const selectedVal = (remarkSelect.value || '').trim();
+  const searchInput = remarkSelect.parentElement ? remarkSelect.parentElement.querySelector('.searchable-select-input') : null;
+  let selectedVal = (remarkSelect.value || '').trim();
+  if (!selectedVal && searchInput && searchInput.value) {
+    selectedVal = searchInput.value.trim();
+  }
   const isDisableRemark = isAadharDisabledRemark(selectedVal);
 
   if (isDisableRemark) {
@@ -1494,7 +1545,7 @@ function handleSendEditRemarkChange() {
     aadharInput.readOnly = true;
     aadharInput.style.pointerEvents = 'none';
     aadharInput.style.backgroundColor = '#e9ecef';
-    aadharInput.placeholder = `Not Editable (${remarkSelect.value || 'N/A'} selected)`;
+    aadharInput.placeholder = `Not Editable (${selectedVal || 'N/A'} selected)`;
   } else {
     aadharInput.disabled = false;
     aadharInput.readOnly = false;
@@ -1737,7 +1788,13 @@ async function handleRecordFormSubmit(event) {
 
   const pid = document.getElementById('modal-record-pid').value.trim();
   const name = document.getElementById('modal-record-name').value.trim();
-  const remark = document.getElementById('modal-record-remark').value.trim();
+  let remark = document.getElementById('modal-record-remark').value.trim();
+  if (!remark) {
+    const searchInput = document.getElementById('modal-record-remark-search-input');
+    if (searchInput && searchInput.value.trim()) {
+      remark = searchInput.value.trim();
+    }
+  }
   let aadharInput = document.getElementById('modal-record-aadhar').value.trim();
 
   if (isAadharDisabledRemark(remark)) {
@@ -3297,6 +3354,8 @@ async function rejectEditRequest(requestId, pid) {
 
 function openSendListAddRequestModal() {
   document.getElementById('sendListAddRequestForm').reset();
+  const switchEl = document.getElementById('send-list-add-disable-aadhar');
+  if (switchEl) switchEl.checked = false;
   sendListAddRequestModalInstance.show();
 }
 
@@ -3304,6 +3363,7 @@ async function handleSendListAddRequestSubmit(event) {
   event.preventDefault();
   const optionValue = document.getElementById('send-list-add-option').value.trim();
   const reason = document.getElementById('send-list-add-reason').value.trim();
+  const disableAadhar = document.getElementById('send-list-add-disable-aadhar') ? document.getElementById('send-list-add-disable-aadhar').checked : false;
 
   if (!optionValue) {
     showToast('danger', 'Validation Error', 'Option name is required.');
@@ -3316,7 +3376,7 @@ async function handleSendListAddRequestSubmit(event) {
     const res = await fetch('/api/list-add-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionValue, reason })
+      body: JSON.stringify({ optionValue, reason, disableAadhar })
     });
     const data = await res.json();
     hideLoader();
@@ -3325,7 +3385,9 @@ async function handleSendListAddRequestSubmit(event) {
       showToast('success', 'Request Sent', data.message);
       loadMyRequestsList();
       loadReactiveList();
-      loadRemarkOptions();
+      await loadRemarkOptions();
+      const currentRecRemark = document.getElementById('modal-record-remark')?.value || '';
+      populateRemarkDropdown(currentRecRemark);
     } else {
       showToast('danger', 'Error', data.message);
     }
@@ -3458,7 +3520,10 @@ function renderMyRequestsTable(requests) {
     } else if (req.requestType === 'List Add') {
       typeBadge = '<span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>List Add</span>';
       pidDisplay = '<span class="text-muted small">N/A</span>';
-      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>`;
+      const aadharBadge = req.disableAadhar
+        ? ` <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-1 small" title="Aadhar Not Editable"><i class="bi bi-lock-fill me-1"></i>Aadhar Not Editable</span>`
+        : ` <span class="badge bg-light text-secondary border ms-1 small" title="Aadhar Editable"><i class="bi bi-pencil-fill me-1"></i>Aadhar Editable</span>`;
+      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>${aadharBadge}`;
     }
 
     let actionCol = '-';
@@ -3671,11 +3736,14 @@ function renderAllRequestsTable(requests) {
     } else if (req.requestType === 'List Add') {
       typeBadge = '<span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>List Add</span>';
       targetDisplay = '<span class="text-muted small">Dropdown List</span>';
-      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>`;
+      const aadharBadge = req.disableAadhar
+        ? ` <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-1 small" title="Aadhar Not Editable"><i class="bi bi-lock-fill me-1"></i>Aadhar Not Editable</span>`
+        : ` <span class="badge bg-light text-secondary border ms-1 small" title="Aadhar Editable"><i class="bi bi-pencil-fill me-1"></i>Aadhar Editable</span>`;
+      nameDisplay = `<span class="fw-semibold text-primary"><i class="bi bi-tag-fill me-1"></i>${escapeHtml(req.optionValue)}</span>${aadharBadge}`;
 
       if (req.status === 'Pending') {
         actionCol = `
-          <button class="btn btn-sm btn-success me-1" title="Approve & Add Option" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+          <button class="btn btn-sm btn-success me-1" title="Approve & Add Option" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}', ${Boolean(req.disableAadhar)})">
             <i class="bi bi-check-circle me-1"></i>Add Option
           </button>
           <button class="btn btn-sm btn-outline-secondary" title="Reject Request" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
@@ -3704,36 +3772,57 @@ function renderAllRequestsTable(requests) {
   tbody.innerHTML = html;
 }
 
-async function approveListAddRequest(requestId, optionValue) {
-  document.getElementById('confirmModalTitle').innerText = 'Approve & Add Dropdown Option?';
-  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to approve request and add option "${optionValue}" to Remark dropdown list?`;
-  const executeBtn = document.getElementById('confirmModalExecuteBtn');
-  executeBtn.innerText = 'Yes, Add Option';
-  executeBtn.className = 'btn btn-success btn-sm px-3';
+function approveListAddRequest(requestId, optionValue, initialDisableAadhar = false) {
+  const idEl = document.getElementById('approve-list-add-id');
+  const nameEl = document.getElementById('approve-list-add-name');
+  const switchEl = document.getElementById('approve-list-add-disable-aadhar');
+  if (idEl) idEl.value = requestId;
+  if (nameEl) nameEl.value = optionValue;
+  if (switchEl) switchEl.checked = Boolean(initialDisableAadhar);
 
-  executeBtn.onclick = async function () {
-    confirmModalInstance.hide();
-    showLoader('Adding option to dropdown list...');
-    try {
-      const res = await fetch(`/api/list-add-requests/${requestId}/approve`, { method: 'POST' });
-      const data = await res.json();
-      hideLoader();
+  if (!approveListAddModalInstance) {
+    const el = document.getElementById('approveListAddModal');
+    if (el) approveListAddModalInstance = new bootstrap.Modal(el);
+  }
+  if (approveListAddModalInstance) {
+    approveListAddModalInstance.show();
+  }
+}
 
-      if (data.success) {
-        showToast('success', 'Approved & Option Added', data.message);
-        loadAllRequestsList();
-        loadReactiveList();
-        loadRemarkOptions();
-      } else {
-        showToast('danger', 'Error', data.message);
-      }
-    } catch (err) {
-      hideLoader();
-      showToast('danger', 'Error', err.message);
+async function handleApproveListAddSubmit(event) {
+  if (event) event.preventDefault();
+  const requestId = document.getElementById('approve-list-add-id').value;
+  const optionValue = document.getElementById('approve-list-add-name').value;
+  const disableAadhar = document.getElementById('approve-list-add-disable-aadhar')
+    ? document.getElementById('approve-list-add-disable-aadhar').checked
+    : false;
+
+  if (approveListAddModalInstance) {
+    approveListAddModalInstance.hide();
+  }
+
+  showLoader('Adding option to dropdown list...');
+  try {
+    const res = await fetch(`/api/list-add-requests/${requestId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disableAadhar })
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      showToast('success', 'Approved & Option Added', data.message);
+      loadAllRequestsList();
+      loadReactiveList();
+      await loadRemarkOptions();
+    } else {
+      showToast('danger', 'Error', data.message);
     }
-  };
-
-  confirmModalInstance.show();
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
 }
 
 async function rejectListAddRequest(requestId, optionValue) {
@@ -3780,7 +3869,8 @@ async function loadReactiveList() {
       return;
     }
 
-    const requests = data.requests || data.data || [];
+    const rawRequests = data.requests || data.data || [];
+    const requests = rawRequests.filter(r => String(r.status || '').toLowerCase() === 'pending');
     const affectedRecords = data.affectedRecords || [];
 
     // Update badges
@@ -3830,11 +3920,11 @@ async function loadReactiveList() {
       }
     }
 
-    // 2. Render Dropdown Requests Table
+    // 2. Render Dropdown Requests Table (Only Pending Status)
     const reqTbody = document.getElementById('reactive-list-table-body');
     if (reqTbody) {
       if (requests.length === 0) {
-        reqTbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>No pending or reactive dropdown requests. All requests are approved!</td></tr>';
+        reqTbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>No pending dropdown option requests.</td></tr>';
       } else {
         const canApprove = currentUserState && (currentUserState.role === 'Admin' || currentUserState.deleteRequestPermission);
 
@@ -3844,42 +3934,34 @@ async function loadReactiveList() {
             ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-clock-history me-1"></i>Temp Active (${req.hoursLeft}h left)</span>`
             : `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Temp Expired</span>`;
 
-          const statusBadge = req.status === 'Rejected'
-            ? `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>`
-            : `<span class="badge bg-warning text-dark"><i class="bi bi-arrow-counterclockwise me-1"></i>Reactive / Pending</span>`;
+          const statusBadge = `<span class="badge bg-warning text-dark"><i class="bi bi-clock-fill me-1"></i>Pending</span>`;
 
           let actionButtons = '-';
-          const isPending = String(req.status || '').toLowerCase() === 'pending';
-
           if (canApprove) {
-            if (isPending) {
-              actionButtons = `
-                <button class="btn btn-sm btn-success fw-semibold rounded-2 me-1 shadow-sm" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                  <i class="bi bi-check-lg me-1"></i>Approve & Add Permanent
-                </button>
-                <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                  <i class="bi bi-x-lg me-1"></i>Reject
-                </button>
-              `;
-            } else {
-              actionButtons = `<span class="small text-muted"><i class="bi bi-dash-circle me-1"></i>-</span>`;
-            }
+            actionButtons = `
+              <button class="btn btn-sm btn-success fw-semibold rounded-2 me-1 shadow-sm" onclick="approveListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}', ${Boolean(req.disableAadhar)})">
+                <i class="bi bi-check-lg me-1"></i>Approve & Add Permanent
+              </button>
+              <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="rejectListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                <i class="bi bi-x-lg me-1"></i>Reject
+              </button>
+            `;
           } else if (String(req.requestedBy || '').toLowerCase() === String(currentUserState.username || '').toLowerCase()) {
-            if (isPending) {
-              actionButtons = `
-                <button class="btn btn-sm btn-outline-danger rounded-2" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
-                  <i class="bi bi-trash me-1"></i>Withdraw
-                </button>
-              `;
-            } else {
-              actionButtons = `<span class="small text-muted"><i class="bi bi-dash-circle me-1"></i>-</span>`;
-            }
+            actionButtons = `
+              <button class="btn btn-sm btn-outline-danger rounded-2" onclick="cancelMyListAddRequest(${req.id}, '${escapeHtml(req.optionValue)}')">
+                <i class="bi bi-trash me-1"></i>Withdraw
+              </button>
+            `;
           }
+
+          const aadharBadge = req.disableAadhar
+            ? ` <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-1 small" title="Aadhar Not Editable"><i class="bi bi-lock-fill me-1"></i>Aadhar Not Editable</span>`
+            : ` <span class="badge bg-light text-secondary border ms-1 small" title="Aadhar Editable"><i class="bi bi-pencil-fill me-1"></i>Aadhar Editable</span>`;
 
           reqHtml += `
             <tr>
               <td class="fw-semibold text-muted">${idx + 1}</td>
-              <td><span class="fw-bold text-dark"><i class="bi bi-tag-fill text-primary me-1"></i>${escapeHtml(req.optionValue)}</span></td>
+              <td><span class="fw-bold text-dark"><i class="bi bi-tag-fill text-primary me-1"></i>${escapeHtml(req.optionValue)}</span>${aadharBadge}</td>
               <td><span class="fst-italic text-secondary">${escapeHtml(req.reason || '-')}</span></td>
               <td><span class="badge bg-light text-dark border">${escapeHtml(req.requestedBy)}</span></td>
               <td class="small text-muted">${escapeHtml(req.requestedDate)} ${escapeHtml(req.requestedTime || '')}</td>

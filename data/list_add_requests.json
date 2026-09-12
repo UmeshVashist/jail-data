@@ -1,5 +1,19 @@
 [
   {
+    "id": 9,
+    "rowIndex": 9,
+    "optionValue": "Main",
+    "requestedBy": "addut",
+    "requestedDate": "2026-09-12",
+    "requestedTime": "12:43:38 PM",
+    "reason": "",
+    "status": "Approved",
+    "actionBy": "admin",
+    "actionDate": "2026-09-12 12:44:39 PM",
+    "createdAt": 1789197219210,
+    "disableAadhar": true
+  },
+  {
     "id": 8,
     "rowIndex": 8,
     "optionValue": "Special Live Remark",
@@ -10,7 +24,8 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-09-10 09:08:47 PM",
-    "createdAt": 1789054576143
+    "createdAt": 1789054576143,
+    "disableAadhar": false
   },
   {
     "id": 7,
@@ -23,7 +38,8 @@
     "status": "Rejected",
     "actionBy": "admin",
     "actionDate": "2026-09-10 10:12:31 PM",
-    "createdAt": 1789054438930
+    "createdAt": 1789054438930,
+    "disableAadhar": false
   },
   {
     "id": 6,
@@ -36,7 +52,8 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-09-10 09:02:19 PM",
-    "createdAt": 1789038833988
+    "createdAt": 1789038833988,
+    "disableAadhar": false
   },
   {
     "id": 5,
@@ -49,7 +66,8 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-09-10 04:07:10 PM",
-    "createdAt": 1789036628460
+    "createdAt": 1789036628460,
+    "disableAadhar": false
   },
   {
     "id": 1,
@@ -62,7 +80,8 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-08-04 15:17:33",
-    "createdAt": 1788854533088
+    "createdAt": 1788854533088,
+    "disableAadhar": false
   },
   {
     "id": 2,
@@ -75,7 +94,8 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-08-06 4:56:49",
-    "createdAt": 1788854533088
+    "createdAt": 1788854533088,
+    "disableAadhar": false
   },
   {
     "id": 3,
@@ -88,6 +108,7 @@
     "status": "Approved",
     "actionBy": "admin",
     "actionDate": "2026-09-08 1:27:34 PM",
-    "createdAt": 1788854533088
+    "createdAt": 1788854533088,
+    "disableAadhar": false
   }
 ]
