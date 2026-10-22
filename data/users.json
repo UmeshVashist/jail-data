@@ -14,12 +14,13 @@
     "id": 2,
     "rowIndex": 2,
     "username": "addct",
-    "password": "Ram@1020",
+    "password": "Jail@1020",
     "role": "Add",
     "importPermission": false,
     "fullAccess": false,
     "deleteRequestPermission": false,
-    "status": "Active"
+    "status": "Active",
+    "psListPermission": true
   },
   {
     "id": 3,

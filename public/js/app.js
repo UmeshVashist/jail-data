@@ -776,11 +776,31 @@ async function showTotalUsersModal() {
     statusFilterEl.value = 'Active';
   }
 
+  // Reset search input & clear button
+  const searchInputEl = document.getElementById('modal-users-search-input');
+  if (searchInputEl) {
+    searchInputEl.value = '';
+    setTimeout(() => searchInputEl.focus(), 300);
+  }
+  const clearBtn = document.getElementById('modal-users-search-clear');
+  if (clearBtn) {
+    clearBtn.classList.add('d-none');
+  }
+
   if (totalUsersModalInstance) {
     totalUsersModalInstance.show();
   }
 
   await loadTotalUsersModalData();
+}
+
+function clearModalUsersSearch() {
+  const searchInputEl = document.getElementById('modal-users-search-input');
+  if (searchInputEl) {
+    searchInputEl.value = '';
+    filterModalUsersTable();
+    searchInputEl.focus();
+  }
 }
 
 async function loadTotalUsersModalData() {
@@ -816,6 +836,18 @@ async function loadTotalUsersModalData() {
 function filterModalUsersTable() {
   const statusFilterEl = document.getElementById('modal-users-status-filter');
   const targetStatus = statusFilterEl ? statusFilterEl.value : 'Active';
+  const searchInputEl = document.getElementById('modal-users-search-input');
+  const searchQuery = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
+  const clearBtn = document.getElementById('modal-users-search-clear');
+
+  if (clearBtn) {
+    if (searchQuery.length > 0) {
+      clearBtn.classList.remove('d-none');
+    } else {
+      clearBtn.classList.add('d-none');
+    }
+  }
+
   const tbody = document.getElementById('modal-users-table-body');
   const countBadge = document.getElementById('modal-users-count-badge');
   const footerInfo = document.getElementById('modal-users-footer-info');
@@ -826,15 +858,27 @@ function filterModalUsersTable() {
     filtered = filtered.filter(u => (u.status || 'Active').toLowerCase() === targetStatus.toLowerCase());
   }
 
+  if (searchQuery) {
+    filtered = filtered.filter(u => (u.username || '').toLowerCase().includes(searchQuery));
+  }
+
   if (countBadge) {
     countBadge.innerText = filtered.length;
   }
   if (footerInfo) {
-    footerInfo.innerText = `Showing ${targetStatus.toLowerCase()} users (${filtered.length} of ${rawModalUsersList.length})`;
+    const statusLabel = targetStatus === 'All' ? 'all' : targetStatus.toLowerCase();
+    let info = `Showing ${statusLabel} users (${filtered.length} of ${rawModalUsersList.length})`;
+    if (searchQuery) {
+      info += ` matching "${escapeHtml(searchQuery)}"`;
+    }
+    footerInfo.innerText = info;
   }
 
   if (!filtered || filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted"><i class="bi bi-person-x fs-4 d-block mb-1 opacity-50"></i>No ${escapeHtml(targetStatus)} users found.</td></tr>`;
+    const emptyMsg = searchQuery 
+      ? `No users found matching "${escapeHtml(searchQuery)}"`
+      : `No ${escapeHtml(targetStatus)} users found.`;
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted"><i class="bi bi-person-x fs-4 d-block mb-1 opacity-50"></i>${emptyMsg}</td></tr>`;
     return;
   }
 
