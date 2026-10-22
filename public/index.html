@@ -852,7 +852,7 @@
           <!-- Stat Cards Row for All Request Types -->
           <div class="row g-3 mb-4">
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="card stat-card h-100 p-3 border-start border-4 border-warning">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-warning" id="stat-card-total-pending" onclick="setAllRequestsTypeFilter('All', 'Pending')" style="cursor: pointer;" title="Click to filter Total Pending">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">Total Pending</span>
@@ -866,7 +866,7 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="card stat-card h-100 p-3 border-start border-4 border-info">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-info" id="stat-card-edit-requests" onclick="setAllRequestsTypeFilter('Edit')" style="cursor: pointer;" title="Click to filter Edit Requests">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">Edit Requests</span>
@@ -880,7 +880,7 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="card stat-card h-100 p-3 border-start border-4 border-danger">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-danger" id="stat-card-delete-requests" onclick="setAllRequestsTypeFilter('Delete')" style="cursor: pointer;" title="Click to filter Delete Requests">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">Delete Requests</span>
@@ -894,7 +894,7 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="card stat-card h-100 p-3 border-start border-4 border-success">
+              <div class="card stat-card h-100 p-3 border-start border-4 border-success" id="stat-card-listadd-requests" onclick="setAllRequestsTypeFilter('List Add')" style="cursor: pointer;" title="Click to filter List Add Requests">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
                     <span class="text-muted small fw-semibold text-uppercase">List Add Requests</span>
@@ -943,7 +943,7 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="all-requests-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>

@@ -3688,6 +3688,55 @@ async function loadAllRequestsList() {
   }
 }
 
+function setAllRequestsTypeFilter(type, status) {
+  const typeEl = document.getElementById('filter-all-requests-type');
+  if (!typeEl) return;
+
+  // If user clicks the currently selected type card, toggle back to All
+  if (type !== 'All' && typeEl.value === type) {
+    typeEl.value = 'All';
+  } else {
+    typeEl.value = type;
+  }
+
+  if (status) {
+    const statusEl = document.getElementById('filter-all-requests-status');
+    if (statusEl) {
+      statusEl.value = status;
+    }
+  }
+
+  filterAllRequestsTable();
+}
+
+function updateAllRequestsStatCardActiveState(type, status) {
+  const cardTotal = document.getElementById('stat-card-total-pending');
+  const cardEdit = document.getElementById('stat-card-edit-requests');
+  const cardDelete = document.getElementById('stat-card-delete-requests');
+  const cardListAdd = document.getElementById('stat-card-listadd-requests');
+
+  [cardTotal, cardEdit, cardDelete, cardListAdd].forEach(card => {
+    if (card) {
+      card.classList.remove(
+        'active-filter-warning',
+        'active-filter-info',
+        'active-filter-danger',
+        'active-filter-success'
+      );
+    }
+  });
+
+  if (type === 'All' && (status === 'Pending' || !status)) {
+    if (cardTotal) cardTotal.classList.add('active-filter-warning');
+  } else if (type === 'Edit') {
+    if (cardEdit) cardEdit.classList.add('active-filter-info');
+  } else if (type === 'Delete') {
+    if (cardDelete) cardDelete.classList.add('active-filter-danger');
+  } else if (type === 'List Add') {
+    if (cardListAdd) cardListAdd.classList.add('active-filter-success');
+  }
+}
+
 function filterAllRequestsTable() {
   const inputEl = document.getElementById('search-all-requests-input');
   const typeEl = document.getElementById('filter-all-requests-type');
@@ -3696,6 +3745,8 @@ function filterAllRequestsTable() {
   const q = (inputEl ? inputEl.value : '').trim().toLowerCase();
   const typeFilter = typeEl ? typeEl.value : 'All';
   const statusFilter = statusEl ? statusEl.value : 'Pending';
+
+  updateAllRequestsStatCardActiveState(typeFilter, statusFilter);
 
   let filtered = [...rawAllAdminRequests];
 
