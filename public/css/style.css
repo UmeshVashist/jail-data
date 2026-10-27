@@ -54,14 +54,30 @@
   --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Base Body Styling */
+/* Base Body Styling with 3D Perspective Context */
 body {
   font-family: var(--font-main);
-  background-color: var(--bg-main);
+  background: radial-gradient(circle at 50% 20%, #f8fafc 0%, #e2e8f0 100%);
   color: #1e293b;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ==========================================================================
+   Modern Interactive 3D WebGL Background Canvas
+   ========================================================================== */
+.webgl-3d-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
 }
 
 /* Ambient Background Blur Elements for Modern Vibe */
@@ -72,9 +88,9 @@ body::before {
   right: -10vw;
   width: 40vw;
   height: 40vw;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.07) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(255,255,255,0) 70%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 body::after {
@@ -84,46 +100,49 @@ body::after {
   left: -10vw;
   width: 35vw;
   height: 35vw;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.07) 0%, rgba(255,255,255,0) 70%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 /* ==========================================================================
-   Modern Login Screen (Glassmorphism & Neon Accent)
+   Modern Login Screen (Glassmorphism, Neon Glow & 3D Depth)
    ========================================================================== */
 #login-view {
-  background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 100%);
+  background: radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.55) 0%, rgba(15, 23, 42, 0.75) 100%);
   position: relative;
+  z-index: 2;
   overflow: hidden;
 }
 
 #login-view::before {
   content: '';
   position: absolute;
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, rgba(6, 182, 212, 0.1) 70%, transparent 100%);
   border-radius: 50%;
-  filter: blur(90px);
-  top: 15%;
-  left: 20%;
-  opacity: 0.35;
+  filter: blur(80px);
+  top: 10%;
+  left: 15%;
+  opacity: 0.6;
   animation: pulseGlow 8s infinite alternate ease-in-out;
+  pointer-events: none;
 }
 
 #login-view::after {
   content: '';
   position: absolute;
-  width: 350px;
-  height: 350px;
-  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, rgba(139, 92, 246, 0.15) 70%, transparent 100%);
   border-radius: 50%;
-  filter: blur(100px);
-  bottom: 15%;
-  right: 20%;
-  opacity: 0.25;
+  filter: blur(95px);
+  bottom: 10%;
+  right: 15%;
+  opacity: 0.5;
   animation: pulseGlow 10s infinite alternate-reverse ease-in-out;
+  pointer-events: none;
 }
 
 @keyframes pulseGlow {
@@ -132,13 +151,20 @@ body::after {
 }
 
 .login-card {
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 24px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-  z-index: 1;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65), 0 0 30px rgba(99, 102, 241, 0.2) !important;
+  z-index: 2;
+  position: relative;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 35px 75px -10px rgba(0, 0, 0, 0.75), 0 0 45px rgba(99, 102, 241, 0.3) !important;
 }
 
 .login-card .form-control {
@@ -406,7 +432,9 @@ body::after {
 .stat-card {
   border: 1px solid var(--card-border) !important;
   border-radius: var(--card-radius) !important;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow-sm);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1249,14 +1277,15 @@ body.dark-theme #ps-table-body tr.table-danger-subtle {
    Dark Theme System (Login Page Dark Gradient & Sleek Tokens)
    ========================================================================== */
 body.dark-theme {
-  background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 100%) fixed !important;
+  background: radial-gradient(circle at 50% 25%, #0d1224 0%, #060913 100%) fixed !important;
   color: #f8fafc !important;
 }
 
 body.dark-theme header {
-  background: rgba(15, 23, 42, 0.85) !important;
+  background: rgba(15, 23, 42, 0.82) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
 
 body.dark-theme #page-title-display,
@@ -1277,7 +1306,9 @@ body.dark-theme .text-secondary {
 body.dark-theme .card, 
 body.dark-theme .stat-card, 
 body.dark-theme .custom-table-card {
-  background: #1e293b !important;
+  background: rgba(30, 41, 59, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
   color: #f8fafc !important;
