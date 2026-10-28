@@ -21,7 +21,7 @@
   <!-- Custom Design Tokens & Global Styles -->
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body autocomplete="off">
+<body autocomplete="off" class="dark-theme">
 
   <!-- Interactive Modern 3D Animated Background Canvas -->
   <canvas id="webgl-3d-bg" class="webgl-3d-canvas" aria-hidden="true"></canvas>
@@ -199,8 +199,8 @@
         </div>
 
         <div class="d-flex align-items-center gap-3">
-          <!-- Theme Toggle Button -->
-          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 theme-toggle-btn shadow-xs" id="theme-toggle-btn" onclick="toggleAppTheme()" title="Switch Theme" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
+          <!-- Theme Toggle Button (Disabled - Default Dark Theme Enforced) -->
+          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 theme-toggle-btn shadow-xs d-none" id="theme-toggle-btn" aria-hidden="true" disabled style="display: none !important;">
             <i class="bi bi-moon-stars-fill text-secondary fs-6" id="theme-toggle-icon"></i>
           </button>
           <div class="dropdown">
@@ -945,11 +945,37 @@
             </div>
           </div>
 
+          <!-- Bulk Action Toolbar (Displayed dynamically when 1 or more requests are selected) -->
+          <div id="all-requests-bulk-bar" class="card border-0 shadow-lg p-2.5 px-3 mb-3 d-none" style="background: rgba(30, 41, 59, 0.95); border: 1.5px solid rgba(99, 102, 241, 0.45) !important; border-radius: 14px; backdrop-filter: blur(16px);">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div class="d-flex align-items-center gap-2.5">
+                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 shadow-sm">
+                  <i class="bi bi-check2-square me-1"></i><span id="all-requests-selected-count">0</span> Selected
+                </span>
+                <span class="text-white-50 small d-none d-sm-inline">Select multiple requests to approve or reject in bulk</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1.5 shadow-sm fw-semibold" id="btn-bulk-approve" onclick="bulkApproveSelectedRequests()">
+                  <i class="bi bi-check-all me-1 fs-6"></i> Approve Selected (<span class="bulk-count-label">0</span>)
+                </button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 py-1.5 shadow-sm fw-semibold" id="btn-bulk-reject" onclick="bulkRejectSelectedRequests()">
+                  <i class="bi bi-x-circle me-1 fs-6"></i> Reject Selected (<span class="bulk-count-label">0</span>)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5" onclick="clearSelectedRequests()" title="Deselect All">
+                  <i class="bi bi-x-lg me-1"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="custom-table-card">
             <div class="table-responsive" id="all-requests-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
+                    <th style="width: 44px;" class="text-center">
+                      <input type="checkbox" class="form-check-input" id="select-all-requests-checkbox" onchange="toggleSelectAllRequests(this.checked)" title="Select All Visible Requests">
+                    </th>
                     <th>Type</th>
                     <th>PID / Target</th>
                     <th>Name / Option Value</th>
@@ -962,7 +988,7 @@
                 </thead>
                 <tbody id="all-requests-table-body">
                   <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">Loading requests hub...</td>
+                    <td colspan="9" class="text-center py-4 text-muted">Loading requests hub...</td>
                   </tr>
                 </tbody>
               </table>

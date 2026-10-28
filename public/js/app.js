@@ -50,6 +50,7 @@ let rawPendingDeleteRequests = [];
 let rawPendingEditRequests = [];
 let rawPendingListAddRequests = [];
 let rawAllAdminRequests = [];
+let selectedAllRequests = new Map(); // Key: `${requestType}_${id}`, Value: request object
 let rawMyRequests = [];
 let rawUsersList = [];
 
@@ -120,39 +121,27 @@ document.addEventListener('DOMContentLoaded', function () {
   initTheme();
 });
 
-/* Theme Module (Default Light Theme, Dark Theme using Login Radial Gradient) */
+/* Theme Module - Permanent Default Dark Theme */
 function initTheme() {
-  const savedTheme = localStorage.getItem('portal_theme') || 'light';
-  applyTheme(savedTheme);
+  localStorage.setItem('portal_theme', 'dark');
+  applyTheme('dark');
 }
 
 function toggleAppTheme() {
-  const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  applyTheme(newTheme);
-  localStorage.setItem('portal_theme', newTheme);
+  // Light theme disabled per user request: maintain dark theme permanently
+  applyTheme('dark');
+  localStorage.setItem('portal_theme', 'dark');
 }
 
 function applyTheme(themeName) {
+  document.body.classList.add('dark-theme');
   const iconEl = document.getElementById('theme-toggle-icon');
   const btnEl = document.getElementById('theme-toggle-btn');
-
-  if (themeName === 'dark') {
-    document.body.classList.add('dark-theme');
-    if (iconEl) {
-      iconEl.className = 'bi bi-sun-fill text-warning fs-6';
-    }
-    if (btnEl) {
-      btnEl.title = 'Switch to Light Theme';
-    }
-  } else {
-    document.body.classList.remove('dark-theme');
-    if (iconEl) {
-      iconEl.className = 'bi bi-moon-stars-fill text-secondary fs-6';
-    }
-    if (btnEl) {
-      btnEl.title = 'Switch to Dark Theme';
-    }
+  if (iconEl) {
+    iconEl.className = 'bi bi-moon-stars-fill text-warning fs-6';
+  }
+  if (btnEl) {
+    btnEl.style.display = 'none';
   }
 }
 
@@ -3673,6 +3662,7 @@ async function loadAllRequestsList() {
     });
 
     fetchAllPendingRequestsCounts();
+    clearSelectedRequests();
 
     const searchInput = document.getElementById('search-all-requests-input');
     if (searchInput) searchInput.value = '';
@@ -3774,14 +3764,40 @@ function filterAllRequestsTable() {
 function renderAllRequestsTable(requests) {
   const tbody = document.getElementById('all-requests-table-body');
   if (!requests || requests.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>No requests match the current filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>No requests match the current filters.</td></tr>';
+    updateBulkActionBar();
+    updateSelectAllCheckboxState();
     return;
   }
 
   let html = '';
   requests.forEach(req => {
     const reqJson = encodeURIComponent(JSON.stringify(req));
+    const reqKey = `${req.requestType}_${req.id}`;
     const statusBadge = req.status === 'Approved' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>' : req.status === 'Rejected' ? '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Rejected</span>' : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>';
+
+    // Selection Checkbox Column
+    let checkboxCol = '';
+    const isPending = (req.status || 'Pending').toLowerCase() === 'pending';
+    if (isPending) {
+      const isChecked = selectedAllRequests.has(reqKey) ? 'checked' : '';
+      checkboxCol = `
+        <td class="text-center" style="width: 44px;">
+          <input type="checkbox" class="form-check-input request-row-checkbox" 
+            data-key="${reqKey}" 
+            data-req="${reqJson}" 
+            ${isChecked} 
+            onchange="handleRequestCheckboxChange('${reqKey}', this.checked, JSON.parse(decodeURIComponent('${reqJson}')))"
+            title="Select request #${req.id}">
+        </td>
+      `;
+    } else {
+      checkboxCol = `
+        <td class="text-center" style="width: 44px;">
+          <input type="checkbox" class="form-check-input" disabled style="opacity: 0.25; cursor: not-allowed;" title="Only pending requests can be selected">
+        </td>
+      `;
+    }
 
     let typeBadge = '';
     let targetDisplay = '-';
@@ -3850,8 +3866,11 @@ function renderAllRequestsTable(requests) {
       }
     }
 
+    const rowActiveClass = selectedAllRequests.has(reqKey) ? 'style="background-color: rgba(99, 102, 241, 0.12);"' : '';
+
     html += `
-      <tr>
+      <tr ${rowActiveClass}>
+        ${checkboxCol}
         <td>${typeBadge}</td>
         <td>${targetDisplay}</td>
         <td class="fw-semibold">${nameDisplay}</td>
@@ -3865,6 +3884,245 @@ function renderAllRequestsTable(requests) {
   });
 
   tbody.innerHTML = html;
+  updateBulkActionBar();
+  updateSelectAllCheckboxState();
+}
+
+/* ==========================================================================
+   Bulk Selection & Action Handlers (All Requests Hub)
+   ========================================================================== */
+
+function handleRequestCheckboxChange(key, checked, reqObj) {
+  if (checked) {
+    selectedAllRequests.set(key, reqObj);
+  } else {
+    selectedAllRequests.delete(key);
+  }
+  updateBulkActionBar();
+  updateSelectAllCheckboxState();
+}
+
+function toggleSelectAllRequests(checked) {
+  const tbody = document.getElementById('all-requests-table-body');
+  if (!tbody) return;
+
+  const checkboxes = tbody.querySelectorAll('input.request-row-checkbox');
+  checkboxes.forEach(cb => {
+    cb.checked = checked;
+    const key = cb.getAttribute('data-key');
+    if (checked) {
+      const reqDataRaw = cb.getAttribute('data-req');
+      if (reqDataRaw) {
+        try {
+          const reqObj = JSON.parse(decodeURIComponent(reqDataRaw));
+          selectedAllRequests.set(key, reqObj);
+        } catch (e) { }
+      }
+    } else {
+      selectedAllRequests.delete(key);
+    }
+  });
+
+  updateBulkActionBar();
+  updateSelectAllCheckboxState();
+}
+
+function updateSelectAllCheckboxState() {
+  const headerCheckbox = document.getElementById('select-all-requests-checkbox');
+  if (!headerCheckbox) return;
+
+  const tbody = document.getElementById('all-requests-table-body');
+  if (!tbody) return;
+
+  const checkboxes = tbody.querySelectorAll('input.request-row-checkbox');
+  const total = checkboxes.length;
+
+  if (total === 0) {
+    headerCheckbox.checked = false;
+    headerCheckbox.indeterminate = false;
+    headerCheckbox.disabled = true;
+    return;
+  }
+
+  headerCheckbox.disabled = false;
+  let checkedCount = 0;
+  checkboxes.forEach(cb => {
+    if (cb.checked) checkedCount++;
+  });
+
+  if (checkedCount === 0) {
+    headerCheckbox.checked = false;
+    headerCheckbox.indeterminate = false;
+  } else if (checkedCount === total) {
+    headerCheckbox.checked = true;
+    headerCheckbox.indeterminate = false;
+  } else {
+    headerCheckbox.checked = false;
+    headerCheckbox.indeterminate = true;
+  }
+}
+
+function updateBulkActionBar() {
+  const bar = document.getElementById('all-requests-bulk-bar');
+  const countSpan = document.getElementById('all-requests-selected-count');
+  const countLabels = document.querySelectorAll('.bulk-count-label');
+  const count = selectedAllRequests.size;
+
+  if (countSpan) countSpan.innerText = count;
+  countLabels.forEach(el => el.innerText = count);
+
+  if (bar) {
+    if (count > 0) {
+      bar.classList.remove('d-none');
+    } else {
+      bar.classList.add('d-none');
+    }
+  }
+}
+
+function clearSelectedRequests() {
+  selectedAllRequests.clear();
+  const tbody = document.getElementById('all-requests-table-body');
+  if (tbody) {
+    tbody.querySelectorAll('input.request-row-checkbox').forEach(cb => cb.checked = false);
+  }
+  const headerCheckbox = document.getElementById('select-all-requests-checkbox');
+  if (headerCheckbox) {
+    headerCheckbox.checked = false;
+    headerCheckbox.indeterminate = false;
+  }
+  updateBulkActionBar();
+}
+
+async function bulkApproveSelectedRequests() {
+  const selectedList = Array.from(selectedAllRequests.values());
+  if (selectedList.length === 0) {
+    showToast('warning', 'No Selection', 'Please select at least one pending request to approve.');
+    return;
+  }
+
+  document.getElementById('confirmModalTitle').innerText = `Approve ${selectedList.length} Selected Requests?`;
+  document.getElementById('confirmModalMessage').innerHTML = `Are you sure you want to approve all <strong>${selectedList.length}</strong> selected requests? Corresponding records will be updated/deleted and dropdown options added automatically.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = `Yes, Approve All (${selectedList.length})`;
+  executeBtn.className = 'btn btn-success btn-sm px-3 shadow-sm';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader(`Approving ${selectedList.length} requests in bulk...`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < selectedList.length; i++) {
+      const item = selectedList[i];
+      try {
+        let url = '';
+        let opt = { method: 'POST' };
+
+        if (item.requestType === 'Delete') {
+          url = `/api/delete-requests/${item.id}/approve`;
+        } else if (item.requestType === 'Edit') {
+          url = `/api/edit-requests/${item.id}/approve`;
+        } else if (item.requestType === 'List Add') {
+          url = `/api/list-add-requests/${item.id}/approve`;
+          opt.headers = { 'Content-Type': 'application/json' };
+          opt.body = JSON.stringify({ disableAadhar: Boolean(item.disableAadhar) });
+        }
+
+        if (url) {
+          const res = await fetch(url, opt);
+          const data = await res.json();
+          if (data && data.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        }
+      } catch (err) {
+        failCount++;
+      }
+    }
+
+    hideLoader();
+    clearSelectedRequests();
+
+    if (failCount === 0) {
+      showToast('success', 'Bulk Approval Successful', `All ${successCount} requests have been approved successfully.`);
+    } else {
+      showToast('warning', 'Bulk Action Complete', `Approved: ${successCount}, Failed: ${failCount}`);
+    }
+
+    await loadAllRequestsList();
+    loadReactiveList();
+    loadRemarkOptions();
+    loadRecordsData();
+  };
+
+  confirmModalInstance.show();
+}
+
+async function bulkRejectSelectedRequests() {
+  const selectedList = Array.from(selectedAllRequests.values());
+  if (selectedList.length === 0) {
+    showToast('warning', 'No Selection', 'Please select at least one pending request to reject.');
+    return;
+  }
+
+  document.getElementById('confirmModalTitle').innerText = `Reject ${selectedList.length} Selected Requests?`;
+  document.getElementById('confirmModalMessage').innerHTML = `Are you sure you want to reject <strong>${selectedList.length}</strong> selected requests? The requested changes will not be made.`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = `Yes, Reject All (${selectedList.length})`;
+  executeBtn.className = 'btn btn-danger btn-sm px-3 shadow-sm';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader(`Rejecting ${selectedList.length} requests in bulk...`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < selectedList.length; i++) {
+      const item = selectedList[i];
+      try {
+        let url = '';
+        if (item.requestType === 'Delete') {
+          url = `/api/delete-requests/${item.id}/reject`;
+        } else if (item.requestType === 'Edit') {
+          url = `/api/edit-requests/${item.id}/reject`;
+        } else if (item.requestType === 'List Add') {
+          url = `/api/list-add-requests/${item.id}/reject`;
+        }
+
+        if (url) {
+          const res = await fetch(url, { method: 'POST' });
+          const data = await res.json();
+          if (data && data.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        }
+      } catch (err) {
+        failCount++;
+      }
+    }
+
+    hideLoader();
+    clearSelectedRequests();
+
+    if (failCount === 0) {
+      showToast('info', 'Bulk Rejection Complete', `All ${successCount} selected requests have been rejected.`);
+    } else {
+      showToast('warning', 'Bulk Action Complete', `Rejected: ${successCount}, Failed: ${failCount}`);
+    }
+
+    await loadAllRequestsList();
+    loadReactiveList();
+    loadRemarkOptions();
+  };
+
+  confirmModalInstance.show();
 }
 
 function approveListAddRequest(requestId, optionValue, initialDisableAadhar = false) {

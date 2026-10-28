@@ -54,11 +54,11 @@
   --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Base Body Styling with 3D Perspective Context */
+/* Base Body Styling with 3D Perspective Context (Default Dark Theme) */
 body {
   font-family: var(--font-main);
-  background: radial-gradient(circle at 50% 20%, #f8fafc 0%, #e2e8f0 100%);
-  color: #1e293b;
+  background: radial-gradient(circle at 50% 25%, #0d1224 0%, #060913 100%) fixed !important;
+  color: #f8fafc !important;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -109,7 +109,7 @@ body::after {
    Modern Login Screen (Glassmorphism, Neon Glow & 3D Depth)
    ========================================================================== */
 #login-view {
-  background: radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.55) 0%, rgba(15, 23, 42, 0.75) 100%);
+  background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.4) 0%, rgba(3, 7, 18, 0.72) 100%);
   position: relative;
   z-index: 2;
   overflow: hidden;
@@ -118,14 +118,14 @@ body::after {
 #login-view::before {
   content: '';
   position: absolute;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, rgba(6, 182, 212, 0.1) 70%, transparent 100%);
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(6, 182, 212, 0.1) 70%, transparent 100%);
   border-radius: 50%;
-  filter: blur(80px);
-  top: 10%;
-  left: 15%;
-  opacity: 0.6;
+  filter: blur(90px);
+  top: 8%;
+  left: 12%;
+  opacity: 0.65;
   animation: pulseGlow 8s infinite alternate ease-in-out;
   pointer-events: none;
 }
@@ -133,14 +133,14 @@ body::after {
 #login-view::after {
   content: '';
   position: absolute;
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, rgba(139, 92, 246, 0.15) 70%, transparent 100%);
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.22) 0%, rgba(139, 92, 246, 0.15) 70%, transparent 100%);
   border-radius: 50%;
-  filter: blur(95px);
-  bottom: 10%;
-  right: 15%;
-  opacity: 0.5;
+  filter: blur(100px);
+  bottom: 8%;
+  right: 12%;
+  opacity: 0.55;
   animation: pulseGlow 10s infinite alternate-reverse ease-in-out;
   pointer-events: none;
 }
@@ -151,20 +151,24 @@ body::after {
 }
 
 .login-card {
-  background: rgba(15, 23, 42, 0.72) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65), 0 0 30px rgba(99, 102, 241, 0.2) !important;
+  background: rgba(15, 23, 42, 0.62) !important;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.8),
+              0 0 50px rgba(99, 102, 241, 0.25),
+              inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
   z-index: 2;
   position: relative;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
 }
 
 .login-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 35px 75px -10px rgba(0, 0, 0, 0.75), 0 0 45px rgba(99, 102, 241, 0.3) !important;
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 40px 90px -15px rgba(0, 0, 0, 0.85),
+              0 0 70px rgba(6, 182, 212, 0.35),
+              inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
 }
 
 .login-card .form-control {
@@ -523,6 +527,43 @@ body::after {
 body.dark-theme #all-requests-table-container thead th {
   background-color: #0f172a !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Bulk Selection Toolbar & Checkbox Aesthetics */
+#all-requests-bulk-bar {
+  animation: slideDownBulk 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 25px rgba(99, 102, 241, 0.25) !important;
+}
+
+@keyframes slideDownBulk {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table th .form-check-input,
+.table td .form-check-input {
+  cursor: pointer;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+body.dark-theme .form-check-input {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .form-check-input:checked,
+body.dark-theme .form-check-input:indeterminate {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 /* ==========================================================================
@@ -1013,29 +1054,11 @@ body.dark-theme #all-requests-table-container thead th {
               inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* 10. Theme Toggle Button (3D Sun/Moon Spherical Dial) */
+/* 10. Theme Toggle Button (Permanently Hidden & Disabled per requirements) */
 .theme-toggle-btn {
-  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%) !important;
-  border: 1.5px solid #f59e0b !important;
-  color: #d97706 !important;
-  box-shadow: 0 3px 0 #b45309, 
-              0 4px 10px rgba(245, 158, 11, 0.35), 
-              inset 0 1px 1px #ffffff !important;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  cursor: pointer;
-}
-
-.theme-toggle-btn:hover {
-  transform: translateY(-2.5px) rotate(15deg) scale(1.08) !important;
-  box-shadow: 0 5px 0 #92400e, 
-              0 8px 18px rgba(245, 158, 11, 0.5), 
-              inset 0 1px 1px #ffffff !important;
-  color: #b45309 !important;
-}
-
-.theme-toggle-btn:active {
-  transform: translateY(2px) scale(0.95) !important;
-  box-shadow: 0 1px 0 #92400e !important;
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 /* 11. 3D Pagination Buttons */
