@@ -40,7 +40,8 @@ const R2_KEYS = {
   LIST_ADD_REQUESTS: 'data/list_add_requests.json',
   REMARK_OPTIONS: 'data/remark_options.json',
   SETTINGS: 'data/system_settings.json',
-  PS_LIST: 'data/ps_list.json'
+  PS_LIST: 'data/ps_list.json',
+  DELETE_OPTIONS: 'data/delete_options.json'
 };
 
 /* In-memory Data Store (Auto-seeded with defaults) */
@@ -63,6 +64,13 @@ const memoryStore = {
     { id: 6, optionValue: 'Biometric data not match', disableAadhar: false },
     { id: 7, optionValue: 'Aadhar Suspended', disableAadhar: false },
     { id: 8, optionValue: 'Other', disableAadhar: false }
+  ],
+  deleteOptions: [
+    { id: 1, optionValue: 'Duplicate Record' },
+    { id: 2, optionValue: 'Wrong PID Entered' },
+    { id: 3, optionValue: 'Data Entry Error' },
+    { id: 4, optionValue: 'Court Released' },
+    { id: 5, optionValue: 'Other' }
   ],
   settings: {
     aadhar_mandatory: 'false'
@@ -112,6 +120,9 @@ function loadLocalCollections() {
 
   const opts = readLocal(R2_KEYS.REMARK_OPTIONS);
   if (opts && opts.length) memoryStore.remarkOptions = opts;
+
+  const delOpts = readLocal(R2_KEYS.DELETE_OPTIONS);
+  if (delOpts && delOpts.length) memoryStore.deleteOptions = delOpts;
 
   const settings = readLocal(R2_KEYS.SETTINGS);
   if (settings) memoryStore.settings = settings;
@@ -186,6 +197,7 @@ const lastSyncTimestamps = {
   editRequests: 0,
   listAddRequests: 0,
   remarkOptions: 0,
+  deleteOptions: 0,
   settings: 0,
   psList: 0
 };
@@ -368,6 +380,29 @@ async function ensureRemarkOptionsSynced(force = false) {
     if (remote && Array.isArray(remote) && remote.length > 0) {
       memoryStore.remarkOptions = remote;
       lastSyncTimestamps.remarkOptions = now;
+    }
+  }
+}
+
+async function ensureDeleteOptionsSynced(force = false) {
+  const now = Date.now();
+  if (force || (now - (lastSyncTimestamps.deleteOptions || 0) > SYNC_CACHE_TTL)) {
+    let remote = await readFromR2(R2_KEYS.DELETE_OPTIONS);
+    if (!remote || !Array.isArray(remote) || remote.length === 0) {
+      try {
+        const { dbAll } = require('./database');
+        const rows = await dbAll('SELECT * FROM delete_options ORDER BY id ASC');
+        if (rows && rows.length > 0) {
+          remote = rows.map(r => ({
+            id: r.id,
+            optionValue: r.option_value
+          }));
+        }
+      } catch (e) {}
+    }
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      memoryStore.deleteOptions = remote;
+      lastSyncTimestamps.deleteOptions = now;
     }
   }
 }
@@ -1272,6 +1307,86 @@ async function deleteRemarkOption(optionValue) {
 }
 
 /* ==========================================================================
+   Delete Options Methods
+   ========================================================================== */
+
+async function getDeleteOptions() {
+  await ensureDeleteOptionsSynced();
+  return (memoryStore.deleteOptions || []).map(opt => {
+    if (typeof opt === 'string') {
+      return { optionValue: opt.trim() };
+    }
+    return {
+      id: opt.id,
+      optionValue: (opt.optionValue || opt.val || '').toString().trim()
+    };
+  });
+}
+
+async function addDeleteOption(optionValue) {
+  await ensureDeleteOptionsSynced(true);
+  const cleanVal = (optionValue || '').toString().trim();
+  if (!cleanVal) return false;
+
+  if (!memoryStore.deleteOptions) memoryStore.deleteOptions = [];
+  const exists = memoryStore.deleteOptions.some(opt => (opt.optionValue || opt).toString().toLowerCase() === cleanVal.toLowerCase());
+  if (!exists) {
+    const newId = memoryStore.deleteOptions.length + 1;
+    memoryStore.deleteOptions.push({ id: newId, optionValue: cleanVal });
+
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('INSERT OR IGNORE INTO delete_options (option_value) VALUES (?)', [cleanVal]);
+    } catch (e) {}
+
+    await saveToR2(R2_KEYS.DELETE_OPTIONS, memoryStore.deleteOptions);
+    lastSyncTimestamps.deleteOptions = Date.now();
+  }
+  return true;
+}
+
+async function updateDeleteOption(oldValue, newValue) {
+  await ensureDeleteOptionsSynced(true);
+  const cleanOld = (oldValue || '').toString().trim();
+  const cleanNew = (newValue || '').toString().trim();
+  if (!cleanOld || !cleanNew) return false;
+
+  if (!memoryStore.deleteOptions) memoryStore.deleteOptions = [];
+  const item = memoryStore.deleteOptions.find(opt => (opt.optionValue || opt).toString().toLowerCase() === cleanOld.toLowerCase());
+  if (item) {
+    if (typeof item === 'object') item.optionValue = cleanNew;
+    else memoryStore.deleteOptions[memoryStore.deleteOptions.indexOf(item)] = { optionValue: cleanNew };
+
+    try {
+      const { dbRun } = require('./database');
+      await dbRun('UPDATE delete_options SET option_value = ? WHERE LOWER(option_value) = LOWER(?)', [cleanNew, cleanOld]);
+    } catch (e) {}
+
+    await saveToR2(R2_KEYS.DELETE_OPTIONS, memoryStore.deleteOptions);
+    lastSyncTimestamps.deleteOptions = Date.now();
+  }
+  return true;
+}
+
+async function deleteDeleteOption(optionValue) {
+  await ensureDeleteOptionsSynced(true);
+  const cleanVal = (optionValue || '').toString().trim();
+  if (!cleanVal) return false;
+
+  if (!memoryStore.deleteOptions) memoryStore.deleteOptions = [];
+  memoryStore.deleteOptions = memoryStore.deleteOptions.filter(opt => (opt.optionValue || opt).toString().toLowerCase() !== cleanVal.toLowerCase());
+
+  try {
+    const { dbRun } = require('./database');
+    await dbRun('DELETE FROM delete_options WHERE LOWER(option_value) = LOWER(?)', [cleanVal]);
+  } catch (e) {}
+
+  await saveToR2(R2_KEYS.DELETE_OPTIONS, memoryStore.deleteOptions);
+  lastSyncTimestamps.deleteOptions = Date.now();
+  return true;
+}
+
+/* ==========================================================================
    System Settings Methods
    ========================================================================== */
 
@@ -1514,6 +1629,10 @@ module.exports = {
   updateRemarkOption,
   deleteRemarkOption,
   toggleRemarkOptionAadhar,
+  getDeleteOptions,
+  addDeleteOption,
+  updateDeleteOption,
+  deleteDeleteOption,
   getSystemSettings,
   updateSystemSetting,
   getPSList,

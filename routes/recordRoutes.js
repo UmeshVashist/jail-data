@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getListAddRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getSystemSettings, updateSystemSetting } = require('../config/cloudflareStorage');
+const { getRecords, addRecord, updateRecord, deleteRecord, getUsers, getDeleteRequests, getEditRequests, getListAddRequests, getRemarkOptions, addRemarkOption, updateRemarkOption, deleteRemarkOption, toggleRemarkOptionAadhar, getDeleteOptions, addDeleteOption, updateDeleteOption, deleteDeleteOption, getSystemSettings, updateSystemSetting } = require('../config/cloudflareStorage');
 const { requireAuth, requireAdmin, canModifyRecord } = require('../middleware/auth');
 
 // GET /api/records/remark-options - Fetch dynamic remark options (Permanent + Active Pending List-Add Requests)
@@ -111,6 +111,59 @@ router.delete('/remark-options', requireAuth, requireAdmin, async (req, res) => 
     res.json({ success: true, message: `Remark option "${cleanVal}" deleted.` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Delete remark option error: ' + err.message });
+  }
+});
+
+// GET /api/records/delete-options - Fetch delete request reason options
+router.get('/delete-options', requireAuth, async (req, res) => {
+  try {
+    const options = await getDeleteOptions();
+    res.json({ success: true, data: options });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch delete options error: ' + err.message });
+  }
+});
+
+// POST /api/records/delete-options - Add new delete option (Admin Only)
+router.post('/delete-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { optionValue } = req.body;
+    const cleanVal = (optionValue || '').trim();
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option name cannot be empty.' });
+
+    await addDeleteOption(cleanVal);
+    res.json({ success: true, message: `Delete option "${cleanVal}" added successfully.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Add delete option error: ' + err.message });
+  }
+});
+
+// PUT /api/records/delete-options - Update delete option (Admin Only)
+router.put('/delete-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { oldValue, newValue } = req.body;
+    const cleanOld = (oldValue || '').trim();
+    const cleanNew = (newValue || '').trim();
+    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'Old and new option names are required.' });
+
+    await updateDeleteOption(cleanOld, cleanNew);
+    res.json({ success: true, message: `Delete option updated to "${cleanNew}".` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Update delete option error: ' + err.message });
+  }
+});
+
+// DELETE /api/records/delete-options - Delete delete option (Admin Only)
+router.delete('/delete-options', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { optionValue } = req.body;
+    const cleanVal = (optionValue || '').trim();
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
+
+    await deleteDeleteOption(cleanVal);
+    res.json({ success: true, message: `Delete option "${cleanVal}" deleted.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Delete option error: ' + err.message });
   }
 });
 

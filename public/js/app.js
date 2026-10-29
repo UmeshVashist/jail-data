@@ -37,6 +37,9 @@ let selectedImportFile = null;
 let searchDebounceTimer = null;
 let currentRemarkOptions = [];
 let remarkOptionModalInstance = null;
+let deleteOptionModalInstance = null;
+let currentDeleteOptions = [];
+let activeDropdownSettingsTab = 'remark';
 let sendDeleteRequestModalInstance = null;
 let sendEditRequestModalInstance = null;
 let sendListAddRequestModalInstance = null;
@@ -62,6 +65,8 @@ document.addEventListener('DOMContentLoaded', function () {
   resetPasswordModalInstance = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
   importDetailsModalInstance = new bootstrap.Modal(document.getElementById('importDetailsModal'));
   remarkOptionModalInstance = new bootstrap.Modal(document.getElementById('remarkOptionModal'));
+  const delOptEl = document.getElementById('deleteOptionModal');
+  if (delOptEl) deleteOptionModalInstance = new bootstrap.Modal(delOptEl);
   sendDeleteRequestModalInstance = new bootstrap.Modal(document.getElementById('sendDeleteRequestModal'));
   sendEditRequestModalInstance = new bootstrap.Modal(document.getElementById('sendEditRequestModal'));
   sendListAddRequestModalInstance = new bootstrap.Modal(document.getElementById('sendListAddRequestModal'));
@@ -537,6 +542,15 @@ function navigateToView(viewName) {
 
   document.getElementById('sidebar').classList.remove('active');
 
+  const headerSwitcher = document.getElementById('dropdowns-header-switcher');
+  if (headerSwitcher) {
+    if (viewName === 'dropdowns') {
+      headerSwitcher.classList.remove('d-none');
+    } else {
+      headerSwitcher.classList.add('d-none');
+    }
+  }
+
   if (viewName === 'dashboard') {
     loadDashboardData();
   } else if (viewName === 'records') {
@@ -551,7 +565,7 @@ function navigateToView(viewName) {
   } else if (viewName === 'users' && currentUserState.role === 'Admin') {
     loadUsersList();
   } else if (viewName === 'dropdowns' && currentUserState.role === 'Admin') {
-    loadDropdownsView();
+    switchDropdownSettingsTab(activeDropdownSettingsTab || 'remark');
   } else if (viewName === 'ps-list') {
     loadPSListView();
   }
@@ -2821,21 +2835,70 @@ async function fetchPendingDeleteRequestsCount() {
   } catch (err) { }
 }
 
-function openSendDeleteRequestModal(recordId, pid) {
+async function populateDeleteReasonSelect(selectedVal = '') {
+  const selectEl = document.getElementById('send-delete-reason-select');
+  if (!selectEl) return;
+
+  const options = await loadDeleteOptions();
+  selectEl.innerHTML = '<option value="">-- Select Deletion Reason --</option>';
+
+  options.forEach(opt => {
+    const val = typeof opt === 'object' ? opt.optionValue : opt;
+    if (!val) return;
+    const optionEl = document.createElement('option');
+    optionEl.value = val;
+    optionEl.textContent = val;
+    if (selectedVal && selectedVal.toLowerCase() === val.toLowerCase()) {
+      optionEl.selected = true;
+    }
+    selectEl.appendChild(optionEl);
+  });
+}
+
+function handleDeleteReasonSelectChange(val) {
+  const textarea = document.getElementById('send-delete-reason');
+  if (!textarea) return;
+  if (val === 'Other') {
+    textarea.placeholder = 'Please specify custom deletion reason (required)...';
+    textarea.focus();
+  } else {
+    textarea.placeholder = 'Additional details or custom remark (optional)...';
+  }
+}
+
+async function openSendDeleteRequestModal(recordId, pid) {
   const rec = currentRecordsData.find(r => r.id === parseInt(recordId, 10) || r.pid === String(pid));
   document.getElementById('send-delete-record-id').value = recordId;
   document.getElementById('send-delete-pid').innerText = pid;
   document.getElementById('send-delete-name').innerText = rec ? rec.name : '-';
   document.getElementById('send-delete-ut').innerText = rec ? (rec.utNo || '-') : '-';
   document.getElementById('send-delete-aadhar').innerText = rec ? (rec.aadharNo || '#N/A') : '#N/A';
-  document.getElementById('send-delete-reason').value = '';
+  const customReasonEl = document.getElementById('send-delete-reason');
+  if (customReasonEl) {
+    customReasonEl.value = '';
+    customReasonEl.placeholder = 'Additional details or custom remark (optional)...';
+  }
+  await populateDeleteReasonSelect();
   sendDeleteRequestModalInstance.show();
 }
 
 async function handleSendDeleteRequestSubmit(event) {
   event.preventDefault();
   const recordId = document.getElementById('send-delete-record-id').value;
-  const reason = document.getElementById('send-delete-reason').value.trim();
+  const selectEl = document.getElementById('send-delete-reason-select');
+  const selectVal = selectEl ? selectEl.value.trim() : '';
+  const customReason = document.getElementById('send-delete-reason') ? document.getElementById('send-delete-reason').value.trim() : '';
+
+  if (!selectVal) {
+    showToast('danger', 'Validation Error', 'Please select a reason for deletion from the dropdown.');
+    if (selectEl) selectEl.focus();
+    return;
+  }
+
+  let finalReason = selectVal;
+  if (customReason) {
+    finalReason = (selectVal === 'Other') ? customReason : `${selectVal}: ${customReason}`;
+  }
 
   sendDeleteRequestModalInstance.hide();
   showLoader('Sending delete request...');
@@ -2843,7 +2906,7 @@ async function handleSendDeleteRequestSubmit(event) {
     const res = await fetch('/api/delete-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recordId, reason })
+      body: JSON.stringify({ recordId, reason: finalReason })
     });
     const data = await res.json();
     hideLoader();
@@ -4720,6 +4783,210 @@ function confirmDeleteRemarkOption(val) {
         showToast('success', 'Option Deleted', data.message);
         loadDropdownsView();
         loadRemarkOptions();
+      } else {
+        showToast('danger', 'Error', data.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showToast('danger', 'Server Error', err.message);
+    }
+  };
+
+  confirmModalInstance.show();
+}
+
+/* ==========================================================================
+   Dropdown Options Settings Switcher & Delete Options Management Module
+   ========================================================================== */
+
+function switchDropdownSettingsTab(tabType = 'remark') {
+  activeDropdownSettingsTab = tabType;
+  const isRemark = tabType === 'remark';
+
+  // Update Header Switcher Buttons
+  const hRemarkBtn = document.getElementById('header-btn-tab-remark');
+  const hDeleteBtn = document.getElementById('header-btn-tab-delete');
+  if (hRemarkBtn && hDeleteBtn) {
+    if (isRemark) {
+      hRemarkBtn.className = 'btn btn-sm header-tab-btn header-tab-btn-active-remark active';
+      hDeleteBtn.className = 'btn btn-sm header-tab-btn header-tab-btn-inactive';
+    } else {
+      hDeleteBtn.className = 'btn btn-sm header-tab-btn header-tab-btn-active-delete active';
+      hRemarkBtn.className = 'btn btn-sm header-tab-btn header-tab-btn-inactive';
+    }
+  }
+
+  // Update Page Header Titles & Action Buttons
+  const titleEl = document.getElementById('dropdowns-view-title');
+  const subEl = document.getElementById('dropdowns-view-subtitle');
+  const btnAddRemark = document.getElementById('btn-add-remark-option');
+  const btnAddDelete = document.getElementById('btn-add-delete-option');
+  const remarkSec = document.getElementById('dropdowns-remark-section');
+  const deleteSec = document.getElementById('dropdowns-delete-section');
+
+  if (isRemark) {
+    if (titleEl) titleEl.innerText = 'System & Dropdown Settings';
+    if (subEl) subEl.innerText = 'Configure site-wide system validation rules and manage Remark dropdown options';
+    if (btnAddRemark) btnAddRemark.classList.remove('d-none');
+    if (btnAddDelete) btnAddDelete.classList.add('d-none');
+    if (remarkSec) remarkSec.classList.remove('d-none');
+    if (deleteSec) deleteSec.classList.add('d-none');
+    loadDropdownsView();
+  } else {
+    if (titleEl) titleEl.innerText = 'Delete Reasons Settings';
+    if (subEl) subEl.innerText = 'Manage predefined reasons & remarks for record deletion requests';
+    if (btnAddRemark) btnAddRemark.classList.add('d-none');
+    if (btnAddDelete) btnAddDelete.classList.remove('d-none');
+    if (remarkSec) remarkSec.classList.add('d-none');
+    if (deleteSec) deleteSec.classList.remove('d-none');
+    loadDeleteOptionsView();
+  }
+}
+
+async function loadDeleteOptions() {
+  try {
+    const res = await fetch('/api/records/delete-options?t=' + Date.now());
+    const data = await res.json();
+    if (data.success) {
+      currentDeleteOptions = data.data || [];
+      return currentDeleteOptions;
+    }
+  } catch (e) {}
+  return [];
+}
+
+async function loadDeleteOptionsView() {
+  showLoader('Loading delete options...');
+  try {
+    const res = await fetch('/api/records/delete-options?t=' + Date.now());
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      currentDeleteOptions = data.data || [];
+      renderDeleteOptionsTable(currentDeleteOptions);
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Error', err.message);
+  }
+}
+
+function renderDeleteOptionsTable(options) {
+  const tbody = document.getElementById('delete-options-table-body');
+  if (!tbody) return;
+
+  if (!options || options.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No delete options found. Click "Add New Delete Option" to create one.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  options.forEach((opt, idx) => {
+    const optVal = typeof opt === 'object' ? opt.optionValue : opt;
+
+    html += `
+      <tr>
+        <td class="fw-bold text-secondary">${idx + 1}</td>
+        <td class="fw-semibold text-dark"><i class="bi bi-trash3-fill text-danger me-2"></i>${escapeHtml(optVal)}</td>
+        <td><span class="badge bg-success-subtle-custom text-success border border-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Synced</span></td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-primary me-1" title="Edit Option" onclick="showEditDeleteOptionModal('${escapeHtml(optVal)}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete Option" onclick="confirmDeleteDeleteOption('${escapeHtml(optVal)}')"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function showAddDeleteOptionModal() {
+  if (!deleteOptionModalInstance) {
+    const el = document.getElementById('deleteOptionModal');
+    if (el) deleteOptionModalInstance = new bootstrap.Modal(el);
+  }
+  document.getElementById('deleteOptionModalTitle').innerText = 'Add Delete Option';
+  document.getElementById('deleteOptionForm').reset();
+  document.getElementById('delete-option-mode').value = 'add';
+  document.getElementById('delete-option-old-value').value = '';
+  if (deleteOptionModalInstance) deleteOptionModalInstance.show();
+}
+
+function showEditDeleteOptionModal(val) {
+  if (!deleteOptionModalInstance) {
+    const el = document.getElementById('deleteOptionModal');
+    if (el) deleteOptionModalInstance = new bootstrap.Modal(el);
+  }
+  document.getElementById('deleteOptionModalTitle').innerText = 'Edit Delete Option';
+  document.getElementById('delete-option-mode').value = 'edit';
+  document.getElementById('delete-option-old-value').value = val;
+  document.getElementById('modal-delete-option-name').value = val;
+  if (deleteOptionModalInstance) deleteOptionModalInstance.show();
+}
+
+async function handleDeleteOptionFormSubmit(event) {
+  event.preventDefault();
+  const mode = document.getElementById('delete-option-mode').value;
+  const oldValue = document.getElementById('delete-option-old-value').value;
+  const newValue = document.getElementById('modal-delete-option-name').value.trim();
+
+  if (!newValue) {
+    showToast('danger', 'Validation Error', 'Option name cannot be empty.');
+    return;
+  }
+
+  const endpoint = '/api/records/delete-options';
+  const method = mode === 'add' ? 'POST' : 'PUT';
+  const payload = mode === 'add' ? { optionValue: newValue } : { oldValue: oldValue, newValue: newValue };
+
+  showLoader(mode === 'add' ? 'Adding delete option...' : 'Updating delete option...');
+  try {
+    const res = await fetch(endpoint, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+      if (deleteOptionModalInstance) deleteOptionModalInstance.hide();
+      showToast('success', 'Option Saved', data.message);
+      await loadDeleteOptionsView();
+    } else {
+      showToast('danger', 'Error', data.message);
+    }
+  } catch (err) {
+    hideLoader();
+    showToast('danger', 'Server Error', err.message);
+  }
+}
+
+function confirmDeleteDeleteOption(val) {
+  document.getElementById('confirmModalTitle').innerText = 'Delete Delete Option?';
+  document.getElementById('confirmModalMessage').innerText = `Are you sure you want to remove delete reason "${val}"?`;
+  const executeBtn = document.getElementById('confirmModalExecuteBtn');
+  executeBtn.innerText = 'Yes, Delete Option';
+  executeBtn.className = 'btn btn-danger btn-sm px-3';
+
+  executeBtn.onclick = async function () {
+    confirmModalInstance.hide();
+    showLoader('Deleting option...');
+    try {
+      const res = await fetch('/api/records/delete-options', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ optionValue: val })
+      });
+      const data = await res.json();
+      hideLoader();
+
+      if (data.success) {
+        showToast('success', 'Option Deleted', data.message);
+        loadDeleteOptionsView();
       } else {
         showToast('danger', 'Error', data.message);
       }

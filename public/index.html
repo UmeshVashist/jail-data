@@ -196,6 +196,14 @@
           <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="page-title-display">
             <i class="bi bi-speedometer2 text-primary"></i> Dashboard Overview
           </h5>
+          <div id="dropdowns-header-switcher" class="d-none d-flex align-items-center ms-3 gap-2">
+            <button type="button" class="btn btn-sm header-tab-btn header-tab-btn-active-remark active" id="header-btn-tab-remark" onclick="switchDropdownSettingsTab('remark')">
+              <i class="bi bi-chat-quote-fill me-1.5"></i> Remark
+            </button>
+            <button type="button" class="btn btn-sm header-tab-btn header-tab-btn-inactive" id="header-btn-tab-delete" onclick="switchDropdownSettingsTab('delete')">
+              <i class="bi bi-trash3-fill me-1.5 text-danger"></i> Delete
+            </button>
+          </div>
         </div>
 
         <div class="d-flex align-items-center gap-3">
@@ -349,8 +357,8 @@
                 <i class="bi bi-plus-lg me-1"></i> Add Record
               </button>
               <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm rounded-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="bi bi-download me-1"></i> Download
+                <button class="btn btn-sm rounded-2 dropdown-toggle btn-download-action px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="btn-download-records">
+                  <i class="bi bi-download me-1.5"></i> Download
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                   <li><a class="dropdown-item" href="#" onclick="exportDataToExcel(); return false;"><i class="bi bi-file-earmark-excel text-success me-2"></i> Excel (.xlsx)</a></li>
@@ -361,7 +369,7 @@
           </div>
 
           <!-- Instant Search & Filters Bar -->
-          <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 12px;">
+          <div class="card border-0 shadow-sm p-3 mb-4 records-filter-card" style="border-radius: 12px; position: relative; z-index: 25;">
             <div class="row g-3 align-items-center">
               <div class="col-12 col-md-3 col-lg-3">
                 <div class="input-group">
@@ -394,7 +402,7 @@
                 </div>
               </div>
               <div class="col-12 col-sm-2 col-md-1 col-lg-1 text-md-end">
-                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()" title="Reset Filters"><i class="bi bi-x-circle"></i></button>
+                <button class="btn btn-sm w-100 btn-clear-filters" id="btn-clear-filters" onclick="clearFilters()" title="Reset Filters"><i class="bi bi-x-circle-fill"></i></button>
               </div>
             </div>
           </div>
@@ -1002,62 +1010,93 @@
           
           <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom">
             <div>
-              <h3 class="fw-bold text-dark mb-1">System & Dropdown Settings</h3>
-              <p class="text-muted small mb-0">Configure site-wide system validation rules and manage Remark dropdown options</p>
+              <div class="d-flex align-items-center gap-3 flex-wrap">
+                <h3 class="fw-bold text-dark mb-0" id="dropdowns-view-title">System & Dropdown Settings</h3>
+              </div>
+              <p class="text-muted small mb-0 mt-1" id="dropdowns-view-subtitle">Configure site-wide system validation rules and manage Remark dropdown options</p>
             </div>
-            <div class="mt-3 mt-md-0">
-              <button class="btn btn-primary btn-sm rounded-2 shadow-sm" onclick="showAddRemarkOptionModal()">
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+              <button class="btn btn-primary btn-sm rounded-2 shadow-sm" id="btn-add-remark-option" onclick="showAddRemarkOptionModal()">
                 <i class="bi bi-plus-circle-fill me-1"></i> Add New Remark Option
+              </button>
+              <button class="btn btn-danger btn-sm rounded-2 shadow-sm d-none" id="btn-add-delete-option" onclick="showAddDeleteOptionModal()">
+                <i class="bi bi-plus-circle-fill me-1"></i> Add New Delete Option
               </button>
             </div>
           </div>
 
-          <!-- System Validation Settings Card -->
-          <div class="card border-0 shadow-sm rounded-3 mb-4 overflow-hidden">
-            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-gear-wide-connected text-primary fs-5"></i>
-                <h5 class="fw-bold text-dark mb-0">Aadhar Input Requirement Setting</h5>
+          <!-- Section 1: Remark Dropdown Options & Validation -->
+          <div id="dropdowns-remark-section">
+            <!-- System Validation Settings Card -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4 overflow-hidden">
+              <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-gear-wide-connected text-primary fs-5"></i>
+                  <h5 class="fw-bold text-dark mb-0">Aadhar Input Requirement Setting</h5>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i>Admin Only</span>
               </div>
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i>Admin Only</span>
+              <div class="card-body p-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 bg-light rounded-3 border">
+                  <div class="me-md-3 mb-3 mb-md-0">
+                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                      <i class="bi bi-card-heading text-secondary"></i>
+                      Mandatory Aadhar No. Input
+                    </div>
+                    <div class="text-muted small mt-1">
+                      When turned <strong>ON</strong>, entering a valid 12-digit Aadhar number is <strong>mandatory</strong> for all new and edited data records (except records with remarks like <em>'Aadhar Not Made'</em>, <em>'Foreigner'</em>, <em>'Not Available'</em>, etc.). When <strong>OFF</strong>, Aadhar number is optional.
+                    </div>
+                  </div>
+                  <div class="form-check form-switch fs-4 mb-0 ps-5 ms-md-2 d-flex align-items-center">
+                    <input class="form-check-input" type="checkbox" id="setting-aadhar-mandatory" onchange="toggleAadharMandatorySetting(this.checked)" role="switch" style="cursor: pointer;">
+                    <label class="form-check-label fs-6 fw-bold ms-2 align-middle text-secondary mb-0" for="setting-aadhar-mandatory" id="setting-aadhar-mandatory-label">OFF</label>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="card-body p-4">
-              <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 bg-light rounded-3 border">
-                <div class="me-md-3 mb-3 mb-md-0">
-                  <div class="fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-card-heading text-secondary"></i>
-                    Mandatory Aadhar No. Input
-                  </div>
-                  <div class="text-muted small mt-1">
-                    When turned <strong>ON</strong>, entering a valid 12-digit Aadhar number is <strong>mandatory</strong> for all new and edited data records (except records with remarks like <em>'Aadhar Not Made'</em>, <em>'Foreigner'</em>, <em>'Not Available'</em>, etc.). When <strong>OFF</strong>, Aadhar number is optional.
-                  </div>
-                </div>
-                <div class="form-check form-switch fs-4 mb-0 ps-5 ms-md-2 d-flex align-items-center">
-                  <input class="form-check-input" type="checkbox" id="setting-aadhar-mandatory" onchange="toggleAadharMandatorySetting(this.checked)" role="switch" style="cursor: pointer;">
-                  <label class="form-check-label fs-6 fw-bold ms-2 align-middle text-secondary mb-0" for="setting-aadhar-mandatory" id="setting-aadhar-mandatory-label">OFF</label>
-                </div>
+
+            <div class="custom-table-card">
+              <div class="table-responsive dropdown-table-scroll-container" style="max-height: 335px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
+                    <tr>
+                      <th style="width: 60px;">#</th>
+                      <th>Remark Option Name</th>
+                      <th style="width: 270px;">Aadhar Input (ON = Not Editable)</th>
+                      <th style="width: 200px;">Cloudflare Sync</th>
+                      <th class="text-end" style="width: 120px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dropdowns-table-body">
+                    <tr>
+                      <td colspan="5" class="text-center py-4 text-muted">Loading dropdown options...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          <div class="custom-table-card">
-            <div class="table-responsive dropdown-table-scroll-container" style="max-height: 335px; overflow-y: auto;">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
-                  <tr>
-                    <th style="width: 60px;">#</th>
-                    <th>Remark Option Name</th>
-                    <th style="width: 270px;">Aadhar Input (ON = Not Editable)</th>
-                    <th style="width: 200px;">Cloudflare Sync</th>
-                    <th class="text-end" style="width: 120px;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="dropdowns-table-body">
-                  <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">Loading dropdown options...</td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- Section 2: Delete Request Reasons Dropdown Options -->
+          <div id="dropdowns-delete-section" class="d-none">
+            <div class="custom-table-card">
+              <div class="table-responsive dropdown-table-scroll-container" style="max-height: 420px; min-height: 250px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light sticky-top shadow-xs" style="z-index: 10;">
+                    <tr>
+                      <th style="width: 60px;">#</th>
+                      <th>Delete Reason / Remark Option Name</th>
+                      <th style="width: 200px;">Cloudflare Sync</th>
+                      <th class="text-end" style="width: 120px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="delete-options-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center py-4 text-muted">Loading delete options...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -1645,8 +1684,11 @@
               </div>
             </div>
             <div class="mb-3">
-              <label for="send-delete-reason" class="form-label small fw-semibold text-secondary">Reason / Remark for Deletion <span class="text-danger">*</span></label>
-              <textarea class="form-control" id="send-delete-reason" rows="3" placeholder="Specify why you want to request deletion of this record..." required autocomplete="off"></textarea>
+              <label for="send-delete-reason-select" class="form-label small fw-semibold text-secondary">Reason / Remark for Deletion <span class="text-danger">*</span></label>
+              <select class="form-select mb-2" id="send-delete-reason-select" required onchange="handleDeleteReasonSelectChange(this.value)">
+                <option value="">-- Select Deletion Reason --</option>
+              </select>
+              <textarea class="form-control" id="send-delete-reason" rows="2" placeholder="Additional details or custom remark (optional)..." autocomplete="off"></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -1901,6 +1943,33 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-primary px-3">Save Option</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Delete Option Modal (Admin Only) -->
+  <div class="modal fade" id="deleteOptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="deleteOptionModalTitle">Add Delete Option</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="deleteOptionForm" onsubmit="handleDeleteOptionFormSubmit(event)" autocomplete="off">
+          <div class="modal-body">
+            <input type="hidden" id="delete-option-mode" value="add">
+            <input type="hidden" id="delete-option-old-value">
+
+            <div class="mb-3">
+              <label for="modal-delete-option-name" class="form-label small fw-semibold text-secondary">Delete Reason / Option Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="modal-delete-option-name" placeholder="e.g. Duplicate Record, Wrong PID, etc." autocomplete="off" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger px-3"><i class="bi bi-check2-circle me-1"></i>Save Option</button>
           </div>
         </form>
       </div>

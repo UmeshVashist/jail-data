@@ -186,6 +186,28 @@ async function initDatabase() {
       } catch (e) {}
     }
 
+    // Create Delete Options table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS delete_options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        option_value TEXT UNIQUE NOT NULL
+      )
+    `);
+
+    const deleteCount = await dbGet('SELECT COUNT(*) as count FROM delete_options');
+    if (deleteCount.count === 0) {
+      const deleteDefaults = [
+        'Duplicate Record',
+        'Wrong PID Entered',
+        'Data Entry Error',
+        'Court Released',
+        'Other'
+      ];
+      for (const val of deleteDefaults) {
+        await dbRun('INSERT OR IGNORE INTO delete_options (option_value) VALUES (?)', [val]);
+      }
+    }
+
     // Create System Settings table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS system_settings (

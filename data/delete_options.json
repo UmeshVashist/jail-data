@@ -1,0 +1,18 @@
+[
+  {
+    "id": 2,
+    "optionValue": "Wrong PID Entered"
+  },
+  {
+    "id": 4,
+    "optionValue": "Court Released"
+  },
+  {
+    "id": 3,
+    "optionValue": "Jail Transfer"
+  },
+  {
+    "id": 4,
+    "optionValue": "Bailout"
+  }
+]
