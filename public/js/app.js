@@ -720,7 +720,7 @@ async function loadTodayRecords() {
       if (menuItems.length > 0) {
         actionButtons = `
           <div class="dropdown d-inline-block">
-            <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+            <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
               <i class="bi bi-three-dots-vertical fs-6 text-secondary"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 170px; border-radius: 10px; font-size: 0.85rem; z-index: 1060;">
@@ -1114,7 +1114,7 @@ function renderRecordsTable(records, highlightPid = null) {
     if (menuItems.length > 0) {
       actionButtons = `
         <div class="dropdown d-inline-block">
-          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+          <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 action-dots-btn shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
             <i class="bi bi-three-dots-vertical fs-6 text-secondary"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 170px; border-radius: 10px; font-size: 0.85rem; z-index: 1060;">

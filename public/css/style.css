@@ -577,6 +577,20 @@ body.dark-theme .form-check-input:indeterminate {
   overflow: hidden;
 }
 
+.custom-table-card .table-responsive {
+  min-height: 250px;
+}
+
+.custom-table-card .dropdown {
+  position: relative;
+}
+
+.custom-table-card .dropdown.show,
+.custom-table-card tr:has(.dropdown.show) {
+  position: relative;
+  z-index: 1050;
+}
+
 .custom-table-card table {
   margin-bottom: 0;
 }
