@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Management Portal</title>
+  <title>JAM Management Portal</title>
   
   <!-- Google Fonts: Plus Jakarta Sans & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
   <!-- Custom Design Tokens & Global Styles -->
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body autocomplete="off" class="dark-theme">
+<body autocomplete="off" class="theme-classic">
 
   <!-- Interactive Modern 3D Animated Background Canvas -->
   <canvas id="webgl-3d-bg" class="webgl-3d-canvas" aria-hidden="true"></canvas>
@@ -39,22 +39,22 @@
 
   <!-- Authentication / Login Screen -->
   <div id="login-view" class="d-none min-vh-100 d-flex align-items-center justify-content-center p-3">
-    <div class="card login-card p-4 p-md-5 text-white" style="max-width: 440px; width: 100%;">
+    <div class="card login-card p-4 p-md-5" style="max-width: 440px; width: 100%;">
       <div class="text-center mb-4">
         <div class="brand-logo-icon mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 18px; font-size: 1.8rem;">
           <i class="bi bi-shield-lock-fill"></i>
         </div>
-        <h3 class="fw-bold mb-1 text-white">Data Portal Access</h3>
-        <p class="text-white-50 small mb-0">Sign in to manage your sheets & data records</p>
+        <h3 class="fw-bold mb-1 login-title">JAM Portal Access</h3>
+        <p class="login-subtitle small mb-0">Sign in to manage your sheets & data records</p>
       </div>
 
-      <div id="login-alert" class="alert alert-danger d-none small rounded-3 border-0 bg-danger bg-opacity-25 text-white" role="alert">
+      <div id="login-alert" class="alert alert-danger d-none small rounded-3 border-0 bg-danger bg-opacity-25 text-danger fw-semibold" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-1 text-danger"></i> <span id="login-alert-text">Invalid Username or Password.</span>
       </div>
 
       <form id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="off">
         <div class="mb-3">
-          <label for="login-username" class="form-label small fw-semibold text-white-50">Username</label>
+          <label for="login-username" class="form-label small fw-semibold login-label">Username</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-person"></i></span>
             <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="off" required>
@@ -62,12 +62,12 @@
         </div>
 
         <div class="mb-4">
-          <label for="login-password" class="form-label small fw-semibold text-white-50">Password</label>
+          <label for="login-password" class="form-label small fw-semibold login-label">Password</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-key"></i></span>
             <input type="password" class="form-control border-end-0" id="login-password" placeholder="Enter password" autocomplete="off" required>
-            <button class="btn btn-outline-secondary border-start-0 input-group-text" type="button" onclick="togglePasswordVisibility('login-password', 'login-pass-icon')">
-              <i class="bi bi-eye text-white-50" id="login-pass-icon"></i>
+            <button class="btn btn-outline-secondary border-start-0 input-group-text password-toggle-btn" type="button" onclick="togglePasswordVisibility('login-password', 'login-pass-icon')">
+              <i class="bi bi-eye" id="login-pass-icon"></i>
             </button>
           </div>
         </div>
@@ -90,11 +90,11 @@
           <div class="brand-logo-icon">
             <i class="bi bi-layers-fill"></i>
           </div>
-          <span class="fw-bold text-white fs-5 tracking-wide">Data Portal</span>
+          <span class="fw-bold text-white fs-5 tracking-wide">JAM Portal</span>
         </div>
         <button class="btn btn-link text-white-50 d-md-none p-0" onclick="toggleMobileSidebar()">
           <i class="bi bi-x-lg fs-5"></i>
-        </button>
+        </button><!--  -->
       </div>
 
       <ul class="nav flex-column my-3">
@@ -206,7 +206,19 @@
           </div>
         </div>
 
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-2 gap-md-3">
+          <!-- UI Style Switcher (Classic UI vs Modern 3D UI) -->
+          <div class="ui-mode-switcher-container" id="ui-mode-switcher-wrapper">
+            <div class="ui-mode-pill d-flex align-items-center rounded-pill p-0.5 border" role="group" aria-label="UI Mode Switcher">
+              <button type="button" class="btn btn-sm ui-mode-btn active" id="btn-ui-classic" onclick="setUIMode('classic')" title="Classic UI (Default)">
+                <i class="bi bi-display me-1"></i> <span class="d-none d-sm-inline">Classic</span> UI
+              </button>
+              <button type="button" class="btn btn-sm ui-mode-btn" id="btn-ui-modern" onclick="setUIMode('modern')" title="Modern 3D UI (Cyber-Glass & Animated 3D)">
+                <i class="bi bi-stars me-1 text-warning"></i> <span class="d-none d-sm-inline">Modern</span> 3D
+              </button>
+            </div>
+          </div>
+
           <!-- Theme Toggle Button (Disabled - Default Dark Theme Enforced) -->
           <button class="btn btn-sm btn-light border border-secondary-subtle rounded-circle p-0 theme-toggle-btn shadow-xs d-none" id="theme-toggle-btn" aria-hidden="true" disabled style="display: none !important;">
             <i class="bi bi-moon-stars-fill text-secondary fs-6" id="theme-toggle-icon"></i>
@@ -580,7 +592,7 @@
           </div>
 
           <!-- Search & Filter Bar for User Management -->
-          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+          <div class="card border-0 shadow-sm p-3 mb-3 requests-filter-card" style="border-radius: 12px;">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-6">
                 <div class="input-group input-group-sm">
@@ -605,7 +617,7 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="users-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -672,7 +684,7 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="delete-requests-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -714,7 +726,7 @@
           </div>
 
           <!-- Search Bar & Filters -->
-          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+          <div class="card border-0 shadow-sm p-3 mb-3 requests-filter-card" style="border-radius: 12px;">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-5">
                 <div class="input-group input-group-sm">
@@ -740,7 +752,7 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="edit-requests-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -784,7 +796,7 @@
           </div>
 
           <!-- Search Bar & Filters -->
-          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+          <div class="card border-0 shadow-sm p-3 mb-3 requests-filter-card" style="border-radius: 12px;">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-4">
                 <div class="input-group input-group-sm">
@@ -818,7 +830,7 @@
           </div>
 
           <div class="custom-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="my-requests-table-container">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -920,7 +932,7 @@
           </div>
 
           <!-- Search Bar & Filters -->
-          <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 12px;">
+          <div class="card border-0 shadow-sm p-3 mb-3 requests-filter-card" style="border-radius: 12px;">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-4">
                 <div class="input-group input-group-sm">

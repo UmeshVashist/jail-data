@@ -125,12 +125,58 @@ document.addEventListener('DOMContentLoaded', function () {
   loadRemarkOptions();
   setInterval(loadRemarkOptions, 20000);
   initTheme();
+  initAllSiteDropdowns();
 });
 
-/* Theme Module - Permanent Default Dark Theme */
+/* Theme Module - UI Mode Initialization */
 function initTheme() {
-  localStorage.setItem('portal_theme', 'dark');
-  applyTheme('dark');
+  initUIMode();
+}
+
+/* ==========================================================================
+   UI Mode Switcher Module (Classic UI vs Modern 3D UI)
+   ========================================================================== */
+function setUIMode(mode = 'classic', showNotification = true) {
+  const isModern = mode === 'modern';
+  
+  if (isModern) {
+    document.body.classList.add('theme-modern-3d');
+    document.body.classList.add('dark-theme');
+    document.body.classList.remove('theme-classic');
+    localStorage.setItem('portal_ui_mode', 'modern');
+  } else {
+    document.body.classList.remove('theme-modern-3d');
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('theme-classic');
+    localStorage.setItem('portal_ui_mode', 'classic');
+  }
+
+  const btnClassic = document.getElementById('btn-ui-classic');
+  const btnModern = document.getElementById('btn-ui-modern');
+
+  if (btnClassic && btnModern) {
+    if (isModern) {
+      btnModern.classList.add('active');
+      btnClassic.classList.remove('active');
+    } else {
+      btnClassic.classList.add('active');
+      btnModern.classList.remove('active');
+    }
+  }
+
+  if (showNotification && typeof showToast === 'function') {
+    if (isModern) {
+      showToast('info', 'Modern 3D UI Activated', 'Switched to Next-Gen 3D Cyber-Glass UI with vibrant color animations.');
+    } else {
+      showToast('secondary', 'Classic UI Activated', 'Switched back to standard Classic UI.');
+    }
+  }
+}
+
+function initUIMode() {
+  // By default, Classic (Old) UI is active unless explicitly set
+  const savedMode = localStorage.getItem('portal_ui_mode') || 'classic';
+  setUIMode(savedMode, false);
 }
 
 function toggleAppTheme() {
@@ -140,7 +186,13 @@ function toggleAppTheme() {
 }
 
 function applyTheme(themeName) {
-  document.body.classList.add('dark-theme');
+  const currentMode = localStorage.getItem('portal_ui_mode') || 'classic';
+  if (currentMode === 'modern') {
+    document.body.classList.add('dark-theme');
+  } else {
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('theme-classic');
+  }
   const iconEl = document.getElementById('theme-toggle-icon');
   const btnEl = document.getElementById('theme-toggle-btn');
   if (iconEl) {
@@ -570,6 +622,8 @@ function navigateToView(viewName) {
   } else if (viewName === 'ps-list') {
     loadPSListView();
   }
+
+  setTimeout(initAllSiteDropdowns, 50);
 }
 
 function toggleMobileSidebar() {
@@ -830,6 +884,8 @@ async function showTotalUsersModal() {
   const statusFilterEl = document.getElementById('modal-users-status-filter');
   if (statusFilterEl) {
     statusFilterEl.value = 'Active';
+    setupSearchableSelect('modal-users-status-filter', 'All Statuses');
+    if (statusFilterEl.syncSearchableSelect) statusFilterEl.syncSearchableSelect();
   }
 
   // Reset search input & clear button
@@ -1269,7 +1325,12 @@ function clearFilters() {
   document.getElementById('filter-start-date').value = '';
   document.getElementById('filter-end-date').value = '';
   const filterRecordTypeEl = document.getElementById('filter-record-type');
-  if (filterRecordTypeEl) filterRecordTypeEl.value = 'All';
+  if (filterRecordTypeEl) {
+    filterRecordTypeEl.value = 'All';
+    if (filterRecordTypeEl.syncSearchableSelect) {
+      filterRecordTypeEl.syncSearchableSelect();
+    }
+  }
   const filterRemarkEl = document.getElementById('filter-remark');
   if (filterRemarkEl) {
     filterRemarkEl.value = '';
@@ -1302,31 +1363,34 @@ async function loadRemarkOptions() {
   }
 }
 
-function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. not, lock)...') {
+function setupSearchableSelect(selectId, placeholderText = '') {
   const selectEl = document.getElementById(selectId);
   if (!selectEl) return;
 
-  let wrapper = selectEl.parentElement.querySelector(`.searchable-select-wrapper[data-for="${selectId}"]`);
+  let wrapper = selectEl.parentElement ? selectEl.parentElement.querySelector(`.searchable-select-wrapper[data-for="${selectId}"]`) : null;
   let input, menu;
 
   if (!wrapper) {
     wrapper = document.createElement('div');
-    wrapper.className = 'searchable-select-wrapper position-relative w-100';
+    wrapper.className = 'searchable-select-wrapper position-relative flex-grow-1';
     wrapper.setAttribute('data-for', selectId);
+    wrapper.style.cursor = 'pointer';
 
     input = document.createElement('input');
     input.type = 'text';
     input.className = 'form-control searchable-select-input';
+    input.style.cursor = 'pointer';
     if (selectEl.classList.contains('form-select-sm')) {
       input.classList.add('form-control-sm');
     }
-    input.placeholder = placeholderText;
+    const defaultPlaceholder = placeholderText || (selectEl.options[0] ? selectEl.options[0].text : 'Select option...');
+    input.placeholder = defaultPlaceholder;
     input.autocomplete = 'off';
     input.id = `${selectId}-search-input`;
 
     menu = document.createElement('div');
     menu.className = 'dropdown-menu w-100 shadow-sm searchable-select-menu p-1';
-    menu.style.maxHeight = '220px';
+    menu.style.maxHeight = '240px';
     menu.style.overflowY = 'auto';
 
     wrapper.appendChild(input);
@@ -1340,7 +1404,7 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
     const renderMenuItems = (filterText = '') => {
       menu.innerHTML = '';
       const options = Array.from(selectEl.options);
-      const search = filterText.trim().toLowerCase();
+      const search = (filterText || '').trim().toLowerCase();
       let matchCount = 0;
       activeIndex = -1;
 
@@ -1356,11 +1420,12 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
         const item = document.createElement('button');
         item.type = 'button';
         item.className = 'dropdown-item py-1.5 px-3 small rounded text-truncate w-100 text-start';
-        if (selectEl.value === val && val !== '') {
+        item.style.cursor = 'pointer';
+        if (selectEl.value === val) {
           item.classList.add('active', 'fw-bold');
         }
 
-        if (search && val !== '') {
+        if (search) {
           const idx = text.toLowerCase().indexOf(search);
           if (idx >= 0) {
             const before = text.substring(0, idx);
@@ -1377,11 +1442,20 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
         item.addEventListener('mousedown', (e) => {
           e.preventDefault();
           selectEl.value = val;
-          input.value = val ? text : '';
-          menu.classList.remove('show');
+          input.value = text;
+          closeMenu();
           selectEl.dispatchEvent(new Event('change', { bubbles: true }));
-          handleRecordRemarkChange();
-          handleSendEditRemarkChange();
+          if (typeof selectEl.onchange === 'function') {
+            try { selectEl.onchange(); } catch (err) { console.error(err); }
+          }
+          if (selectId === 'modal-record-remark') handleRecordRemarkChange();
+          if (selectId === 'send-edit-remark') handleSendEditRemarkChange();
+          if (selectId === 'modal-user-role' && typeof handleRoleSelectChange === 'function') {
+            handleRoleSelectChange(val);
+          }
+          if (selectId === 'send-delete-reason-select' && typeof handleDeleteReasonSelectChange === 'function') {
+            handleDeleteReasonSelectChange(val);
+          }
         });
 
         menu.appendChild(item);
@@ -1390,73 +1464,106 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
       if (matchCount === 0) {
         const noRes = document.createElement('div');
         noRes.className = 'px-3 py-2 text-muted small fst-italic';
-        noRes.innerHTML = '<i class="bi bi-search me-1 opacity-50"></i>No matching remarks found';
+        noRes.innerHTML = '<i class="bi bi-search me-1 opacity-50"></i>No matching options';
         menu.appendChild(noRes);
       }
+    };
 
+    wrapper.renderMenuItems = renderMenuItems;
+
+    const openMenu = () => {
+      document.querySelectorAll('.searchable-select-menu.show').forEach(m => {
+        if (m !== menu) m.classList.remove('show');
+      });
+      renderMenuItems('');
       menu.classList.add('show');
     };
 
-    const showAllOrFiltered = () => {
-      renderMenuItems('');
-      input.select();
+    const closeMenu = () => {
+      menu.classList.remove('show');
     };
 
-    input.addEventListener('focus', showAllOrFiltered);
-    input.addEventListener('click', showAllOrFiltered);
+    const toggleMenu = () => {
+      if (menu.classList.contains('show')) {
+        closeMenu();
+      } else {
+        openMenu();
+        input.select();
+      }
+    };
+
+    input.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
+    });
+
+    wrapper.addEventListener('click', (e) => {
+      if (e.target !== input && !menu.contains(e.target)) {
+        e.stopPropagation();
+        toggleMenu();
+      }
+    });
 
     input.addEventListener('input', () => {
       const typed = input.value.trim().toLowerCase();
       let matchedOpt = null;
       for (let i = 0; i < selectEl.options.length; i++) {
         const opt = selectEl.options[i];
-        if (opt.value && (opt.value.toLowerCase() === typed || opt.text.toLowerCase() === typed)) {
+        if (opt.text.toLowerCase() === typed || (opt.value && opt.value.toLowerCase() === typed)) {
           matchedOpt = opt.value;
           break;
         }
       }
-      if (matchedOpt) {
+      if (matchedOpt !== null) {
         if (selectEl.value !== matchedOpt) {
           selectEl.value = matchedOpt;
           selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof selectEl.onchange === 'function') {
+            try { selectEl.onchange(); } catch (err) {}
+          }
         }
-      } else if (input.value.trim() === '' && selectEl.value !== '') {
-        selectEl.value = '';
-        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      handleRecordRemarkChange();
-      handleSendEditRemarkChange();
+      if (selectId === 'modal-record-remark') handleRecordRemarkChange();
+      if (selectId === 'send-edit-remark') handleSendEditRemarkChange();
       renderMenuItems(input.value);
+      menu.classList.add('show');
     });
 
     input.addEventListener('blur', () => {
-      const typed = input.value.trim().toLowerCase();
-      if (!typed) {
-        if (selectEl.value !== '') {
-          selectEl.value = '';
-          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        return;
-      }
-      for (let i = 0; i < selectEl.options.length; i++) {
-        const opt = selectEl.options[i];
-        if (opt.value && (opt.value.toLowerCase() === typed || opt.text.toLowerCase() === typed)) {
-          if (selectEl.value !== opt.value) {
-            selectEl.value = opt.value;
-            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+      setTimeout(() => {
+        closeMenu();
+        const typed = input.value.trim().toLowerCase();
+        let found = false;
+        for (let i = 0; i < selectEl.options.length; i++) {
+          const opt = selectEl.options[i];
+          if (opt.text.toLowerCase() === typed || (opt.value && opt.value.toLowerCase() === typed)) {
+            if (selectEl.value !== opt.value) {
+              selectEl.value = opt.value;
+              selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof selectEl.onchange === 'function') {
+                try { selectEl.onchange(); } catch (err) {}
+              }
+            }
+            input.value = opt.text;
+            found = true;
+            break;
           }
-          input.value = opt.text;
-          break;
         }
-      }
-      handleRecordRemarkChange();
-      handleSendEditRemarkChange();
+        if (!found) {
+          updateInputFromSelect();
+        }
+        if (selectId === 'modal-record-remark') handleRecordRemarkChange();
+        if (selectId === 'send-edit-remark') handleSendEditRemarkChange();
+      }, 180);
     });
 
     input.addEventListener('keydown', (e) => {
       const items = menu.querySelectorAll('.dropdown-item');
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        if (!menu.classList.contains('show')) {
+          openMenu();
+        }
         if (items.length > 0) {
           activeIndex = (activeIndex + 1) % items.length;
           items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
@@ -1464,6 +1571,9 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        if (!menu.classList.contains('show')) {
+          openMenu();
+        }
         if (items.length > 0) {
           activeIndex = (activeIndex - 1 + items.length) % items.length;
           items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
@@ -1477,19 +1587,19 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
           items[0].dispatchEvent(new Event('mousedown'));
         }
       } else if (e.key === 'Escape') {
-        menu.classList.remove('show');
+        closeMenu();
       }
     });
 
     document.addEventListener('click', (e) => {
       if (!wrapper.contains(e.target)) {
-        menu.classList.remove('show');
+        closeMenu();
       }
     });
 
     const updateInputFromSelect = () => {
       const selectedOpt = selectEl.options[selectEl.selectedIndex];
-      if (selectedOpt && selectedOpt.value !== '') {
+      if (selectedOpt) {
         input.value = selectedOpt.text;
       } else {
         input.value = '';
@@ -1501,24 +1611,93 @@ function setupSearchableSelect(selectId, placeholderText = 'Search remark (e.g. 
       parentForm.addEventListener('reset', () => {
         setTimeout(() => {
           updateInputFromSelect();
-        }, 10);
+        }, 15);
       });
     }
 
     selectEl.addEventListener('change', () => {
       updateInputFromSelect();
-      handleRecordRemarkChange();
-      handleSendEditRemarkChange();
+      if (selectId === 'modal-record-remark') handleRecordRemarkChange();
+      if (selectId === 'send-edit-remark') handleSendEditRemarkChange();
     });
+
     selectEl.syncSearchableSelect = updateInputFromSelect;
+
+    try {
+      const originalValueDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+      if (originalValueDesc && originalValueDesc.set) {
+        Object.defineProperty(selectEl, 'value', {
+          get() {
+            return originalValueDesc.get.call(this);
+          },
+          set(val) {
+            originalValueDesc.set.call(this, val);
+            if (typeof this.syncSearchableSelect === 'function') {
+              this.syncSearchableSelect();
+            }
+          },
+          configurable: true
+        });
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    if (window.MutationObserver) {
+      const obs = new MutationObserver(() => {
+        if (wrapper && typeof wrapper.renderMenuItems === 'function') {
+          wrapper.renderMenuItems('');
+        }
+        updateInputFromSelect();
+      });
+      obs.observe(selectEl, { childList: true, subtree: true });
+    }
   } else {
     input = wrapper.querySelector('.searchable-select-input');
+    menu = wrapper.querySelector('.searchable-select-menu');
     if (placeholderText && input) input.placeholder = placeholderText;
+    if (wrapper.renderMenuItems) {
+      wrapper.renderMenuItems('');
+    }
+    if (menu) menu.classList.remove('show');
   }
 
   if (selectEl.syncSearchableSelect) {
     selectEl.syncSearchableSelect();
   }
+}
+
+function initAllSiteDropdowns() {
+  const dropdownDefs = [
+    { id: 'filter-record-type', placeholder: 'All (UT / CT)' },
+    { id: 'filter-remark', placeholder: 'All Remarks' },
+    { id: 'filter-all-requests-type', placeholder: 'All Request Types' },
+    { id: 'filter-all-requests-status', placeholder: 'All Statuses' },
+    { id: 'filter-my-requests-type', placeholder: 'All Types' },
+    { id: 'filter-my-requests-status', placeholder: 'All Statuses' },
+    { id: 'filter-users-status', placeholder: 'All Statuses' },
+    { id: 'filter-delete-requests-status', placeholder: 'All Statuses' },
+    { id: 'filter-edit-requests-status', placeholder: 'All Statuses' },
+    { id: 'modal-users-status-filter', placeholder: 'All Statuses' },
+    { id: 'modal-user-role', placeholder: 'Select Role' },
+    { id: 'modal-user-status', placeholder: 'Account Status' },
+    { id: 'modal-record-type', placeholder: 'Select Type' },
+    { id: 'modal-record-remark', placeholder: 'Select Remark' },
+    { id: 'send-delete-reason-select', placeholder: 'Select a Reason' },
+    { id: 'send-edit-type', placeholder: 'Select Type' },
+    { id: 'send-edit-remark', placeholder: 'Select Remark' },
+    { id: 'update-remark-select', placeholder: 'Search Remark' }
+  ];
+
+  dropdownDefs.forEach(def => {
+    const el = document.getElementById(def.id);
+    if (el) {
+      setupSearchableSelect(def.id, def.placeholder);
+    }
+  });
+
+  // Ensure all dropdown menus are closed by default on page / view load
+  document.querySelectorAll('.searchable-select-menu.show').forEach(m => m.classList.remove('show'));
 }
 
 function populateFilterRemarkDropdown() {
@@ -1835,7 +2014,11 @@ async function showAddRecordModal() {
   }
 
   const typeSelect = document.getElementById('modal-record-type');
-  if (typeSelect) typeSelect.value = '';
+  if (typeSelect) {
+    typeSelect.value = '';
+    setupSearchableSelect('modal-record-type', 'Select Type');
+    if (typeSelect.syncSearchableSelect) typeSelect.syncSearchableSelect();
+  }
   populateRemarkDropdown('');
   handleRecordRemarkChange();
   recordModalInstance.show();
@@ -1864,6 +2047,8 @@ async function showEditRecordModal(encodedRecJson) {
     } else {
       typeSelect.value = '';
     }
+    setupSearchableSelect('modal-record-type', 'Select Type');
+    if (typeSelect.syncSearchableSelect) typeSelect.syncSearchableSelect();
   }
 
   document.getElementById('modal-record-aadhar').value = (rec.aadharNo === '#N/A' ? '' : (rec.aadharNo || '').replace(/\D/g, ''));
@@ -2709,6 +2894,12 @@ function showAddUserModal() {
   document.getElementById('modal-user-deleterequest').checked = false;
   const psPermEl = document.getElementById('modal-user-pspermission');
   if (psPermEl) psPermEl.checked = false;
+  setupSearchableSelect('modal-user-role', 'Select Role');
+  setupSearchableSelect('modal-user-status', 'Account Status');
+  const roleEl = document.getElementById('modal-user-role');
+  if (roleEl && roleEl.syncSearchableSelect) roleEl.syncSearchableSelect();
+  const statusEl = document.getElementById('modal-user-status');
+  if (statusEl && statusEl.syncSearchableSelect) statusEl.syncSearchableSelect();
   userModalInstance.show();
 }
 
@@ -2731,6 +2922,13 @@ function showEditUserModal(encodedUserJson) {
   const psPermEl = document.getElementById('modal-user-pspermission');
   if (psPermEl) psPermEl.checked = u.role === 'Admin' || !!u.psListPermission;
   document.getElementById('modal-user-status').value = u.status;
+
+  setupSearchableSelect('modal-user-role', 'Select Role');
+  setupSearchableSelect('modal-user-status', 'Account Status');
+  const roleEl = document.getElementById('modal-user-role');
+  if (roleEl && roleEl.syncSearchableSelect) roleEl.syncSearchableSelect();
+  const statusEl = document.getElementById('modal-user-status');
+  if (statusEl && statusEl.syncSearchableSelect) statusEl.syncSearchableSelect();
 
   userModalInstance.show();
 }
@@ -2906,6 +3104,7 @@ async function populateDeleteReasonSelect(selectedVal = '') {
     }
     selectEl.appendChild(optionEl);
   });
+  setupSearchableSelect('send-delete-reason-select', 'Select Deletion Reason');
 }
 
 function handleDeleteReasonSelectChange(val) {
@@ -3183,6 +3382,8 @@ async function openSendEditRequestModal(encodedRecJson) {
     } else {
       typeSelect.value = '';
     }
+    setupSearchableSelect('send-edit-type', 'Select Type');
+    if (typeSelect.syncSearchableSelect) typeSelect.syncSearchableSelect();
   }
 
   const remarkSelect = document.getElementById('send-edit-remark');
@@ -3600,9 +3801,15 @@ async function loadMyRequestsList() {
     const searchInput = document.getElementById('search-my-requests-input');
     if (searchInput) searchInput.value = '';
     const typeFilterSelect = document.getElementById('filter-my-requests-type');
-    if (typeFilterSelect) typeFilterSelect.value = 'All';
+    if (typeFilterSelect) {
+      typeFilterSelect.value = 'All';
+      if (typeFilterSelect.syncSearchableSelect) typeFilterSelect.syncSearchableSelect();
+    }
     const statusFilterSelect = document.getElementById('filter-my-requests-status');
-    if (statusFilterSelect) statusFilterSelect.value = 'All';
+    if (statusFilterSelect) {
+      statusFilterSelect.value = 'All';
+      if (statusFilterSelect.syncSearchableSelect) statusFilterSelect.syncSearchableSelect();
+    }
 
     filterMyRequestsTable();
   } catch (err) {
@@ -3783,9 +3990,15 @@ async function loadAllRequestsList() {
     const searchInput = document.getElementById('search-all-requests-input');
     if (searchInput) searchInput.value = '';
     const typeFilterSelect = document.getElementById('filter-all-requests-type');
-    if (typeFilterSelect) typeFilterSelect.value = 'All';
+    if (typeFilterSelect) {
+      typeFilterSelect.value = 'All';
+      if (typeFilterSelect.syncSearchableSelect) typeFilterSelect.syncSearchableSelect();
+    }
     const statusFilterSelect = document.getElementById('filter-all-requests-status');
-    if (statusFilterSelect) statusFilterSelect.value = 'Pending';
+    if (statusFilterSelect) {
+      statusFilterSelect.value = 'Pending';
+      if (statusFilterSelect.syncSearchableSelect) statusFilterSelect.syncSearchableSelect();
+    }
 
     filterAllRequestsTable();
   } catch (err) {
@@ -3804,11 +4017,13 @@ function setAllRequestsTypeFilter(type, status) {
   } else {
     typeEl.value = type;
   }
+  if (typeEl.syncSearchableSelect) typeEl.syncSearchableSelect();
 
   if (status) {
     const statusEl = document.getElementById('filter-all-requests-status');
     if (statusEl) {
       statusEl.value = status;
+      if (statusEl.syncSearchableSelect) statusEl.syncSearchableSelect();
     }
   }
 

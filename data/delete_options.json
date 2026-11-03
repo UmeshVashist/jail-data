@@ -4,15 +4,15 @@
     "optionValue": "Wrong PID Entered"
   },
   {
-    "id": 4,
-    "optionValue": "Court Released"
-  },
-  {
     "id": 3,
-    "optionValue": "Jail Transfer"
+    "optionValue": "JAIL TRANSFER"
   },
   {
     "id": 4,
-    "optionValue": "Bailout"
+    "optionValue": "Bailed Out"
+  },
+  {
+    "id": 4,
+    "optionValue": "Other"
   }
 ]
