@@ -1327,17 +1327,29 @@
   <div class="modal fade" id="todayRecordsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
       <div class="modal-content shadow border-0 rounded-4">
-        <div class="modal-header bg-success-subtle border-bottom px-4 py-3">
+        <div class="modal-header bg-success-subtle border-bottom px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="d-flex align-items-center">
-            <div class="stat-icon bg-success text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <div class="stat-icon bg-success text-white me-3 rounded-3 p-2 d-flex align-items-center justify-content-center shadow-xs" style="width: 38px; height: 38px;">
               <i class="bi bi-calendar-check fs-5"></i>
             </div>
             <div>
-              <h5 class="modal-title fw-bold mb-0 text-dark">Today's Uploaded Records</h5>
-              <span class="text-muted small">Records uploaded or added today (<span id="today-records-count-badge" class="badge bg-success text-white">0</span>)</span>
+              <h5 class="modal-title fw-bold mb-0 text-dark" id="today-records-modal-title">Today's Uploaded Records</h5>
+              <span class="text-muted small" id="today-records-modal-subtitle">Records uploaded or added (<span id="today-records-count-badge" class="badge bg-success text-white">0</span>)</span>
             </div>
           </div>
-          <button type="button" class="btn-close-modern shadow-xs ms-auto" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
+          <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <div class="d-flex align-items-center today-filter-box rounded-3 px-2 py-1 shadow-xs border">
+              <label for="today-records-filter-date" class="small fw-semibold mb-0 me-2 d-flex align-items-center gap-1 today-filter-label" style="white-space: nowrap;">
+                <i class="bi bi-calendar3 text-success"></i>
+                <span class="d-none d-sm-inline">Upload Date:</span>
+              </label>
+              <input type="date" class="form-control form-control-sm today-filter-date-input" id="today-records-filter-date" onchange="handleTodayRecordsDateChange(this.value)" autocomplete="off">
+              <button type="button" class="btn btn-sm today-btn-reset ms-1 px-2 py-0.5 rounded-2" onclick="resetTodayRecordsToToday()" title="Reset to Today's Date">
+                <i class="bi bi-arrow-clockwise me-1 d-none d-md-inline"></i>Today
+              </button>
+            </div>
+            <button type="button" class="btn-close-modern shadow-xs" data-bs-dismiss="modal" aria-label="Close" title="Close"><i class="bi bi-x-lg"></i></button>
+          </div>
         </div>
         <div class="modal-body p-0">
           <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">

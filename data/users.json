@@ -45,16 +45,5 @@
     "deleteRequestPermission": false,
     "status": "Active",
     "psListPermission": false
-  },
-  {
-    "id": 5,
-    "rowIndex": 5,
-    "username": "addvc",
-    "password": "Ram@1020",
-    "role": "Add",
-    "importPermission": false,
-    "fullAccess": false,
-    "deleteRequestPermission": false,
-    "status": "Inactive"
   }
 ]

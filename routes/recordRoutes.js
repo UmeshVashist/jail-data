@@ -370,6 +370,8 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const todayOnly = req.query.today === 'true' || req.query.todayOnly === 'true';
     const todayStr = getFormattedDate();
+    const uploadDateParam = (req.query.uploadDate || req.query.createdDate || '').trim();
+    const uploadDateFilter = uploadDateParam ? normalizeToYMD(uploadDateParam) : (todayOnly ? todayStr : '');
     const query = (req.query.query || '').trim().toLowerCase();
     const startDate = req.query.startDate || '';
     const endDate = req.query.endDate || '';
@@ -395,8 +397,11 @@ router.get('/', requireAuth, async (req, res) => {
     for (let i = 0; i < allRecords.length; i++) {
       const rec = allRecords[i];
 
-      // Today Only Filter
-      if (todayOnly && rec.createdDate !== todayStr && rec.date !== todayStr) continue;
+      // Today Only / Upload Date Filter (Filter by record upload/creation date)
+      if (uploadDateFilter !== '') {
+        const recUpload = normalizeToYMD(rec.createdDate) || normalizeToYMD(rec.date) || rec.createdDate || rec.date;
+        if (recUpload !== uploadDateFilter) continue;
+      }
 
       // Search Filter (PID, Name, Father, UT No, Aadhar No)
       if (query !== '') {

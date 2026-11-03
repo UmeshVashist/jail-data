@@ -47,6 +47,7 @@ let approveListAddModalInstance = null;
 let viewEditComparisonModalInstance = null;
 let updateRecordRemarkModalInstance = null;
 let todayRecordsModalInstance = null;
+let currentTodayModalDate = '';
 let totalUsersModalInstance = null;
 let rawModalUsersList = [];
 let rawPendingDeleteRequests = [];
@@ -630,40 +631,86 @@ async function showTodayRecordsModal() {
     const el = document.getElementById('todayRecordsModal');
     if (el) todayRecordsModalInstance = new bootstrap.Modal(el);
   }
+
+  const todayStr = getTodayDateStr();
+  currentTodayModalDate = todayStr;
+
+  const dateInput = document.getElementById('today-records-filter-date');
+  if (dateInput) {
+    dateInput.value = todayStr;
+  }
+
   if (todayRecordsModalInstance) {
     todayRecordsModalInstance.show();
   }
-  await loadTodayRecords();
+  await loadTodayRecords(todayStr);
 }
 
-async function loadTodayRecords() {
+function handleTodayRecordsDateChange(val) {
+  const targetDate = (val && val.trim()) ? val.trim() : getTodayDateStr();
+  loadTodayRecords(targetDate);
+}
+
+function resetTodayRecordsToToday() {
+  const todayStr = getTodayDateStr();
+  const dateInput = document.getElementById('today-records-filter-date');
+  if (dateInput) {
+    dateInput.value = todayStr;
+  }
+  loadTodayRecords(todayStr);
+}
+
+async function loadTodayRecords(filterDate) {
   const tbody = document.getElementById('today-records-table-body');
   const countBadge = document.getElementById('today-records-count-badge');
+  const titleEl = document.getElementById('today-records-modal-title');
+  const subEl = document.getElementById('today-records-modal-subtitle');
+  const dateInput = document.getElementById('today-records-filter-date');
   if (!tbody) return;
+
+  const todayStr = getTodayDateStr();
+  const selectedDate = filterDate || (dateInput ? dateInput.value : '') || currentTodayModalDate || todayStr;
+  currentTodayModalDate = selectedDate;
+
+  if (dateInput && dateInput.value !== selectedDate) {
+    dateInput.value = selectedDate;
+  }
+
+  const isToday = selectedDate === todayStr;
+  if (titleEl) {
+    titleEl.innerText = isToday ? "Today's Uploaded Records" : `Uploaded Records (${selectedDate})`;
+  }
+  if (subEl) {
+    subEl.innerHTML = isToday
+      ? `Records uploaded or added today (<span id="today-records-count-badge" class="badge bg-success text-white">0</span>)`
+      : `Records uploaded or added on ${escapeHtml(selectedDate)} (<span id="today-records-count-badge" class="badge bg-success text-white">0</span>)`;
+  }
 
   tbody.innerHTML = `
     <tr>
       <td colspan="7" class="text-center py-4 text-muted">
-        <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div> Loading today's records...
+        <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div> Loading records for ${escapeHtml(selectedDate)}...
       </td>
     </tr>
   `;
 
   try {
-    const res = await fetch('/api/records?today=true&pageSize=All');
+    const res = await fetch(`/api/records?uploadDate=${encodeURIComponent(selectedDate)}&pageSize=All`);
     const data = await res.json();
+    const updatedBadge = document.getElementById('today-records-count-badge');
 
     if (!data.success) {
       tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading records: ${escapeHtml(data.message)}</td></tr>`;
-      if (countBadge) countBadge.innerText = '0';
+      if (updatedBadge) updatedBadge.innerText = '0';
       return;
     }
 
     const records = (data.data && data.data.records) ? data.data.records : [];
-    if (countBadge) countBadge.innerText = records.length;
+    if (updatedBadge) updatedBadge.innerText = records.length;
 
     if (records.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4 d-block mb-1 opacity-50"></i>No records uploaded today yet.</td></tr>`;
+      const emptyText = isToday ? 'No records uploaded today yet.' : `No records uploaded on ${escapeHtml(selectedDate)} yet.`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4 d-block mb-1 opacity-50"></i>${emptyText}</td></tr>`;
       return;
     }
 
@@ -746,13 +793,19 @@ async function loadTodayRecords() {
         actionButtons = '<span class="text-muted small">-</span>';
       }
 
+      const displayDate = rec.date || rec.createdDate || '-';
+      const uploadDetail = (rec.createdDate && rec.createdDate !== rec.date) ? `<div class="text-muted small" style="font-size: 0.72rem;" title="Upload Date: ${escapeHtml(rec.createdDate)}"><i class="bi bi-cloud-arrow-up text-success me-1"></i>${escapeHtml(rec.createdDate)}</div>` : '';
+
       html += `
         <tr>
           <td class="ps-4"><a href="#" onclick="viewRecordDetails('${recJson}'); return false;" class="pid-link fw-semibold" title="Click to view record details">${escapeHtml(rec.pid)}</a></td>
           <td class="fw-semibold">${escapeHtml(rec.name)}</td>
           <td>${escapeHtml(rec.father || '-')}</td>
           <td>${escapeHtml(rec.utNo || '-')}</td>
-          <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar-event me-1 text-primary opacity-75"></i>${escapeHtml(rec.date || rec.createdDate || '-')}</span></td>
+          <td>
+            <span class="badge bg-light text-dark border"><i class="bi bi-calendar-event me-1 text-primary opacity-75"></i>${escapeHtml(displayDate)}</span>
+            ${uploadDetail}
+          </td>
           <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(rec.remark)}">${escapeHtml(rec.remark || '-')}</span></td>
           <td class="text-end pe-4">${actionButtons}</td>
         </tr>
@@ -761,7 +814,7 @@ async function loadTodayRecords() {
 
     tbody.innerHTML = html;
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading today's records: ${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error loading records: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 

@@ -1790,6 +1790,80 @@ body.dark-theme .btn-modern-close:active {
   box-shadow: 0 1px 0 #881337 !important;
 }
 
+/* Today Records Modal Date Filter */
+.today-filter-box {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.2s ease;
+}
+
+.today-filter-label {
+  color: #334155;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+
+.today-filter-date-input {
+  width: 140px;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.5rem;
+  outline: none;
+}
+
+.today-filter-date-input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.today-btn-reset {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #059669 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.today-btn-reset:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+body.dark-theme .today-filter-box {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+body.dark-theme .today-filter-label {
+  color: #cbd5e1;
+}
+
+body.dark-theme .today-filter-date-input {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+}
+
+body.dark-theme .today-btn-reset {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
+}
+
+body.dark-theme .today-btn-reset:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
 /* Print Media Styles for PDF Report */
 @page {
   size: A4 portrait;
