@@ -54,7 +54,7 @@ function requireImportPermission(req, res, next) {
 }
 
 /**
- * Helper to check 24-hour edit/delete permission window.
+ * Helper to check 12-hour edit/delete permission window.
  * @param {Object} user - Session user
  * @param {Object} record - Target record
  * @return {boolean}
@@ -70,11 +70,14 @@ function canModifyRecord(user, record) {
   // View users cannot edit or delete
   if (user.role === 'View') return false;
 
-  // Standard Add User: Can edit/delete ONLY records created by himself AND created within 24 hours
+  // Standard Add User: Can edit/delete ONLY records created by himself AND created within 12 hours
   if (user.role === 'Add') {
-    const isOwnRecord = String(user.username).toLowerCase() === String(record.createdBy || '').toLowerCase();
+    const isOwnRecord = String(user.username || '').toLowerCase() === String(record.createdBy || '').toLowerCase();
+    if (!isOwnRecord) return false;
     
-    const dateStr = (record.createdDate || '').trim();
+    const dateStr = (record.createdDate || record.date || '').trim();
+    if (!dateStr) return false;
+
     const timeStr = (record.createdTime || '00:00:00').trim();
     let createdTimestamp = new Date(`${dateStr} ${timeStr}`).getTime();
     if (isNaN(createdTimestamp)) {
@@ -89,7 +92,7 @@ function canModifyRecord(user, record) {
     const currentTimestamp = Date.now();
     const diffInHours = (currentTimestamp - createdTimestamp) / (1000 * 60 * 60);
 
-    return isOwnRecord && diffInHours >= 0 && diffInHours <= 24;
+    return diffInHours >= -0.5 && diffInHours <= 12;
   }
 
   return false;

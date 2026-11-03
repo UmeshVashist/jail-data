@@ -343,7 +343,26 @@ router.get('/dashboard', requireAuth, async (req, res) => {
       return (b.id || 0) - (a.id || 0);
     });
 
-    const recentActivities = sortedRecords.slice(0, 10);
+    const [allDeleteRequests, allEditRequests] = await Promise.all([
+      getDeleteRequests().catch(() => []),
+      getEditRequests().catch(() => [])
+    ]);
+
+    const pendingDeleteRecordIds = new Set(
+      allDeleteRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
+    );
+    const pendingEditRecordIds = new Set(
+      allEditRequests.filter(r => r.status === 'Pending').map(r => String(r.recordId || r.pid))
+    );
+
+    const recentActivities = sortedRecords.slice(0, 10).map(rec => {
+      const r = { ...rec };
+      r.canEdit = canModifyRecord(req.user, r);
+      r.canDelete = canModifyRecord(req.user, r);
+      r.hasPendingDeleteRequest = pendingDeleteRecordIds.has(String(r.id)) || pendingDeleteRecordIds.has(String(r.rowIndex)) || pendingDeleteRecordIds.has(String(r.pid));
+      r.hasPendingEditRequest = pendingEditRecordIds.has(String(r.id)) || pendingEditRecordIds.has(String(r.rowIndex)) || pendingEditRecordIds.has(String(r.pid));
+      return r;
+    });
 
     res.json({
       success: true,
@@ -645,7 +664,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
 
     if (!canModifyRecord(req.user, existingRecord)) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to edit this record (Only own records within 24h allowed).' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to edit this record (Only own records within 12h allowed).' });
     }
 
     const { pid, name, father, utNo, recordType, aadharNo, date, remark } = req.body;
@@ -746,7 +765,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 
     if (!canModifyRecord(req.user, existingRecord)) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to delete this record.' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to delete this record (Only own records within 12h allowed).' });
     }
 
     await deleteRecord(rowIndex);
