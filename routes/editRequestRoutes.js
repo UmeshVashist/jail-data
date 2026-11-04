@@ -135,23 +135,32 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Aadhar No must contain numbers only.' });
     }
 
+    if (propAadhar && propAadhar !== '#N/A') {
+      const cleanDigits = propAadhar.replace(/\D/g, '');
+      if (cleanDigits.length === 12) {
+        propAadhar = cleanDigits.replace(/^(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3');
+      }
+    } else if (!propAadhar && (!targetRecord.aadharNo || targetRecord.aadharNo === '#N/A')) {
+      propAadhar = '#N/A';
+    }
+
     await createEditRequest({
       recordId: targetRecord.id || targetRecord.rowIndex,
       pid: targetRecord.pid,
       name: targetRecord.name,
-      father: targetRecord.father,
-      utNo: targetRecord.utNo,
-      aadharNo: targetRecord.aadharNo,
-      date: targetRecord.date,
-      remark: targetRecord.remark,
+      father: targetRecord.father || '',
+      utNo: targetRecord.utNo || '',
+      aadharNo: targetRecord.aadharNo || '',
+      date: targetRecord.date || '',
+      remark: targetRecord.remark || '',
       proposedData: {
         pid: targetRecord.pid,
         name: (proposedData.name || targetRecord.name).trim(),
-        father: (proposedData.father || '').trim(),
-        utNo: (proposedData.utNo || '').trim(),
+        father: (proposedData.father !== undefined ? proposedData.father : targetRecord.father || '').trim(),
+        utNo: (proposedData.utNo !== undefined ? proposedData.utNo : targetRecord.utNo || '').trim(),
         aadharNo: propAadhar,
-        date: proposedData.date || targetRecord.date || '',
-        remark: propRemark,
+        date: (proposedData.date !== undefined && proposedData.date !== null && proposedData.date !== '') ? proposedData.date.trim() : (targetRecord.date || ''),
+        remark: propRemark || targetRecord.remark || '',
         createdBy: targetRecord.createdBy,
         createdDate: targetRecord.createdDate,
         createdTime: targetRecord.createdTime

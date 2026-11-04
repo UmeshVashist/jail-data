@@ -305,6 +305,8 @@ async function ensureEditRequestsSynced(force = false) {
             father: (r.father || '').toString().trim(),
             utNo: (r.ut_no || r.utNo || '').toString().trim(),
             aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
+            date: (r.date || '').toString().trim(),
+            remark: (r.remark || '').toString().trim(),
             proposedData: typeof r.proposed_data === 'string' ? JSON.parse(r.proposed_data || '{}') : (r.proposed_data || r.proposedData || {}),
             requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
             requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
@@ -999,24 +1001,48 @@ async function deleteDeleteRequest(requestId) {
 
 async function getEditRequests() {
   await ensureEditRequestsSynced();
-  return memoryStore.editRequests.map(r => ({
-    id: r.id || r.rowIndex,
-    rowIndex: r.rowIndex || r.id,
-    recordId: (r.recordId || r.record_id || r.id).toString(),
-    pid: (r.pid || '').toString().trim(),
-    name: (r.name || '').toString().trim(),
-    father: (r.father || '').toString().trim(),
-    utNo: (r.utNo || '').toString().trim(),
-    aadharNo: (r.aadharNo || '').toString().trim(),
-    proposedData: typeof r.proposedData === 'string' ? JSON.parse(r.proposedData || '{}') : (r.proposedData || {}),
-    requestedBy: (r.requestedBy || '').toString().trim(),
-    requestedDate: (r.requestedDate || '').toString().trim(),
-    requestedTime: (r.requestedTime || '').toString().trim(),
-    reason: (r.reason || '').toString().trim(),
-    status: (r.status || 'Pending').toString().trim(),
-    actionBy: (r.actionBy || '').toString().trim(),
-    actionDate: (r.actionDate || '').toString().trim()
-  }));
+  return memoryStore.editRequests.map(r => {
+    let recDate = (r.date || '').toString().trim();
+    let recRemark = (r.remark || '').toString().trim();
+    let recAadhar = (r.aadharNo || '').toString().trim();
+
+    // If date, remark or aadharNo is empty, resolve from memoryStore.records
+    if ((!recDate || !recRemark || !recAadhar) && Array.isArray(memoryStore.records)) {
+      const target = memoryStore.records.find(m => 
+        (r.recordId && String(m.id || m.rowIndex) === String(r.recordId)) || 
+        (r.pid && String(m.pid) === String(r.pid))
+      );
+      if (target) {
+        if (!recDate) recDate = (target.date || '').toString().trim();
+        if (!recRemark) recRemark = (target.remark || '').toString().trim();
+        if (!recAadhar) recAadhar = (target.aadharNo || '').toString().trim();
+        r.date = recDate;
+        r.remark = recRemark;
+        if (!r.aadharNo) r.aadharNo = recAadhar;
+      }
+    }
+
+    return {
+      id: r.id || r.rowIndex,
+      rowIndex: r.rowIndex || r.id,
+      recordId: (r.recordId || r.record_id || r.id).toString(),
+      pid: (r.pid || '').toString().trim(),
+      name: (r.name || '').toString().trim(),
+      father: (r.father || '').toString().trim(),
+      utNo: (r.utNo || '').toString().trim(),
+      aadharNo: recAadhar,
+      date: recDate,
+      remark: recRemark,
+      proposedData: typeof r.proposedData === 'string' ? JSON.parse(r.proposedData || '{}') : (r.proposedData || {}),
+      requestedBy: (r.requestedBy || '').toString().trim(),
+      requestedDate: (r.requestedDate || '').toString().trim(),
+      requestedTime: (r.requestedTime || '').toString().trim(),
+      reason: (r.reason || '').toString().trim(),
+      status: (r.status || 'Pending').toString().trim(),
+      actionBy: (r.actionBy || '').toString().trim(),
+      actionDate: (r.actionDate || '').toString().trim()
+    };
+  });
 }
 
 async function createEditRequest(reqObj) {
@@ -1033,6 +1059,8 @@ async function createEditRequest(reqObj) {
     father: reqObj.father || '',
     utNo: reqObj.utNo || '',
     aadharNo: reqObj.aadharNo || '',
+    date: reqObj.date || '',
+    remark: reqObj.remark || '',
     proposedData: reqObj.proposedData || {},
     requestedBy: reqObj.requestedBy,
     requestedDate: reqObj.requestedDate,
@@ -1049,8 +1077,8 @@ async function createEditRequest(reqObj) {
     const { dbRun } = require('./database');
     const proposedStr = typeof reqObj.proposedData === 'string' ? reqObj.proposedData : JSON.stringify(reqObj.proposedData || {});
     await dbRun(
-      `INSERT INTO edit_requests (record_id, pid, name, father, ut_no, aadhar_no, proposed_data, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [item.recordId, item.pid, item.name, item.father, item.utNo, item.aadharNo, proposedStr, item.requestedBy, item.requestedDate, item.requestedTime, reasonVal, 'Pending']
+      `INSERT INTO edit_requests (record_id, pid, name, father, ut_no, aadhar_no, date, remark, proposed_data, requested_by, requested_date, requested_time, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [item.recordId, item.pid, item.name, item.father, item.utNo, item.aadharNo, item.date, item.remark, proposedStr, item.requestedBy, item.requestedDate, item.requestedTime, reasonVal, 'Pending']
     );
   } catch (e) {}
 

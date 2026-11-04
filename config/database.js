@@ -2,6 +2,7 @@
  * config/database.js - SQLite database initialization, table creation & default user seeding
  */
 
+const path = require('path');
 let sqlite3 = null;
 let db = null;
 
@@ -126,6 +127,13 @@ async function initDatabase() {
         action_date TEXT
       )
     `);
+
+    try {
+      await dbRun(`ALTER TABLE edit_requests ADD COLUMN date TEXT`);
+    } catch (e) {}
+    try {
+      await dbRun(`ALTER TABLE edit_requests ADD COLUMN remark TEXT`);
+    } catch (e) {}
 
     // Create List Add Requests table
     await dbRun(`

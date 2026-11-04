@@ -126,7 +126,76 @@ document.addEventListener('DOMContentLoaded', function () {
   setInterval(loadRemarkOptions, 20000);
   initTheme();
   initAllSiteDropdowns();
+  initSlashSearchShortcut();
 });
+
+/* ==========================================================================
+   Global Keyboard Shortcuts ('/' Key to activate page Search bar)
+   ========================================================================== */
+function initSlashSearchShortcut() {
+  window.addEventListener('keydown', function (e) {
+    // Only trigger if '/' key is pressed without modifier keys (Ctrl, Alt, Meta)
+    if (e.key === '/' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      // If user is currently typing in an input, textarea, select, or editable element, do not intercept
+      const activeEl = document.activeElement;
+      if (activeEl) {
+        const tag = activeEl.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || activeEl.isContentEditable) {
+          return;
+        }
+      }
+
+      // If any modal is currently open and displayed, do not intercept
+      if (document.querySelector('.modal.show')) {
+        return;
+      }
+
+      // Find the active search input based on visible view
+      let targetInput = null;
+      const recordsView = document.getElementById('records-view');
+      const allRequestsView = document.getElementById('all-requests-view');
+      const myRequestsView = document.getElementById('my-requests-view');
+      const usersView = document.getElementById('users-view');
+      const psListView = document.getElementById('ps-list-view');
+      const deleteRequestsView = document.getElementById('delete-requests-view');
+      const editRequestsView = document.getElementById('edit-requests-view');
+
+      if (recordsView && !recordsView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-query-input');
+      } else if (allRequestsView && !allRequestsView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-all-requests-input');
+      } else if (myRequestsView && !myRequestsView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-my-requests-input');
+      } else if (usersView && !usersView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-users-input');
+      } else if (psListView && !psListView.classList.contains('d-none')) {
+        targetInput = document.getElementById('ps-search-name');
+      } else if (deleteRequestsView && !deleteRequestsView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-delete-requests-input');
+      } else if (editRequestsView && !editRequestsView.classList.contains('d-none')) {
+        targetInput = document.getElementById('search-edit-requests-input');
+      }
+
+      if (targetInput) {
+        e.preventDefault();
+        targetInput.focus();
+        targetInput.select();
+      }
+    }
+  });
+
+  // Pressing Escape inside search inputs blurs focus
+  ['search-query-input', 'search-all-requests-input', 'search-my-requests-input', 'search-users-input', 'ps-search-name'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape') {
+          el.blur();
+        }
+      });
+    }
+  });
+}
 
 /* Theme Module - UI Mode Initialization */
 function initTheme() {
@@ -3578,31 +3647,130 @@ function viewEditRequestComparison(encodedReqJson) {
   const req = JSON.parse(decodeURIComponent(encodedReqJson));
   const prop = req.proposedData || {};
 
-  document.getElementById('comp-requested-by').innerText = req.requestedBy;
-  document.getElementById('comp-requested-date').innerText = (req.requestedDate || '') + ' ' + (req.requestedTime || '');
+  document.getElementById('comp-requested-by').innerText = req.requestedBy || '-';
+  document.getElementById('comp-requested-date').innerText = ((req.requestedDate || '') + ' ' + (req.requestedTime || '')).trim() || '-';
   document.getElementById('comp-reason').innerText = req.reason || 'No reason provided';
 
+  // Fallback to currentRecordsData if original values are missing on older request objects
+  let origRecord = null;
+  if (Array.isArray(currentRecordsData)) {
+    origRecord = currentRecordsData.find(r => 
+      (req.pid && String(r.pid).toLowerCase() === String(req.pid).toLowerCase()) || 
+      (req.recordId && String(r.id || r.rowIndex) === String(req.recordId))
+    );
+  }
+
+  const origPid = (req.pid || (origRecord && origRecord.pid) || '').toString().trim();
+  const origName = (req.name || (origRecord && origRecord.name) || '').toString().trim();
+  const origFather = (req.father || (origRecord && origRecord.father) || '').toString().trim();
+  const origUtNo = (req.utNo || (origRecord && origRecord.utNo) || '').toString().trim();
+  const origAadhar = (req.aadharNo || (origRecord && origRecord.aadharNo) || '').toString().trim();
+  const origDate = (req.date || (origRecord && origRecord.date) || '').toString().trim();
+  const origRemark = (req.remark || (origRecord && origRecord.remark) || '').toString().trim();
+
+  // Helper to normalize Aadhar digits for comparison
+  const normAadhar = (val) => {
+    if (!val || val === '-' || val === '#N/A' || /^n\/?a$/i.test(String(val).trim())) return '#N/A';
+    const digits = String(val).replace(/\D/g, '');
+    return digits || '#N/A';
+  };
+
+  // Helper to format Aadhar with standard 4-4-4 spaces for display
+  const formatAadharDisplay = (val) => {
+    if (!val || val === '-' || val === '#N/A' || /^n\/?a$/i.test(String(val).trim())) return '#N/A';
+    const digits = String(val).replace(/\D/g, '');
+    if (digits.length === 12) {
+      return digits.replace(/^(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3');
+    }
+    return val;
+  };
+
+  // Helper to normalize Date (YYYY-MM-DD) for comparison
+  const normDate = (val) => {
+    if (!val || val === '-') return '';
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const parts = s.split(/[-/]/);
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    return s;
+  };
+
+  // Proposed values
+  const propPid = (prop.pid !== undefined && prop.pid !== null && String(prop.pid).trim() !== '') ? String(prop.pid).trim() : origPid;
+  const propName = (prop.name !== undefined && prop.name !== null && String(prop.name).trim() !== '') ? String(prop.name).trim() : origName;
+  const propFather = (prop.father !== undefined && prop.father !== null) ? String(prop.father).trim() : origFather;
+  const propUtNo = (prop.utNo !== undefined && prop.utNo !== null) ? String(prop.utNo).trim() : origUtNo;
+  const propAadhar = (prop.aadharNo !== undefined && prop.aadharNo !== null) ? String(prop.aadharNo).trim() : origAadhar;
+  const propDate = (prop.date !== undefined && prop.date !== null) ? String(prop.date).trim() : origDate;
+  const propRemark = (prop.remark !== undefined && prop.remark !== null) ? String(prop.remark).trim() : origRemark;
+
+  const isAadharChanged = normAadhar(origAadhar) !== normAadhar(propAadhar);
+  const isDateChanged = Boolean(origDate && propDate && normDate(origDate) !== normDate(propDate)) || (!origDate && Boolean(propDate)) || (Boolean(origDate) && !propDate);
+
   const fields = [
-    { key: 'pid', label: 'PID', orig: req.pid, proposed: prop.pid || req.pid },
-    { key: 'name', label: 'Name', orig: req.name, proposed: prop.name || req.name },
-    { key: 'father', label: 'Father Name', orig: req.father || '-', proposed: prop.father || '-' },
-    { key: 'utNo', label: 'UT No', orig: req.utNo || '-', proposed: prop.utNo || '-' },
-    { key: 'aadharNo', label: 'Aadhar No', orig: req.aadharNo || '-', proposed: prop.aadharNo || '-' },
-    { key: 'date', label: 'Record Date', orig: req.date || '-', proposed: prop.date || '-' },
-    { key: 'remark', label: 'Remark', orig: req.remark || '-', proposed: prop.remark || '-' }
+    {
+      key: 'pid',
+      label: 'PID',
+      origDisplay: origPid || '-',
+      propDisplay: propPid || '-',
+      isChanged: origPid.toLowerCase() !== propPid.toLowerCase()
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      origDisplay: origName || '-',
+      propDisplay: propName || '-',
+      isChanged: origName.toLowerCase() !== propName.toLowerCase()
+    },
+    {
+      key: 'father',
+      label: 'Father Name',
+      origDisplay: origFather || '-',
+      propDisplay: propFather || '-',
+      isChanged: origFather.toLowerCase() !== propFather.toLowerCase()
+    },
+    {
+      key: 'utNo',
+      label: 'UT No',
+      origDisplay: origUtNo || '-',
+      propDisplay: propUtNo || '-',
+      isChanged: origUtNo.toLowerCase() !== propUtNo.toLowerCase()
+    },
+    {
+      key: 'aadharNo',
+      label: 'Aadhar No',
+      origDisplay: formatAadharDisplay(origAadhar),
+      propDisplay: formatAadharDisplay(propAadhar),
+      isChanged: isAadharChanged
+    },
+    {
+      key: 'date',
+      label: 'Record Date',
+      origDisplay: origDate || '-',
+      propDisplay: propDate || '-',
+      isChanged: isDateChanged
+    },
+    {
+      key: 'remark',
+      label: 'Remark',
+      origDisplay: origRemark || '-',
+      propDisplay: propRemark || '-',
+      isChanged: origRemark.toLowerCase() !== propRemark.toLowerCase()
+    }
   ];
 
   let tbodyHtml = '';
   fields.forEach(f => {
-    const isChanged = String(f.orig).trim() !== String(f.proposed).trim();
-    const highlightClass = isChanged ? 'bg-warning bg-opacity-10 fw-bold text-dark' : '';
-    const badge = isChanged ? '<span class="badge bg-warning text-dark ms-2">Changed</span>' : '';
+    const highlightClass = f.isChanged ? 'bg-warning bg-opacity-10 fw-bold text-dark' : '';
+    const badge = f.isChanged ? '<span class="badge bg-warning text-dark ms-2">Changed</span>' : '';
 
     tbodyHtml += `
       <tr class="${highlightClass}">
         <td class="fw-semibold">${f.label}</td>
-        <td class="text-secondary">${escapeHtml(f.orig)}</td>
-        <td class="text-dark">${escapeHtml(f.proposed)} ${badge}</td>
+        <td class="text-secondary">${escapeHtml(f.origDisplay)}</td>
+        <td class="text-dark">${escapeHtml(f.propDisplay)} ${badge}</td>
       </tr>
     `;
   });

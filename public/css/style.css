@@ -3858,3 +3858,68 @@ body.theme-modern-3d .login-card .form-control:-webkit-autofill:focus {
     display: table-header-group !important;
   }
 }
+
+/* ==========================================================================
+   Search Bar Keyboard Shortcut Badge ('/' Key)
+   ========================================================================== */
+.search-shortcut-kbd-wrap {
+  background: transparent !important;
+  border-left: none !important;
+  cursor: pointer;
+  padding: 0 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 4;
+}
+
+.search-slash-kbd {
+  font-family: inherit, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  padding: 3px 7px !important;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.search-shortcut-kbd-wrap:hover .search-slash-kbd,
+.search-slash-kbd:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: scale(1.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Modern 3D Cyber Theme */
+body.theme-modern-3d .search-shortcut-kbd-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.theme-modern-3d .search-slash-kbd {
+  color: #00f0ff !important;
+  background: rgba(0, 240, 255, 0.14) !important;
+  border: 1px solid rgba(0, 240, 255, 0.5) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.8) !important;
+}
+
+body.theme-modern-3d .search-shortcut-kbd-wrap:hover .search-slash-kbd,
+body.theme-modern-3d .search-slash-kbd:hover {
+  background: rgba(0, 240, 255, 0.28) !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+  transform: scale(1.1) !important;
+}

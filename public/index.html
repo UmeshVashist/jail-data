@@ -387,6 +387,7 @@
                 <div class="input-group">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-query-input" placeholder="Search PID, Name, Father, UT No, Aadhar..." oninput="handleInstantSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault(); return false;}" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-query-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-6 col-sm-4 col-md-2 col-lg-2">
@@ -598,6 +599,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-users-input" placeholder="Search user by username..." oninput="filterUsersTable()" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-users-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-4">
@@ -664,6 +666,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-delete-requests-input" placeholder="Search by PID or UT No..." oninput="filterDeleteRequestsTable()" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-delete-requests-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-4">
@@ -732,6 +735,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-edit-requests-input" placeholder="Search by PID or UT No..." oninput="filterEditRequestsTable()" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-edit-requests-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-4">
@@ -802,6 +806,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-my-requests-input" placeholder="Search by PID or UT No..." oninput="filterMyRequestsTable()" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-my-requests-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-4">
@@ -938,6 +943,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="search-all-requests-input" placeholder="Search by PID, Name, User, Option..." oninput="filterAllRequestsTable()" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('search-all-requests-input').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-4">
@@ -1246,6 +1252,7 @@
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
                   <input type="text" class="form-control border-start-0 ps-0" id="ps-search-name" placeholder="Search by PS Name..." onkeydown="if(event.key==='Enter'){event.preventDefault();executePSSearch();}" autocomplete="off">
+                  <span class="input-group-text border-start-0 search-shortcut-kbd-wrap" title="Press / to focus search" onclick="document.getElementById('ps-search-name').focus()"><kbd class="search-slash-kbd">/</kbd></span>
                 </div>
               </div>
               <div class="col-12 col-md-3">
