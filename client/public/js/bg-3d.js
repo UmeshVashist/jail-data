@@ -102,6 +102,7 @@
   function init() {
     canvasEl = document.getElementById('webgl-3d-bg');
     if (!canvasEl) return;
+    if (renderer && renderer.domElement === canvasEl && isRunning) return;
 
     if (typeof THREE === 'undefined') {
       console.warn('[3D-BG] Three.js not found. Loading fallback.');
@@ -759,6 +760,7 @@
 
   // Public API
   window.Portal3DBackground = {
+    init: init,
     triggerPulse: onPointerDown,
     refreshTheme: updateThemeColors
   };

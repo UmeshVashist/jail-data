@@ -194,7 +194,7 @@ export default function PSList() {
                     Loading police stations...
                   </td>
                 </tr>
-              ) : stations.length === 0 ? (
+              ) : !Array.isArray(stations) || stations.length === 0 ? (
                 <tr>
                   <td colSpan={isAdmin ? 5 : 4} className="text-center py-5 text-muted">
                     <i className="bi bi-shield-x fs-2 d-block mb-2 text-secondary"></i>
@@ -202,7 +202,7 @@ export default function PSList() {
                   </td>
                 </tr>
               ) : (
-                stations.map((st, idx) => (
+                (stations || []).map((st, idx) => (
                   <tr key={st.id || idx}>
                     <td className="text-muted font-monospace">{st.id}</td>
                     <td className="fw-bold text-white">{st.psName || st.ps}</td>

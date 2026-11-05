@@ -281,7 +281,7 @@ async function isAadharDisabledRemark(remarkValue) {
 router.get('/settings', requireAuth, async (req, res) => {
   try {
     const settings = await getSystemSettings();
-    res.json({ success: true, settings });
+    res.json({ success: true, settings, data: settings });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Fetch settings error: ' + err.message });
   }
@@ -292,7 +292,7 @@ router.put('/settings', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { aadharMandatory } = req.body;
     const settings = await updateSystemSetting('aadhar_mandatory', aadharMandatory);
-    res.json({ success: true, settings, message: 'System settings updated successfully.' });
+    res.json({ success: true, settings, data: settings, message: 'System settings updated successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Update settings error: ' + err.message });
   }
@@ -495,8 +495,18 @@ router.get('/', requireAuth, async (req, res) => {
       paginatedRecords = filteredRecords.slice(startIndex, startIndex + pageSize);
     }
 
+    const effectiveTotalPages = pageSize === 'All' ? 1 : Math.max(1, Math.ceil(totalRecords / (pageSize || 25)));
+
     res.json({
       success: true,
+      records: paginatedRecords,
+      totalCount: totalRecords,
+      pagination: {
+        total: totalRecords,
+        totalPages: effectiveTotalPages,
+        page: page,
+        pageSize: pageSize
+      },
       data: {
         records: paginatedRecords,
         totalRecords: totalRecords,

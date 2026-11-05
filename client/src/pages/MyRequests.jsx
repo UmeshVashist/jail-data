@@ -29,16 +29,16 @@ export default function MyRequests() {
       const currentUsername = (user?.username || '').toLowerCase();
 
       // Filter only requests created by current user (or all if admin)
-      const editItems = (editRes.data || [])
-        .filter(r => (r.requestedBy || '').toLowerCase() === currentUsername)
+      const editItems = (Array.isArray(editRes?.data) ? editRes.data : [])
+        .filter(r => r && String(r.requestedBy || '').toLowerCase() === currentUsername)
         .map(r => ({ ...r, requestType: 'Edit' }));
 
-      const delItems = (delRes.data || [])
-        .filter(r => (r.requestedBy || '').toLowerCase() === currentUsername)
+      const delItems = (Array.isArray(delRes?.data) ? delRes.data : [])
+        .filter(r => r && String(r.requestedBy || '').toLowerCase() === currentUsername)
         .map(r => ({ ...r, requestType: 'Delete' }));
 
-      const listItems = (listRes.data || [])
-        .filter(r => (r.requestedBy || '').toLowerCase() === currentUsername)
+      const listItems = (Array.isArray(listRes?.data) ? listRes.data : [])
+        .filter(r => r && String(r.requestedBy || '').toLowerCase() === currentUsername)
         .map(r => ({ ...r, requestType: 'List Add' }));
 
       setRequests([...editItems, ...delItems, ...listItems]);
@@ -54,15 +54,16 @@ export default function MyRequests() {
   }, [fetchMyRequests]);
 
   // Filter
-  const filtered = requests.filter(req => {
+  const filtered = (Array.isArray(requests) ? requests : []).filter(req => {
+    if (!req) return false;
     if (typeFilter !== 'All' && req.requestType !== typeFilter) return false;
-    if (statusFilter !== 'All' && (req.status || 'Pending').toLowerCase() !== statusFilter.toLowerCase()) return false;
+    if (statusFilter !== 'All' && String(req.status || 'Pending').toLowerCase() !== statusFilter.toLowerCase()) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      const pidMatch = (req.pid || '').toLowerCase().includes(q);
-      const nameMatch = (req.name || '').toLowerCase().includes(q);
-      const optMatch = (req.optionValue || '').toLowerCase().includes(q);
-      const utMatch = (req.utNo || '').toLowerCase().includes(q);
+      const pidMatch = String(req.pid || '').toLowerCase().includes(q);
+      const nameMatch = String(req.name || '').toLowerCase().includes(q);
+      const optMatch = String(req.optionValue || '').toLowerCase().includes(q);
+      const utMatch = String(req.utNo || '').toLowerCase().includes(q);
       if (!pidMatch && !nameMatch && !optMatch && !utMatch) return false;
     }
     return true;

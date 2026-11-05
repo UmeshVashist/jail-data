@@ -68,9 +68,10 @@ export default function UserManagement() {
     }
   };
 
-  const filtered = users.filter(u => {
-    if (statusFilter !== 'All' && (u.status || 'Active').toLowerCase() !== statusFilter.toLowerCase()) return false;
-    if (searchUsername.trim() && !(u.username || '').toLowerCase().includes(searchUsername.trim().toLowerCase())) return false;
+  const filtered = (Array.isArray(users) ? users : []).filter(u => {
+    if (!u) return false;
+    if (statusFilter !== 'All' && String(u.status || 'Active').toLowerCase() !== statusFilter.toLowerCase()) return false;
+    if (searchUsername.trim() && !String(u.username || '').toLowerCase().includes(searchUsername.trim().toLowerCase())) return false;
     return true;
   });
 

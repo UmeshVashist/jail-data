@@ -86,6 +86,16 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/delete-requests - List all delete requests (Root alias)
+router.get('/', async (req, res) => {
+  try {
+    const allRequests = await getDeleteRequests();
+    res.json({ success: true, data: allRequests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch delete requests error: ' + err.message });
+  }
+});
+
 // GET /api/delete-requests/pending - List all pending delete requests
 router.get('/pending', requireDeleteRequestPermission, async (req, res) => {
   try {
@@ -122,8 +132,8 @@ router.get('/my-requests', async (req, res) => {
   }
 });
 
-// POST /api/delete-requests/:id/approve - Approve delete request and delete the record
-router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => {
+// Approve delete request (Supports both POST and PUT)
+const handleApproveDelete = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getDeleteRequests();
@@ -156,10 +166,12 @@ router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => 
   } catch (err) {
     res.status(500).json({ success: false, message: 'Approve delete request error: ' + err.message });
   }
-});
+};
+router.post('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
+router.put('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
 
-// POST /api/delete-requests/:id/reject - Reject / Cancel delete request by admin/permitted user
-router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
+// Reject / Cancel delete request by admin/permitted user (Supports both POST and PUT)
+const handleRejectDelete = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getDeleteRequests();
@@ -179,7 +191,9 @@ router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'Reject delete request error: ' + err.message });
   }
-});
+};
+router.post('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
+router.put('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
 
 // DELETE /api/delete-requests/:id/cancel - Cancel pending delete request by the user who sent it
 router.delete('/:id/cancel', async (req, res) => {

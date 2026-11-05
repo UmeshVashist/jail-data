@@ -190,6 +190,16 @@ router.get('/reactive', async (req, res) => {
   }
 });
 
+// GET /api/list-add-requests - List all list add requests (Root alias)
+router.get('/', async (req, res) => {
+  try {
+    const allRequests = await getListAddRequests();
+    res.json({ success: true, data: allRequests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch list-add requests error: ' + err.message });
+  }
+});
+
 // GET /api/list-add-requests/pending - List pending list add requests
 router.get('/pending', requireDeleteRequestPermission, async (req, res) => {
   try {
@@ -226,8 +236,8 @@ router.get('/my-requests', async (req, res) => {
   }
 });
 
-// POST /api/list-add-requests/:id/approve - Approve list add request and add option to dropdown list
-router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => {
+// Approve list add request (Supports both POST and PUT)
+const handleApproveListAdd = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const { disableAadhar } = req.body;
@@ -259,10 +269,12 @@ router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => 
   } catch (err) {
     res.status(500).json({ success: false, message: 'Approve list add request error: ' + err.message });
   }
-});
+};
+router.post('/:id/approve', requireDeleteRequestPermission, handleApproveListAdd);
+router.put('/:id/approve', requireDeleteRequestPermission, handleApproveListAdd);
 
-// POST /api/list-add-requests/:id/reject - Reject list add request
-router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
+// Reject list add request (Supports both POST and PUT)
+const handleRejectListAdd = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getListAddRequests();
@@ -282,7 +294,9 @@ router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'Reject list add request error: ' + err.message });
   }
-});
+};
+router.post('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
+router.put('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
 
 // DELETE /api/list-add-requests/:id/cancel - Cancel pending list add request by the user who sent it
 router.delete('/:id/cancel', async (req, res) => {

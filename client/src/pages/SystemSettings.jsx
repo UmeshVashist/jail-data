@@ -254,12 +254,12 @@ export default function SystemSettings() {
                     <tr>
                       <td colSpan="3" className="text-center py-3 text-muted">Loading options...</td>
                     </tr>
-                  ) : remarkOptions.length === 0 ? (
+                  ) : !Array.isArray(remarkOptions) || remarkOptions.length === 0 ? (
                     <tr>
                       <td colSpan="3" className="text-center py-3 text-muted">No remark options configured.</td>
                     </tr>
                   ) : (
-                    remarkOptions.map((opt, idx) => {
+                    (remarkOptions || []).map((opt, idx) => {
                       const val = typeof opt === 'object' ? opt.optionValue : opt;
                       const disable = typeof opt === 'object' ? !!opt.disableAadhar : false;
                       return (
@@ -333,12 +333,12 @@ export default function SystemSettings() {
                     <tr>
                       <td colSpan="2" className="text-center py-3 text-muted">Loading options...</td>
                     </tr>
-                  ) : deleteOptions.length === 0 ? (
+                  ) : !Array.isArray(deleteOptions) || deleteOptions.length === 0 ? (
                     <tr>
                       <td colSpan="2" className="text-center py-3 text-muted">No delete options configured.</td>
                     </tr>
                   ) : (
-                    deleteOptions.map((opt, idx) => {
+                    (deleteOptions || []).map((opt, idx) => {
                       const val = typeof opt === 'object' ? opt.optionValue : opt;
                       return (
                         <tr key={idx}>

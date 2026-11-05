@@ -1,6 +1,6 @@
 /**
  * client/src/layouts/MainLayout.jsx
- * Main Application Shell Layout with Sidebar, Header, 3D Canvas, Toasts, and Global Shortcuts
+ * Main Application Shell Layout with Sidebar, Header, 3D Canvas, Toasts, ErrorBoundary and Global Shortcuts
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,6 +11,7 @@ import Header from '../components/Header';
 import CyberBackground3D from '../components/CyberBackground3D';
 import ToastContainer from '../components/ToastContainer';
 import SelfChangePasswordModal from '../components/modals/SelfChangePasswordModal';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function MainLayout() {
   const { user, loading } = useAuth();
@@ -54,7 +55,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div id="app" className="d-flex min-vh-100 position-relative">
+    <div id="app-shell" className="d-flex min-vh-100 position-relative">
       {/* 3D WebGL Background Canvas */}
       <CyberBackground3D />
 
@@ -72,7 +73,9 @@ export default function MainLayout() {
           onOpenSelfPassword={() => setSelfPasswordOpen(true)}
         />
         <main className="p-3 p-md-4 flex-grow-1">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -87,4 +90,3 @@ export default function MainLayout() {
     </div>
   );
 }
-

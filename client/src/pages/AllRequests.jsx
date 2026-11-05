@@ -59,15 +59,16 @@ export default function AllRequests() {
   }
 
   // Filter logic
-  const filtered = requests.filter(req => {
+  const filtered = (Array.isArray(requests) ? requests : []).filter(req => {
+    if (!req) return false;
     if (typeFilter !== 'All' && req.requestType !== typeFilter) return false;
-    if (statusFilter !== 'All' && (req.status || 'Pending').toLowerCase() !== statusFilter.toLowerCase()) return false;
+    if (statusFilter !== 'All' && String(req.status || 'Pending').toLowerCase() !== statusFilter.toLowerCase()) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      const pidMatch = (req.pid || '').toLowerCase().includes(q);
-      const nameMatch = (req.name || '').toLowerCase().includes(q);
-      const userMatch = (req.requestedBy || '').toLowerCase().includes(q);
-      const optionMatch = (req.optionValue || '').toLowerCase().includes(q);
+      const pidMatch = String(req.pid || '').toLowerCase().includes(q);
+      const nameMatch = String(req.name || '').toLowerCase().includes(q);
+      const userMatch = String(req.requestedBy || '').toLowerCase().includes(q);
+      const optionMatch = String(req.optionValue || '').toLowerCase().includes(q);
       if (!pidMatch && !nameMatch && !userMatch && !optionMatch) return false;
     }
     return true;

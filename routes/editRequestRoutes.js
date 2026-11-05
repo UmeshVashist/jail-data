@@ -177,6 +177,16 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/edit-requests - List all edit requests (Root alias)
+router.get('/', async (req, res) => {
+  try {
+    const allRequests = await getEditRequests();
+    res.json({ success: true, data: allRequests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Fetch edit requests error: ' + err.message });
+  }
+});
+
 // GET /api/edit-requests/pending - List all pending edit requests
 router.get('/pending', requireDeleteRequestPermission, async (req, res) => {
   try {
@@ -214,7 +224,7 @@ router.get('/my-requests', async (req, res) => {
 });
 
 // POST /api/edit-requests/:id/approve - Approve edit request and apply updates to record
-router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => {
+const handleApproveEdit = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getEditRequests();
@@ -270,10 +280,12 @@ router.post('/:id/approve', requireDeleteRequestPermission, async (req, res) => 
   } catch (err) {
     res.status(500).json({ success: false, message: 'Approve edit request error: ' + err.message });
   }
-});
+};
+router.post('/:id/approve', requireDeleteRequestPermission, handleApproveEdit);
+router.put('/:id/approve', requireDeleteRequestPermission, handleApproveEdit);
 
 // POST /api/edit-requests/:id/reject - Reject edit request
-router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
+const handleRejectEdit = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getEditRequests();
@@ -293,7 +305,9 @@ router.post('/:id/reject', requireDeleteRequestPermission, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'Reject edit request error: ' + err.message });
   }
-});
+};
+router.post('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
+router.put('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
 
 // DELETE /api/edit-requests/:id/cancel - Cancel pending edit request by the user who sent it
 router.delete('/:id/cancel', async (req, res) => {

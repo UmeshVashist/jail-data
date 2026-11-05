@@ -76,11 +76,22 @@ export default function DataRecords() {
 
       const res = await api.get('/api/records', params);
       if (res && res.success) {
-        setRecords(res.data || []);
-        if (res.pagination) {
-          setTotalCount(res.pagination.total || 0);
-          setTotalPages(res.pagination.totalPages || 1);
-        }
+        const recordsList = Array.isArray(res.data) 
+          ? res.data 
+          : (res.data?.records || res.records || []);
+        
+        const total = typeof res.data?.totalRecords === 'number'
+          ? res.data.totalRecords
+          : (typeof res.totalCount === 'number'
+            ? res.totalCount
+            : (res.pagination?.total ?? recordsList.length));
+        
+        const effectivePageSize = pageSize === 'All' ? total : Number(pageSize || 25);
+        const pages = effectivePageSize > 0 ? Math.max(1, Math.ceil(total / effectivePageSize)) : 1;
+
+        setRecords(recordsList);
+        setTotalCount(total);
+        setTotalPages(res.pagination?.totalPages || pages);
       }
     } catch (err) {
       showToast('Error loading records: ' + err.message, 'danger');
@@ -221,7 +232,7 @@ export default function DataRecords() {
               }}
             >
               <option value="all">All Remarks</option>
-              {remarkOptions.map((opt, idx) => {
+              {Array.isArray(remarkOptions) && remarkOptions.map((opt, idx) => {
                 const val = opt && typeof opt === 'object' ? opt.optionValue : opt;
                 return (
                   <option key={idx} value={val}>
@@ -312,7 +323,7 @@ export default function DataRecords() {
                     Loading records...
                   </td>
                 </tr>
-              ) : records.length === 0 ? (
+              ) : !Array.isArray(records) || records.length === 0 ? (
                 <tr>
                   <td colSpan="10" className="text-center py-5 text-muted">
                     <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
@@ -320,7 +331,7 @@ export default function DataRecords() {
                   </td>
                 </tr>
               ) : (
-                records.map((rec, idx) => (
+                (records || []).map((rec, idx) => (
                   <tr key={rec.id || idx}>
                     <td className="fw-bold font-monospace">
                       <button
