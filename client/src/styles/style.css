@@ -4134,3 +4134,160 @@ body.theme-modern-3d .search-slash-kbd:hover {
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
   transform: scale(1.1) !important;
 }
+
+/* ==========================================================================
+   MODERN 3D CYBER THEME: SEARCH BARS, FILTER INPUTS & DATE CONTROLS
+   ========================================================================== */
+
+/* Remove white background from all search bars & inputs in Modern 3D Cyber Theme */
+body.theme-modern-3d .form-control,
+body.theme-modern-3d .search-slash-input,
+body.theme-modern-3d input[data-search-slash="true"],
+body.theme-modern-3d .filter-bar .form-control,
+body.theme-modern-3d .filter-bar .form-select,
+body.theme-modern-3d .input-group .form-control,
+body.theme-modern-3d .input-group .form-select,
+body.theme-modern-3d .custom-table-card .form-control,
+body.theme-modern-3d .custom-table-card .form-select,
+body.theme-modern-3d input[type="text"],
+body.theme-modern-3d input[type="search"] {
+  background: rgba(10, 16, 36, 0.85) !important;
+  background-color: rgba(10, 16, 36, 0.85) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 240, 255, 0.35) !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.08), inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+body.theme-modern-3d .form-control::placeholder,
+body.theme-modern-3d .search-slash-input::placeholder,
+body.theme-modern-3d input[data-search-slash="true"]::placeholder,
+body.theme-modern-3d .filter-bar .form-control::placeholder,
+body.theme-modern-3d input::placeholder {
+  color: rgba(147, 197, 253, 0.65) !important;
+}
+
+body.theme-modern-3d .form-control:focus,
+body.theme-modern-3d .search-slash-input:focus,
+body.theme-modern-3d input[data-search-slash="true"]:focus,
+body.theme-modern-3d .filter-bar .form-control:focus,
+body.theme-modern-3d .filter-bar .form-select:focus,
+body.theme-modern-3d .input-group .form-control:focus,
+body.theme-modern-3d input:focus {
+  background: rgba(13, 22, 45, 0.95) !important;
+  background-color: rgba(13, 22, 45, 0.95) !important;
+  color: #ffffff !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.45), inset 0 0 8px rgba(0, 240, 255, 0.2) !important;
+  outline: none !important;
+}
+
+/* Date Inputs & Calendar Icon Styling */
+.compact-date-input {
+  font-size: 0.85rem !important;
+  padding: 0.45rem 0.65rem !important;
+  height: 38px !important;
+}
+
+body.theme-modern-3d input[type="date"],
+body.dark-theme input[type="date"] {
+  background: rgba(10, 16, 36, 0.85) !important;
+  background-color: rgba(10, 16, 36, 0.85) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 240, 255, 0.35) !important;
+  color-scheme: dark !important;
+}
+
+/* Chrome, Edge, Safari Calendar Icon */
+body.theme-modern-3d input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) hue-rotate(180deg) brightness(1.8) !important;
+  cursor: pointer !important;
+  opacity: 0.85;
+  transition: all 0.2s ease-in-out;
+  padding: 2px;
+}
+
+body.theme-modern-3d input[type="date"]::-webkit-calendar-picker-indicator:hover,
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1) hue-rotate(180deg) brightness(2.4) drop-shadow(0 0 6px #00f0ff) !important;
+  transform: scale(1.15);
+}
+
+body.theme-classic input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   UT NO. BADGE PILL STYLING
+   ========================================================================== */
+.badge-ut-pill {
+  background: rgba(0, 240, 255, 0.1) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(0, 240, 255, 0.32) !important;
+  font-weight: 600;
+  padding: 0.35em 0.7em;
+  border-radius: 6px;
+  font-family: var(--bs-font-monospace);
+  letter-spacing: 0.04em;
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.12);
+  vertical-align: middle;
+}
+
+body.theme-classic .badge-ut-pill {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   VIEW RECORD MODAL STRUCTURED TABLE FORMAT
+   ========================================================================== */
+.view-record-table {
+  background: rgba(10, 16, 36, 0.65) !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.view-record-table th.view-th {
+  width: 22%;
+  background: rgba(0, 240, 255, 0.08) !important;
+  color: #a5f3fc !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-color: rgba(0, 240, 255, 0.2) !important;
+  padding: 0.75rem 1rem !important;
+  white-space: nowrap;
+}
+
+.view-record-table td.view-td {
+  width: 28%;
+  background: rgba(13, 22, 45, 0.55) !important;
+  border-color: rgba(0, 240, 255, 0.2) !important;
+  padding: 0.75rem 1rem !important;
+  vertical-align: middle;
+}
+
+body.theme-classic .view-record-table {
+  background: #ffffff !important;
+}
+
+body.theme-classic .view-record-table th.view-th {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-classic .view-record-table td.view-td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}

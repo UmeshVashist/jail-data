@@ -183,7 +183,7 @@ export default function DataRecords() {
       <div className="filter-bar p-3 rounded-3 mb-4 custom-table-card">
         <div className="row g-2 align-items-center">
           {/* 1. Search Query Input with '/' shortcut badge */}
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-md-5 col-xl-3">
             <div className="position-relative">
               <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
               <input
@@ -204,7 +204,7 @@ export default function DataRecords() {
           </div>
 
           {/* 2. Type Filter (All, UT, CT) */}
-          <div className="col-6 col-md-2">
+          <div className="col-6 col-sm-3 col-md-3 col-xl-2">
             <select
               id="filter-record-type"
               className="form-select custom-modern-dropdown"
@@ -221,7 +221,7 @@ export default function DataRecords() {
           </div>
 
           {/* 3. Remark Filter */}
-          <div className="col-6 col-md-2">
+          <div className="col-6 col-sm-3 col-md-4 col-xl-2">
             <select
               id="filter-record-remark"
               className="form-select custom-modern-dropdown"
@@ -244,10 +244,10 @@ export default function DataRecords() {
           </div>
 
           {/* 4. Date Range: From */}
-          <div className="col-5 col-md-1.5">
+          <div className="col-6 col-sm-3 col-md-5 col-xl-2">
             <input
               type="date"
-              className="form-control text-white"
+              className="form-control text-white compact-date-input"
               title="From Date"
               value={startDate}
               onChange={(e) => {
@@ -258,10 +258,10 @@ export default function DataRecords() {
           </div>
 
           {/* 5. Date Range: To */}
-          <div className="col-5 col-md-1.5">
+          <div className="col-6 col-sm-3 col-md-5 col-xl-2">
             <input
               type="date"
-              className="form-control text-white"
+              className="form-control text-white compact-date-input"
               title="To Date"
               value={endDate}
               onChange={(e) => {
@@ -272,7 +272,7 @@ export default function DataRecords() {
           </div>
 
           {/* Reset Filters Button */}
-          <div className="col-2 col-md-1 text-end">
+          <div className="col-12 col-sm-12 col-md-2 col-xl-1 text-end">
             <button
               type="button"
               className="btn btn-outline-danger w-100"
@@ -359,7 +359,7 @@ export default function DataRecords() {
                     </td>
                     <td className="text-muted">{rec.father || '-'}</td>
                     <td>
-                      <span className="badge bg-secondary font-monospace">{rec.utNo || '-'}</span>
+                      <span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span>
                     </td>
                     <td className="font-monospace small text-white">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>

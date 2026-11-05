@@ -13,6 +13,8 @@ import EditRecordModal from '../components/modals/EditRecordModal';
 import RequestEditModal from '../components/modals/RequestEditModal';
 import DeleteRecordModal from '../components/modals/DeleteRecordModal';
 import RequestDeleteModal from '../components/modals/RequestDeleteModal';
+import TodayRecordsModal from '../components/modals/TodayRecordsModal';
+import TotalUsersModal from '../components/modals/TotalUsersModal';
 
 export default function Dashboard() {
   const { user, isAdmin, canImport } = useAuth();
@@ -28,6 +30,8 @@ export default function Dashboard() {
 
   // Modals state
   const [addRecordOpen, setAddRecordOpen] = useState(false);
+  const [todayModalOpen, setTodayModalOpen] = useState(false);
+  const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState(null);
   const [editRecord, setEditRecord] = useState(null);
   const [reqEditRecord, setReqEditRecord] = useState(null);
@@ -95,9 +99,9 @@ export default function Dashboard() {
         <div className="col-12 col-sm-6 col-xl-3">
           <div
             className="card stat-card h-100 p-3"
-            onClick={() => navigate('/records?today=true')}
+            onClick={() => setTodayModalOpen(true)}
             style={{ cursor: 'pointer' }}
-            title="Click to view today's records"
+            title="Click to view today's records popup"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
@@ -115,9 +119,9 @@ export default function Dashboard() {
         <div className="col-12 col-sm-6 col-xl-3">
           <div
             className="card stat-card h-100 p-3"
-            onClick={() => isAdmin && navigate('/users')}
-            style={{ cursor: isAdmin ? 'pointer' : 'default' }}
-            title={isAdmin ? 'Click to manage users' : 'Total user accounts'}
+            onClick={() => setUsersModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+            title="Click to view user accounts popup"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
@@ -206,7 +210,7 @@ export default function Dashboard() {
                     </td>
                     <td className="fw-semibold text-white">{rec.name}</td>
                     <td className="text-muted">{rec.father || '-'}</td>
-                    <td><span className="badge bg-secondary">{rec.utNo || '-'}</span></td>
+                    <td><span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span></td>
                     <td className="font-monospace small text-white">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>
                     <td className="small text-white">{rec.createdBy || '-'}</td>
@@ -281,6 +285,19 @@ export default function Dashboard() {
         record={reqDelRecord}
         onClose={() => setReqDelRecord(null)}
         onRequestSubmitted={() => fetchDashboardData()}
+      />
+      <TodayRecordsModal
+        isOpen={todayModalOpen}
+        onClose={() => setTodayModalOpen(false)}
+        onViewRecord={(rec) => setViewRecord(rec)}
+        onEditRecord={(rec) => setEditRecord(rec)}
+        onRequestEdit={(rec) => setReqEditRecord(rec)}
+        onDeleteRecord={(rec) => setDelRecord(rec)}
+        onRequestDelete={(rec) => setReqDelRecord(rec)}
+      />
+      <TotalUsersModal
+        isOpen={usersModalOpen}
+        onClose={() => setUsersModalOpen(false)}
       />
     </div>
   );
