@@ -15,9 +15,9 @@ export function ThemeProvider({ children }) {
     localStorage.setItem('informaction_theme', theme);
     if (theme === 'modern') {
       document.body.classList.remove('theme-classic');
-      document.body.classList.add('theme-modern-3d');
+      document.body.classList.add('theme-modern-3d', 'dark-theme');
     } else {
-      document.body.classList.remove('theme-modern-3d');
+      document.body.classList.remove('theme-modern-3d', 'dark-theme');
       document.body.classList.add('theme-classic');
     }
   }, [theme]);

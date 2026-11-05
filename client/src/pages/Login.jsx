@@ -29,7 +29,12 @@ export default function Login() {
       await login(username.trim(), password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Invalid Username or Password.');
+      const msg = err.message || 'Invalid Username or Password.';
+      if (!msg.toLowerCase().includes('successful')) {
+        setError(msg);
+      } else {
+        navigate('/dashboard');
+      }
     } finally {
       setLoading(false);
     }

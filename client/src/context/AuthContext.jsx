@@ -93,13 +93,13 @@ export function AuthProvider({ children }) {
   const login = async (username, password, rememberMe) => {
     const res = await api.post('/api/auth/login', { username, password, rememberMe });
     const userData = res ? (res.user || res.data) : null;
-    if (res && res.success && userData) {
+    if (res && (res.success || userData)) {
       setUser(userData);
       lastActivityRef.current = Date.now();
-      showToast(res.message || `Welcome back, ${userData.username}!`, 'success');
+      showToast(res.message || `Welcome back, ${userData?.username || username}!`, 'success');
       return userData;
     }
-    throw new Error((res && res.message) || 'Login failed.');
+    throw new Error((res && res.message) || 'Invalid Username or Password.');
   };
 
   const logout = async () => {

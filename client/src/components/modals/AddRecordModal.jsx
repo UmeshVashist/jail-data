@@ -3,12 +3,13 @@
  * Add Record Modal with Single-Click Protection & Dynamic Remark Options
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
   const { showToast } = useAuth();
+  const submittingLockRef = useRef(false);
   const [remarkOptions, setRemarkOptions] = useState([]);
   const [pid, setPid] = useState('');
   const [name, setName] = useState('');
@@ -81,12 +82,14 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     setDate(new Date().toISOString().slice(0, 10));
     setRemark('');
     setIsAadharDisabled(false);
+    submittingLockRef.current = false;
     setIsSubmitting(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    // Synchronous immediate lock check to prevent rapid double-clicks
+    if (submittingLockRef.current || isSubmitting) return;
 
     if (!pid.trim()) {
       showToast('PID is required.', 'warning');
@@ -97,6 +100,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
       return;
     }
 
+    submittingLockRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -104,6 +108,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
       const checkRes = await api.get(`/api/records/check-pid/${encodeURIComponent(pid.trim())}`);
       if (checkRes.exists) {
         showToast(`Record with PID "${pid.trim()}" already exists!`, 'danger');
+        submittingLockRef.current = false;
         setIsSubmitting(false);
         return;
       }
@@ -127,10 +132,12 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
         if (onRecordAdded) onRecordAdded(res.data);
       } else {
         showToast(res.message || 'Failed to add record.', 'danger');
+        submittingLockRef.current = false;
         setIsSubmitting(false);
       }
     } catch (err) {
       showToast(err.message || 'Error saving record.', 'danger');
+      submittingLockRef.current = false;
       setIsSubmitting(false);
     }
   };

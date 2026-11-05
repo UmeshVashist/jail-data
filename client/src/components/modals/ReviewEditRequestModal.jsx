@@ -15,14 +15,14 @@ export default function ReviewEditRequestModal({ isOpen, onClose, request, onAct
 
   const prop = request.proposedData || {};
 
-  // Normalize comparisons so formatting differences don't falsely show [Changed]
+  // Normalize comparisons so formatting differences or empty placeholders don't falsely show [Changed]
   const normAadhar = (val) => {
-    if (!val || val === '-' || val === '#N/A') return '';
+    if (!val || val === '-' || val === '#N/A' || String(val).toLowerCase() === 'null' || String(val).toLowerCase() === 'undefined') return '';
     return String(val).replace(/\D/g, '').slice(0, 12);
   };
 
   const normDate = (val) => {
-    if (!val || val === '-' || val === '#N/A') return '';
+    if (!val || val === '-' || val === '#N/A' || String(val).toLowerCase() === 'null' || String(val).toLowerCase() === 'undefined') return '';
     const s = String(val).trim();
     const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
     if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
@@ -32,8 +32,9 @@ export default function ReviewEditRequestModal({ isOpen, onClose, request, onAct
   };
 
   const normStr = (val) => {
-    if (!val || val === '-' || val === '#N/A') return '';
-    return String(val).trim().toLowerCase();
+    if (!val || val === '-' || val === '#N/A' || String(val).toLowerCase() === 'null' || String(val).toLowerCase() === 'undefined') return '';
+    const clean = String(val).trim().toLowerCase();
+    return (clean === 'none' || clean === '-- select remark --') ? '' : clean;
   };
 
   const isNameChanged = prop.name !== undefined && normStr(prop.name) !== normStr(request.name);

@@ -62,11 +62,30 @@ function sanitizePayload(payload) {
 function terminalRequestLogger(req, res, next) {
   const startTime = process.hrtime();
   let capturedResponseJson = null;
+  let cachedUser = 'Guest';
+
+  // Safely extract user before response finishes (NEVER access req.session inside res.on('finish') to avoid ERR_HTTP_HEADERS_SENT)
+  try {
+    if (req.user?.username) {
+      cachedUser = req.user.username;
+    } else if (req.session?.user?.username) {
+      cachedUser = req.session.user.username;
+    }
+  } catch (e) {}
 
   // Intercept res.json to capture response message for diagnostic logging
   const originalJson = res.json.bind(res);
   res.json = function (body) {
     capturedResponseJson = body;
+    try {
+      if (req.user?.username) {
+        cachedUser = req.user.username;
+      } else if (req.session?.user?.username) {
+        cachedUser = req.session.user.username;
+      } else if (body?.user?.username) {
+        cachedUser = body.user.username;
+      }
+    } catch (e) {}
     return originalJson(body);
   };
 
@@ -76,7 +95,7 @@ function terminalRequestLogger(req, res, next) {
     const statusCode = res.statusCode;
     const method = req.method.toUpperCase().padEnd(6, ' ');
     const url = req.originalUrl || req.url;
-    const user = req.session?.user?.username || req.user?.username || 'Guest';
+    const user = cachedUser || req.user?.username || 'Guest';
 
     // Skip verbose logs for static bundle assets to keep terminal clean
     if (url.startsWith('/assets/') || url.endsWith('.ico') || url.endsWith('.png') || url.endsWith('.map')) {

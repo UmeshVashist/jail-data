@@ -9,7 +9,17 @@ const cors = require('cors');
 const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Support .env.local, .env, and root environment configuration
+const envLocalPath = path.join(__dirname, '.env.local');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+}
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath, override: true });
+}
 
 // Initialize Cloudflare R2 Database Service
 const { initCloudflareStorage, getIsConnected } = require('./config/cloudflareStorage');
@@ -78,6 +88,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Disable ETags and Browser Caching for all Dynamic API Routes (Prevents 304 Not Modified stalls)
+app.use('/api', (req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  });
+  next();
+});
+
 // Resolve Static Asset Path (Serves compiled React + Vite production bundle)
 const clientDistPath = path.join(__dirname, 'client', 'dist');
 const staticPath = clientDistPath;
@@ -106,6 +127,12 @@ app.use('/api/ps', psRoutes);
 app.get('*', (req, res) => {
   const indexHtml = path.join(staticPath, 'index.html');
   if (fs.existsSync(indexHtml)) {
+    // Add no-cache for index.html so client updates are immediately reflected
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
     return res.sendFile(indexHtml);
   }
   return res.status(503).send('React app is building or client/dist is not found. Please run npm run build:client');

@@ -568,15 +568,19 @@ body.dark-theme .form-check-input:indeterminate {
    Modern Table Card & Custom Scrollable Components
    ========================================================================== */
 .custom-table-card {
-  background: #ffffff;
+  background: linear-gradient(180deg, rgba(14, 21, 46, 0.92) 0%, rgba(7, 11, 26, 0.97) 100%) !important;
   border-radius: var(--card-radius);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--card-border);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.3) !important;
   overflow: hidden;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  color: #f8fafc !important;
 }
 
 .custom-table-card .table-responsive {
   min-height: 250px;
+  background: transparent !important;
 }
 
 .custom-table-card .dropdown {
@@ -621,36 +625,62 @@ body.dark-theme .form-check-input:indeterminate {
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4) !important;
 }
 
-.custom-table-card table {
+.custom-table-card table,
+.custom-table-card .table {
   margin-bottom: 0;
+  --bs-table-bg: transparent !important;
+  --bs-table-accent-bg: transparent !important;
+  --bs-table-striped-bg: transparent !important;
+  --bs-table-hover-bg: rgba(0, 240, 255, 0.12) !important;
+  --bs-table-hover-color: #ffffff !important;
+  --bs-table-color: #f1f5f9 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(0, 240, 255, 0.15) !important;
 }
 
-.custom-table-card table th {
-  background-color: #f8fafc;
-  color: #475569;
-  font-size: 0.75rem;
-  font-weight: 700;
+.custom-table-card table th,
+.custom-table-card .table th {
+  background: rgba(10, 16, 36, 0.96) !important;
+  color: #38bdf8 !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.95rem 1.1rem;
-  border-bottom: 1px solid var(--card-border);
+  letter-spacing: 0.05em;
+  padding: 0.65rem 0.85rem !important;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.5) !important;
   white-space: nowrap;
 }
 
-.custom-table-card table td {
-  padding: 0.9rem 1.1rem;
-  font-size: 0.875rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+.custom-table-card table td,
+.custom-table-card .table td {
+  padding: 0.65rem 0.85rem !important;
+  font-size: 0.82rem !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.12) !important;
   vertical-align: middle;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
-.custom-table-card table tbody tr {
-  transition: background-color 0.15s ease-in-out;
+.custom-table-card table tbody tr,
+.custom-table-card .table tbody tr {
+  transition: all 0.18s ease-in-out;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
-.custom-table-card table tbody tr:hover {
-  background-color: #f8fafc;
+.custom-table-card table tbody tr:hover,
+.custom-table-card .table tbody tr:hover {
+  background-color: rgba(0, 240, 255, 0.12) !important;
+  box-shadow: inset 3px 0 0 #00f0ff, 0 0 12px rgba(0, 240, 255, 0.18) !important;
+}
+
+.custom-table-card table tbody tr:hover td,
+.custom-table-card .table tbody tr:hover td {
+  color: #ffffff !important;
+  background-color: rgba(0, 240, 255, 0.08) !important;
 }
 
 /* Sortable Table Header Styling */

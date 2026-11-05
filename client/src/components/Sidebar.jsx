@@ -11,9 +11,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
   const { user, logout, isAdmin, canImport, canAccessPS } = useAuth();
   const navigate = useNavigate();
 
-  const handleNav = (e, path) => {
-    e.preventDefault();
-    navigate(path);
+  const handleNav = () => {
     if (setMobileOpen) setMobileOpen(false);
   };
 
@@ -25,7 +23,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
           to="/dashboard"
           id="brand-logo-link"
           className="navbar-brand d-flex align-items-center gap-2 m-0 text-decoration-none"
-          onClick={(e) => handleNav(e, '/dashboard')}
+          onClick={handleNav}
         >
           <div className="brand-icon-3d">
             <i className="bi bi-layers-half text-cyan fs-4"></i>
@@ -51,7 +49,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
             to="/dashboard"
             id="nav-dashboard"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={(e) => handleNav(e, '/dashboard')}
+            onClick={handleNav}
           >
             <div className="nav-icon-3d nav-icon-dashboard">
               <i className="bi bi-speedometer2"></i>
@@ -66,7 +64,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
             to="/records"
             id="nav-records"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={(e) => handleNav(e, '/records')}
+            onClick={handleNav}
           >
             <div className="nav-icon-3d nav-icon-records">
               <i className="bi bi-table"></i>
@@ -82,7 +80,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
               to="/import"
               id="nav-import"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={(e) => handleNav(e, '/import')}
+              onClick={handleNav}
             >
               <div className="nav-icon-3d nav-icon-import">
                 <i className="bi bi-file-earmark-arrow-up-fill"></i>
@@ -99,7 +97,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
               to="/all-requests"
               id="nav-all-requests"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={(e) => handleNav(e, '/all-requests')}
+              onClick={handleNav}
             >
               <div className="nav-icon-3d nav-icon-all-requests">
                 <i className="bi bi-inbox-fill"></i>
@@ -115,7 +113,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
             to="/my-requests"
             id="nav-my-requests"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={(e) => handleNav(e, '/my-requests')}
+            onClick={handleNav}
           >
             <div className="nav-icon-3d nav-icon-my-requests">
               <i className="bi bi-send-fill"></i>
@@ -131,7 +129,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
               to="/users"
               id="nav-users"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={(e) => handleNav(e, '/users')}
+              onClick={handleNav}
             >
               <div className="nav-icon-3d nav-icon-users">
                 <i className="bi bi-people-fill"></i>
@@ -148,7 +146,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
               to="/ps"
               id="nav-ps"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={(e) => handleNav(e, '/ps')}
+              onClick={handleNav}
             >
               <div className="nav-icon-3d nav-icon-ps">
                 <i className="bi bi-shield-check"></i>
@@ -165,7 +163,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
               to="/settings"
               id="nav-settings"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={(e) => handleNav(e, '/settings')}
+              onClick={handleNav}
             >
               <div className="nav-icon-3d nav-icon-settings">
                 <i className="bi bi-gear-wide-connected"></i>

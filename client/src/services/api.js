@@ -6,8 +6,11 @@ async function request(url, options = {}) {
   const config = {
     ...options,
     credentials: 'include',
+    cache: 'no-store', // Ensures dynamic API requests never stall on 304 or browser cache
     headers: {
       'Content-Type': 'application/json',
+      'Pragma': 'no-cache',
+      'Cache-Control': 'no-cache',
       ...options.headers
     }
   };
@@ -22,7 +25,7 @@ async function request(url, options = {}) {
   const response = await fetch(url, config);
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 304) {
     const errorMsg = data.message || `Request failed with status ${response.status}`;
     const err = new Error(errorMsg);
     err.status = response.status;
