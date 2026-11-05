@@ -80,3 +80,4 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
     </div>
   );
 }
+

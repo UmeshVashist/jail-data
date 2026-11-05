@@ -308,3 +308,4 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     </div>
   );
 }
+

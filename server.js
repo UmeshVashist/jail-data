@@ -1,5 +1,6 @@
 /**
  * server.js - Express Application Server Entry Point (Cloudflare R2 Database Service)
+ * Fully equipped with real-time terminal request logging and visual error diagnostics
  */
 
 const express = require('express');
@@ -12,6 +13,17 @@ require('dotenv').config();
 
 // Initialize Cloudflare R2 Database Service
 const { initCloudflareStorage, getIsConnected } = require('./config/cloudflareStorage');
+
+// Terminal Request Logger & Visual Error Diagnostics
+const {
+  terminalRequestLogger,
+  terminalErrorHandler,
+  setupProcessErrorDiagnostics,
+  COLORS
+} = require('./middleware/terminalLogger');
+
+// Enable process-level unhandled rejection / exception diagnostics
+setupProcessErrorDiagnostics();
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -52,6 +64,9 @@ app.use(
   })
 );
 
+// Real-Time Color-Coded Terminal Logger for all requests & status codes
+app.use(terminalRequestLogger);
+
 // Non-blocking auto-reconnect for Cloudflare R2 if disconnected (never stalls HTTP requests)
 let lastReconnectAttempt = 0;
 app.use((req, res, next) => {
@@ -63,16 +78,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Resolve Static Asset Path (Prioritizes compiled React + Vite production bundle, fallbacks to public)
+// Resolve Static Asset Path (Serves compiled React + Vite production bundle)
 const clientDistPath = path.join(__dirname, 'client', 'dist');
-const staticPath = fs.existsSync(clientDistPath) ? clientDistPath : path.join(__dirname, 'public');
+const staticPath = clientDistPath;
 
 // Serve Static Frontend Assets with Smart Browser Caching & ETags
-app.use(express.static(staticPath, {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : '1h',
-  etag: true,
-  lastModified: true
-}));
+if (fs.existsSync(staticPath)) {
+  app.use(express.static(staticPath, {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : '1h',
+    etag: true,
+    lastModified: true
+  }));
+}
 
 // Mount API Routes
 app.use('/api/auth', authRoutes);
@@ -87,22 +104,30 @@ app.use('/api/ps', psRoutes);
 
 // Fallback Route to serve Single Page Application
 app.get('*', (req, res) => {
-  res.sendFile(path.join(staticPath, 'index.html'));
+  const indexHtml = path.join(staticPath, 'index.html');
+  if (fs.existsSync(indexHtml)) {
+    return res.sendFile(indexHtml);
+  }
+  return res.status(503).send('React app is building or client/dist is not found. Please run npm run build:client');
 });
+
+// Centralized Terminal Error Handler (Catches all uncaught route errors with full stack trace)
+app.use(terminalErrorHandler);
 
 // Boot Server for Local Development
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const server = app.listen(PORT, async () => {
-    console.log(`=======================================================`);
-    console.log(`  Data Management Portal Server running on:`);
-    console.log(`  http://localhost:${PORT}`);
-    console.log(`=======================================================`);
+    console.log(`\n=======================================================`);
+    console.log(`  🚀 ${COLORS.brightCyan}${COLORS.bold}JAM Portal Server Running${COLORS.reset}`);
+    console.log(`  🔗 ${COLORS.bold}Local URL:${COLORS.reset} http://localhost:${PORT}`);
+    console.log(`  🔍 ${COLORS.bold}Terminal Diagnostics:${COLORS.reset} ${COLORS.brightGreen}ENABLED (Real-time colored logs & errors)${COLORS.reset}`);
+    console.log(`=======================================================\n`);
     await initCloudflareStorage();
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`\n[ERROR] Port ${PORT} is already in use.`);
+      console.error(`\n${COLORS.brightRed}[ERROR] Port ${PORT} is already in use.${COLORS.reset}\n`);
     } else {
       console.error('Server error:', err);
     }

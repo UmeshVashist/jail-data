@@ -10,11 +10,22 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 router.use(requireAuth);
 router.use(requireAdmin);
 
-// GET /api/users - Get list of users
+// GET /api/users - Get list of users (Sanitized: Passwords NEVER exposed)
 router.get('/', async (req, res) => {
   try {
     const users = await getUsers();
-    res.json({ success: true, data: users });
+    const sanitized = users.map(u => ({
+      id: u.id,
+      rowIndex: u.rowIndex,
+      username: u.username,
+      role: u.role,
+      importPermission: !!u.importPermission,
+      fullAccess: !!u.fullAccess,
+      deleteRequestPermission: !!u.deleteRequestPermission,
+      psListPermission: !!u.psListPermission,
+      status: u.status
+    }));
+    res.json({ success: true, data: sanitized });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Fetch users error: ' + err.message });
   }

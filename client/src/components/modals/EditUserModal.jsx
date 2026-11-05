@@ -185,3 +185,4 @@ export default function EditUserModal({ isOpen, onClose, targetUser, onUserUpdat
     </div>
   );
 }
+

@@ -177,6 +177,13 @@ async function readFromR2(key) {
       const content = await streamToString(res.Body);
       const parsed = JSON.parse(content);
       if (parsed) {
+        if (key === R2_KEYS.USERS && Array.isArray(parsed)) {
+          parsed.forEach(u => {
+            if (u.password && !u.password.startsWith('$2a$') && !u.password.startsWith('$2b$')) {
+              u.password = bcrypt.hashSync(u.password.trim(), 10);
+            }
+          });
+        }
         saveLocal(key, parsed);
         return parsed;
       }
@@ -302,8 +309,23 @@ async function ensureUsersSynced(force = false) {
     try {
       const remote = await readFromR2(R2_KEYS.USERS);
       if (remote && Array.isArray(remote)) {
-        memoryStore.users = remote;
+        let changed = false;
+        const normalized = remote.map(u => {
+          let pass = (u.password || '').toString().trim();
+          if (pass && !pass.startsWith('$2a$') && !pass.startsWith('$2b$') && !pass.startsWith('$2y$')) {
+            pass = bcrypt.hashSync(pass, 10);
+            changed = true;
+          }
+          return {
+            ...u,
+            password: pass
+          };
+        });
+        memoryStore.users = normalized;
         lastSyncTimestamps.users = Date.now();
+        if (changed) {
+          saveToR2(R2_KEYS.USERS, memoryStore.users).catch(() => {});
+        }
       }
     } catch (err) {
       console.warn('[Sync Users Warning]:', err.message);
@@ -706,11 +728,21 @@ async function syncAllCollections() {
   if (!isConnected) return;
 
   try {
-    // 1. Users
+    // 1. Users (Enforce Bcrypt Password Hashing in Cloudflare R2 and Memory)
     const r2Users = await readFromR2(R2_KEYS.USERS);
-    if (r2Users && Array.isArray(r2Users) && r2Users.length > 0) {
-      memoryStore.users = r2Users;
-    } else {
+    let usersList = (r2Users && Array.isArray(r2Users) && r2Users.length > 0) ? r2Users : (memoryStore.users || []);
+    let needsR2Update = false;
+    usersList = usersList.map(u => {
+      let pass = (u.password || '').toString().trim();
+      if (pass && !pass.startsWith('$2a$') && !pass.startsWith('$2b$') && !pass.startsWith('$2y$')) {
+        pass = bcrypt.hashSync(pass, 10);
+        needsR2Update = true;
+      }
+      return { ...u, password: pass };
+    });
+    memoryStore.users = usersList;
+    saveLocal(R2_KEYS.USERS, memoryStore.users);
+    if (needsR2Update || !r2Users || r2Users.length === 0) {
       await saveToR2(R2_KEYS.USERS, memoryStore.users);
     }
 
@@ -871,11 +903,15 @@ async function getUserByUsername(username) {
 async function createUser(userObj) {
   await ensureUsersSynced(true);
   const newId = memoryStore.users.length > 0 ? Math.max(...memoryStore.users.map(u => u.id || 0)) + 1 : 1;
+  const rawPass = (userObj.password || '').toString().trim();
+  const isHashed = rawPass.startsWith('$2a$') || rawPass.startsWith('$2b$') || rawPass.startsWith('$2y$');
+  const hashedPassword = isHashed ? rawPass : bcrypt.hashSync(rawPass, 10);
+
   const newUser = {
     id: newId,
     rowIndex: newId,
     username: userObj.username.trim(),
-    password: userObj.password,
+    password: hashedPassword,
     role: userObj.role || 'View',
     importPermission: !!userObj.importPermission,
     fullAccess: !!userObj.fullAccess,
@@ -885,6 +921,15 @@ async function createUser(userObj) {
   };
 
   memoryStore.users.push(newUser);
+
+  // Sync to local SQLite
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(
+      'INSERT INTO users (username, password, role, import_permission, full_access, delete_request_permission, ps_list_permission, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [newUser.username, newUser.password, newUser.role, newUser.importPermission ? 1 : 0, newUser.fullAccess ? 1 : 0, newUser.deleteRequestPermission ? 1 : 0, newUser.psListPermission ? 1 : 0, newUser.status]
+    );
+  } catch (e) {}
 
   // Sync to Cloudflare R2
   await saveToR2(R2_KEYS.USERS, memoryStore.users);
@@ -897,7 +942,13 @@ async function updateUser(rowIndex, updateFields) {
   const target = memoryStore.users.find(u => (u.id === parseInt(rowIndex, 10) || u.rowIndex === parseInt(rowIndex, 10)));
   if (!target) return false;
 
-  if (updateFields.password) target.password = updateFields.password;
+  let passwordChanged = false;
+  if (updateFields.password) {
+    const rawPass = updateFields.password.toString().trim();
+    const isHashed = rawPass.startsWith('$2a$') || rawPass.startsWith('$2b$') || rawPass.startsWith('$2y$');
+    target.password = isHashed ? rawPass : bcrypt.hashSync(rawPass, 10);
+    passwordChanged = true;
+  }
   if (updateFields.role) target.role = updateFields.role;
   if (updateFields.importPermission !== undefined) target.importPermission = !!updateFields.importPermission;
   if (updateFields.fullAccess !== undefined) target.fullAccess = !!updateFields.fullAccess;
@@ -910,9 +961,9 @@ async function updateUser(rowIndex, updateFields) {
     const { dbRun } = require('./database');
     let sql = 'UPDATE users SET role = ?, import_permission = ?, full_access = ?, delete_request_permission = ?, ps_list_permission = ?, status = ?';
     let params = [target.role, target.importPermission ? 1 : 0, target.fullAccess ? 1 : 0, target.deleteRequestPermission ? 1 : 0, target.psListPermission ? 1 : 0, target.status];
-    if (updateFields.password) {
+    if (passwordChanged) {
       sql += ', password = ?';
-      params.push(bcrypt.hashSync(updateFields.password, 10));
+      params.push(target.password);
     }
     sql += ' WHERE username = ?';
     params.push(target.username);

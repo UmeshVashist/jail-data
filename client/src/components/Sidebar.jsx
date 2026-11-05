@@ -175,3 +175,4 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
     </nav>
   );
 }
+

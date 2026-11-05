@@ -132,3 +132,4 @@ export default function SelfChangePasswordModal({ isOpen, onClose }) {
     </div>
   );
 }
+

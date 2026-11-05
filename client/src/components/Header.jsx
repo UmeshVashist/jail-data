@@ -142,3 +142,4 @@ export default function Header({ toggleMobileSidebar, onOpenSelfPassword }) {
     </header>
   );
 }
+

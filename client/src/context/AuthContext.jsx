@@ -29,10 +29,11 @@ export function AuthProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await api.get('/api/auth/me');
-      if (res && res.success && res.user) {
-        setUser(res.user);
-        return res.user;
+      const res = await api.get('/api/auth/session');
+      const userData = res ? (res.user || res.data) : null;
+      if (res && res.success && userData) {
+        setUser(userData);
+        return userData;
       } else {
         setUser(null);
         return null;
@@ -91,13 +92,14 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password, rememberMe) => {
     const res = await api.post('/api/auth/login', { username, password, rememberMe });
-    if (res && res.success && res.user) {
-      setUser(res.user);
+    const userData = res ? (res.user || res.data) : null;
+    if (res && res.success && userData) {
+      setUser(userData);
       lastActivityRef.current = Date.now();
-      showToast(res.message || `Welcome back, ${res.user.username}!`, 'success');
-      return res.user;
+      showToast(res.message || `Welcome back, ${userData.username}!`, 'success');
+      return userData;
     }
-    throw new Error(res.message || 'Login failed.');
+    throw new Error((res && res.message) || 'Login failed.');
   };
 
   const logout = async () => {
@@ -134,3 +136,4 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+

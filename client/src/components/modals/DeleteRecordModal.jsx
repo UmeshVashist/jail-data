@@ -76,3 +76,4 @@ export default function DeleteRecordModal({ isOpen, onClose, record, onRecordDel
     </div>
   );
 }
+

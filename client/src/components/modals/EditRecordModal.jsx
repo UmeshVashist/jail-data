@@ -256,3 +256,4 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
     </div>
   );
 }
+
