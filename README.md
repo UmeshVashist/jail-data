@@ -1,67 +1,140 @@
-# Node.js Data Management Web Application (Cloudflare R2 Database)
+# JAM Portal - React.js + Node.js + Cloudflare R2
 
-Full-stack **Node.js Web Application** built using **Express.js**, **Cloudflare R2 (S3 API)**, **Bootstrap 5 UI**, and **SheetJS**.
-
-Cloudflare R2 serves as the primary live database:
-- **`data/records.json`**: Stores all data records.
-- **`data/users.json`**: Stores user accounts and permission roles.
-- **`data/delete_requests.json`**: Stores delete requests and audit trails.
-- **`data/edit_requests.json`**: Stores edit requests and approval status.
-- **`data/list_add_requests.json`**: Stores dropdown add requests.
-- **`data/remark_options.json`**: Stores dynamic dropdown options.
-- **`data/system_settings.json`**: Stores system settings.
+Enterprise Data Management Portal built with **React.js (Vite)**, **Node.js (Express)**, **Cloudflare R2 Object Storage**, and **Bootstrap 5 / Modern 3D Cyber Theme**.
 
 ---
 
-## Technical Stack & Dependencies
+## 🚀 Architecture Overview
 
-- **Backend Runtime**: Node.js
-- **Web Framework**: Express.js (`server.js`)
-- **Database Engine**: Cloudflare R2 via AWS S3 SDK (`@aws-sdk/client-s3`)
-- **Authentication**: `cookie-session`, `bcryptjs` password hashing against Cloudflare users
-- **Frontend SPA**: HTML5, CSS3, Vanilla JS, Bootstrap 5, Bootstrap Icons, SheetJS (`xlsx`)
+- **Frontend (`client/`)**:
+  - React 18 with Vite
+  - React Router DOM v6
+  - Dual-Theme System: `Classic UI` & `Modern 3D Cyber UI` (with dynamic WebGL 3D Canvas background)
+  - 15 Interactive Modals (Add, Edit, View, Delete, Requests, Approvals, User Management, Police Stations)
+  - Global Keyboard Shortcut `/` for instant search bar activation
+  - 12-Hour Modification Protection for normal users
+  - Single-Click Prevention on record submissions
+- **Backend (`server.js`, `routes/`, `middleware/`, `config/`)**:
+  - Node.js & Express.js (Vercel Serverless Function compatible)
+  - HTTP Gzip/Deflate Compression (`compression`) for 80-90% faster transfers
+  - Non-blocking In-Memory Cache with asynchronous background Cloudflare R2 synchronization
+  - Session authentication with `cookie-session` and `bcryptjs`
+- **Database & Storage**:
+  - **Cloudflare R2**: Persistent single source of truth for records, users, requests, options, and police stations.
+  - **Local SQLite / JSON**: Resilient offline fallback and startup cache.
+  - **Google Sheets**: **100% Removed** from application data storage and dependencies.
+- **Deployment**:
+  - Pre-configured for **Vercel** serverless hosting with SPA rewrites.
 
 ---
 
-## Cloudflare R2 Configuration (.env)
+## 🛠️ Project Structure
 
-All Cloudflare API credentials are stored securely in `.env`:
-```env
-# Server Configuration
-PORT=3000
-SESSION_SECRET=a_very_secure_secret_key_12345
-
-# Cloudflare R2 S3 API Configuration
-CLOUDFLARE_ACCOUNT_ID="d3256a283a9793df959adf1319132806"
-CLOUDFLARE_R2_ENDPOINT="https://d3256a283a9793df959adf1319132806.r2.cloudflarestorage.com"
-CLOUDFLARE_R2_ACCESS_KEY_ID="52351084215d9bf76974cde9dfc64256"
-CLOUDFLARE_R2_SECRET_ACCESS_KEY="db57659ad71fba605ec3da2d473c31a50e0690e5e6d70d1995692d6e2fab815a"
-CLOUDFLARE_R2_BUCKET_NAME="jam-data"
+```text
+JAM data/
+├── client/                     # React.js + Vite Frontend
+│   ├── public/                 # Static assets (3D background engine)
+│   ├── src/
+│   │   ├── components/         # Navbar, Sidebar, 3D Canvas, Modals (15 Modals)
+│   │   ├── context/            # AuthContext & ThemeContext
+│   │   ├── layouts/            # MainLayout (Shell)
+│   │   ├── pages/              # Dashboard, Records, Import, Requests, Users, PS, Settings, Login
+│   │   ├── services/           # Unified API client (fetch)
+│   │   ├── styles/             # style.css (Classic & Modern 3D Cyber CSS)
+│   │   ├── App.jsx             # React Router routing
+│   │   └── main.jsx            # React root entry
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+│
+├── config/
+│   ├── cloudflareStorage.js    # Cloudflare R2 Storage & Cache Engine
+│   └── database.js             # SQLite schema & helpers
+│
+├── routes/                     # Express REST API routes
+│   ├── authRoutes.js           # Login, logout, session, password change
+│   ├── recordRoutes.js         # Records CRUD, search, filter, 12h rule, options
+│   ├── deleteRequestRoutes.js  # Delete requests submit, approve, reject
+│   ├── editRequestRoutes.js    # Edit requests submit, approve, reject
+│   ├── listAddRequestRoutes.js # Dropdown option requests submit, approve, reject
+│   ├── psRoutes.js             # 15,082 Police Stations directory search & CRUD
+│   ├── userRoutes.js           # Admin user management & permissions
+│   ├── importRoutes.js         # Excel/CSV batch data import
+│   └── exportRoutes.js         # Excel/CSV data export
+│
+├── middleware/
+│   └── auth.js                 # Session validation, role & permission guards, 12h rule
+│
+├── data/                       # Local JSON cache files
+├── _backup_original/           # Backup of original vanilla project files
+├── .env.example                # Example environment variables template
+├── package.json                # Root package configuration
+├── server.js                   # Express server entry point
+├── vercel.json                 # Vercel deployment configuration
+└── README.md
 ```
 
 ---
 
-## Default Accounts (Auto-Seeded)
+## 💻 Local Development Setup
 
-When the application runs, it automatically initializes with these default accounts:
+### 1. Install Dependencies
+```bash
+# Install root backend dependencies
+npm install
 
-| Username | Password | Role | Import Perm. | Full Access | Status | Capabilities |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `Admin@123` | `Admin` | `Yes` | `Yes` | `Active` | Full system access, User Management, Import/Export |
-| **Add** | `Add@123` | `Add` | `No` | `No` | `Active` | Add records, Edit/Delete own records <24h |
-| **View** | `View@123` | `View` | `No` | `No` | `Active` | Read-only view, Search, Filter, Download Excel/PDF/Print |
+# Install client React dependencies
+cd client
+npm install
+cd ..
+```
 
----
+### 2. Configure Environment Variables
+Create a `.env` file in the root directory based on `.env.example`:
+```env
+PORT=3000
+SESSION_SECRET=your_random_secret_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
+CLOUDFLARE_R2_ACCESS_KEY_ID=your_access_key
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=your_secret_key
+CLOUDFLARE_R2_BUCKET_NAME=jam-data
+```
 
-## How to Run the Website
+### 3. Build & Run
+```bash
+# Build the React frontend
+npm run build
 
-### Start the Server:
-```cmd
+# Start the Node.js server (serves API & compiled React frontend on http://localhost:3000)
 npm start
 ```
 
-### Access in Browser:
-```text
-http://localhost:3000
+### 4. Concurrent Development Mode (Optional)
+To run Vite's hot-reloading dev server:
+```bash
+# Terminal 1: Start backend
+npm run dev
+
+# Terminal 2: Start Vite React dev server
+npm run client:dev
 ```
-Sign in with `Admin` / `Admin@123`!
+Open `http://localhost:5173` for Vite HMR (API calls are proxied to port 3000).
+
+---
+
+## ☁️ Vercel Deployment
+
+1. Connect the repository to Vercel.
+2. In Project Settings:
+   - **Framework Preset**: Other / Node.js
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `client/dist`
+3. Add Environment Variables in Vercel Dashboard:
+   - `SESSION_SECRET`
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `CLOUDFLARE_R2_ENDPOINT`
+   - `CLOUDFLARE_R2_ACCESS_KEY_ID`
+   - `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
+   - `CLOUDFLARE_R2_BUCKET_NAME`
+4. Deploy!

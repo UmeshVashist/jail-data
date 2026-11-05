@@ -1838,7 +1838,6 @@ async function batchAddPS(entriesArr) {
 
 module.exports = {
   initCloudflareStorage,
-  initGoogleSheets: initCloudflareStorage, // Backward compatibility alias
   getUsers,
   getUserByUsername,
   createUser,

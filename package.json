@@ -1,18 +1,20 @@
 {
   "name": "informaction-node-app",
   "version": "1.0.0",
-  "description": "Complete Data Management Web Application built with Node.js, Express, Google Sheets API, and Bootstrap 5",
+  "description": "Enterprise Data Management Web Application built with React.js, Node.js, Express, Cloudflare R2 and SQLite",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch --watch-path=server.js --watch-path=routes --watch-path=config --watch-path=middleware server.js",
-    "migrate:gsheet": "node scripts/migrate_from_gsheet.js"
+    "build:client": "cd client && npm install && npm run build",
+    "build": "npm run build:client",
+    "client:dev": "cd client && npm run dev"
   },
   "keywords": [
+    "react",
     "nodejs",
     "express",
-    "google-sheets-api",
-    "google-spreadsheet",
+    "cloudflare-r2",
     "bootstrap5",
     "data-management"
   ],
@@ -27,8 +29,6 @@
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
-    "express-session": "^1.18.0",
-    "google-auth-library": "^9.10.0",
-    "google-spreadsheet": "^4.1.2"
+    "express-session": "^1.18.0"
   }
 }

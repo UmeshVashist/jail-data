@@ -7,6 +7,7 @@ const cookieSession = require('cookie-session');
 const cors = require('cors');
 const compression = require('compression');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 // Initialize Cloudflare R2 Database Service
@@ -62,8 +63,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Resolve Static Asset Path (Prioritizes compiled React + Vite production bundle, fallbacks to public)
+const clientDistPath = path.join(__dirname, 'client', 'dist');
+const staticPath = fs.existsSync(clientDistPath) ? clientDistPath : path.join(__dirname, 'public');
+
 // Serve Static Frontend Assets with Smart Browser Caching & ETags
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(express.static(staticPath, {
   maxAge: process.env.NODE_ENV === 'production' ? '1d' : '1h',
   etag: true,
   lastModified: true
@@ -82,7 +87,7 @@ app.use('/api/ps', psRoutes);
 
 // Fallback Route to serve Single Page Application
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 // Boot Server for Local Development

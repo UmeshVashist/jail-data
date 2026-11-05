@@ -1,0 +1,3925 @@
+/* ==========================================================================
+   UI UX Pro Max Design System - Modern Aesthetics & Sleek Visual Tokens
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Color Palette - Vibrant Indigo/Violet & Modern Slate */
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --primary-glow: rgba(99, 102, 241, 0.35);
+  
+  --accent-color: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+
+  --success-color: #10b981;
+  --success-bg: #ecfdf5;
+  --success-text: #047857;
+
+  --warning-color: #f59e0b;
+  --warning-bg: #fffbeb;
+  --warning-text: #b45309;
+
+  --danger-color: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-text: #b91c1c;
+
+  --info-color: #3b82f6;
+  --info-bg: #eff6ff;
+  --info-text: #1d4ed8;
+
+  /* Dark Sidebar Tokens */
+  --sidebar-bg: #0f172a;
+  --sidebar-card: #1e293b;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-text: #94a3b8;
+  --sidebar-active-text: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+
+  /* Light Theme Tokens */
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-radius: 16px;
+  
+  /* Modern Shadow Hierarchy */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 25px -5px rgba(99, 102, 241, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+
+  /* Typography */
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Base Body Styling with 3D Perspective Context (Default Dark Theme) */
+body {
+  font-family: var(--font-main);
+  background: radial-gradient(circle at 50% 25%, #0d1224 0%, #060913 100%) fixed !important;
+  color: #f8fafc !important;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ==========================================================================
+   Modern Interactive 3D WebGL Background Canvas
+   ========================================================================== */
+.webgl-3d-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
+/* Ambient Background Blur Elements for Modern Vibe */
+body::before {
+  content: '';
+  position: fixed;
+  top: -10vw;
+  right: -10vw;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -10vw;
+  left: -10vw;
+  width: 35vw;
+  height: 35vw;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.07) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   Modern Login Screen (Glassmorphism, Neon Glow & 3D Depth)
+   ========================================================================== */
+#login-view {
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.login-card {
+  border-radius: 20px !important;
+  z-index: 2;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.login-subtitle {
+  font-size: 0.85rem;
+}
+
+.login-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.login-card .form-control {
+  font-size: 0.9rem;
+  padding: 0.62rem 0.85rem;
+  border-radius: 8px;
+}
+
+.login-card .input-group-text {
+  font-size: 0.95rem;
+  padding: 0.62rem 0.85rem;
+}
+
+.login-icon-box {
+  background: var(--primary-gradient);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+}
+
+/* ==========================================================================
+   Full Width Portal Layout & Flex Structure
+   ========================================================================== */
+#app-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+#sidebar {
+  min-width: 220px;
+  max-width: 220px;
+  width: 220px;
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+#content {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#sidebar .sidebar-header {
+  padding: 1.25rem 1.1rem;
+  border-bottom: 1px solid var(--sidebar-border);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.brand-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--primary-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+#sidebar .nav-link {
+  color: var(--sidebar-text, #94a3b8);
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  margin: 0.28rem 0.6rem;
+  font-weight: 500;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+#sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+#sidebar .nav-link.active {
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.25);
+}
+
+/* 3D Colorful Icon Container */
+.nav-icon-3d {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.25);
+}
+
+.nav-icon-3d i {
+  font-size: 1.05rem !important;
+  color: #ffffff !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#sidebar .nav-link:hover .nav-icon-3d {
+  transform: translateY(-2px) scale(1.08);
+}
+
+#sidebar .nav-link:hover .nav-icon-3d i {
+  transform: scale(1.1);
+}
+
+#sidebar .nav-link.active .nav-icon-3d {
+  transform: translateY(-1px) scale(1.06);
+}
+
+/* 1. Dashboard: 3D Royal Purple & Indigo */
+.nav-icon-dashboard {
+  background: linear-gradient(135deg, #818cf8 0%, #4f46e5 50%, #3730a3 100%);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-dashboard {
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 2. Data Records: 3D Emerald & Jade */
+.nav-icon-records {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-records {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 3. Import Data: 3D Golden Amber & Vibrant Orange */
+.nav-icon-import {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #c2410c 100%);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-import {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 4. All Requests: 3D Coral Crimson & Rose */
+.nav-icon-all-requests {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #be123c 100%);
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-all-requests {
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 5. My Requests: 3D Electric Cyan & Sky Blue */
+.nav-icon-my-requests {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0369a1 100%);
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-my-requests {
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 6. Reactive List: 3D Vivid Magenta & Fuchsia */
+.nav-icon-reactive {
+  background: linear-gradient(135deg, #f472b6 0%, #d946ef 50%, #a21caf 100%);
+  box-shadow: 0 4px 10px rgba(217, 70, 239, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-reactive {
+  box-shadow: 0 0 16px rgba(217, 70, 239, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 7. User Management: 3D Royal Sapphire & Blue */
+.nav-icon-users {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-users {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 8. PS List: 3D Turquoise & Deep Teal */
+.nav-icon-ps {
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #0f766e 100%);
+  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-ps {
+  box-shadow: 0 0 16px rgba(20, 184, 166, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 9. System Settings: 3D Electric Violet & Amethyst */
+.nav-icon-settings {
+  background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 50%, #5b21b6 100%);
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+#sidebar .nav-link.active .nav-icon-settings {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 10. Logout 3D Button */
+.nav-icon-logout {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #b91c1c 100%);
+  box-shadow: 0 3px 6px rgba(239, 68, 68, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+.nav-icon-logout i {
+  font-size: 0.85rem !important;
+}
+
+/* Top Navbar Header */
+.top-navbar {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--card-border);
+  padding: 0.85rem 1.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  width: 100%;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Modern Avatar */
+.avatar-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================================================
+   Dashboard Cards & Metric Visuals
+   ========================================================================== */
+.stat-card {
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--card-radius) !important;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+.stat-card:hover::after {
+  background: var(--primary-gradient);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(4deg);
+}
+
+/* Custom Soft Colored Metric Badges */
+.bg-primary-subtle-custom { background-color: #e0e7ff; color: #4338ca; }
+.bg-success-subtle-custom { background-color: #d1fae5; color: #047857; }
+.bg-info-subtle-custom { background-color: #cff4fc; color: #0891b2; }
+.bg-warning-subtle-custom { background-color: #fef3c7; color: #b45309; }
+
+/* Active Filter Stat Card Highlights */
+.stat-card.active-filter-warning {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px #f59e0b, 0 8px 20px rgba(245, 158, 11, 0.25) !important;
+  transform: translateY(-2px);
+}
+.stat-card.active-filter-info {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px #06b6d4, 0 8px 20px rgba(6, 182, 212, 0.25) !important;
+  transform: translateY(-2px);
+}
+.stat-card.active-filter-danger {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px #ef4444, 0 8px 20px rgba(239, 68, 68, 0.25) !important;
+  transform: translateY(-2px);
+}
+.stat-card.active-filter-success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px #10b981, 0 8px 20px rgba(16, 185, 129, 0.25) !important;
+  transform: translateY(-2px);
+}
+
+/* All Requests & My Requests Table Scrollable (Active scroll after 10 rows) & Sticky Header */
+#all-requests-table-container,
+#my-requests-table-container {
+  max-height: 530px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+#all-requests-table-container thead th,
+#my-requests-table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8fafc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-theme #all-requests-table-container thead th,
+body.dark-theme #my-requests-table-container thead th {
+  background-color: #0f172a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+#my-requests-table-container::-webkit-scrollbar,
+#all-requests-table-container::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+#my-requests-table-container::-webkit-scrollbar-track,
+#all-requests-table-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+#my-requests-table-container::-webkit-scrollbar-thumb,
+#all-requests-table-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+body.theme-modern-3d #my-requests-table-container thead th,
+body.theme-modern-3d #all-requests-table-container thead th {
+  background-color: rgba(10, 16, 36, 0.98) !important;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.5) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.theme-modern-3d #my-requests-table-container::-webkit-scrollbar-track,
+body.theme-modern-3d #all-requests-table-container::-webkit-scrollbar-track {
+  background: rgba(8, 14, 34, 0.6) !important;
+}
+
+body.theme-modern-3d #my-requests-table-container::-webkit-scrollbar-thumb,
+body.theme-modern-3d #all-requests-table-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.45) !important;
+}
+
+body.theme-modern-3d #my-requests-table-container::-webkit-scrollbar-thumb:hover,
+body.theme-modern-3d #all-requests-table-container::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff !important;
+}
+
+/* Bulk Selection Toolbar & Checkbox Aesthetics */
+#all-requests-bulk-bar {
+  animation: slideDownBulk 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 25px rgba(99, 102, 241, 0.25) !important;
+}
+
+@keyframes slideDownBulk {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table th .form-check-input,
+.table td .form-check-input {
+  cursor: pointer;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+body.dark-theme .form-check-input {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .form-check-input:checked,
+body.dark-theme .form-check-input:indeterminate {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* ==========================================================================
+   Modern Table Card & Custom Scrollable Components
+   ========================================================================== */
+.custom-table-card {
+  background: #ffffff;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.custom-table-card .table-responsive {
+  min-height: 250px;
+}
+
+.custom-table-card .dropdown {
+  position: relative;
+}
+
+.custom-table-card .dropdown.show,
+.custom-table-card tr:has(.dropdown.show) {
+  position: relative;
+  z-index: 1050;
+}
+
+/* Filter Bar & Dropdown Stacking Context Fix */
+.records-filter-card,
+.requests-filter-card {
+  position: relative;
+  z-index: 30 !important;
+}
+
+.records-filter-card:focus-within,
+.requests-filter-card:focus-within,
+.records-filter-card:has(.searchable-select-menu.show),
+.requests-filter-card:has(.searchable-select-menu.show) {
+  z-index: 100 !important;
+}
+
+.searchable-select-wrapper {
+  position: relative;
+  z-index: 35;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.searchable-select-menu {
+  z-index: 1060 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Dropdown Settings Header Switcher */
+#dropdowns-header-switcher .btn.active,
+#dropdowns-page-switcher .btn.active {
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4) !important;
+}
+
+.custom-table-card table {
+  margin-bottom: 0;
+}
+
+.custom-table-card table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--card-border);
+  white-space: nowrap;
+}
+
+.custom-table-card table td {
+  padding: 0.9rem 1.1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.custom-table-card table tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.custom-table-card table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Sortable Table Header Styling */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.sortable-header:hover {
+  color: var(--primary-color) !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Modern Form Controls & Focus Effects */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.875rem;
+  padding: 0.55rem 0.85rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.input-group-text {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+/* ==========================================================================
+   Comprehensive 3D Colorful Buttons System with Tactile Animations
+   ========================================================================== */
+
+/* Universal 3D Button Base */
+.btn {
+  position: relative;
+  overflow: hidden;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  vertical-align: middle;
+  text-decoration: none !important;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              background 0.22s ease, 
+              color 0.15s ease,
+              border-color 0.2s ease !important;
+}
+
+/* 3D Button Gloss / Shimmer Micro-Animation Sweep */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    65deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  transition: left 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  z-index: 3;
+}
+
+.btn:hover::after {
+  left: 150%;
+  opacity: 1;
+}
+
+/* Tactile Physical Depression on Click (Push Down 3D Effect) */
+.btn:active {
+  transform: translateY(3px) scale(0.97) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* 1. Primary Button: 3D Vivid Royal Indigo & Violet */
+.btn-primary {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 45%, #4f46e5 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 0 #3730a3, 
+              0 6px 14px rgba(79, 70, 229, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(180deg, #939bf9 0%, #6d70f7 45%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #312e81, 
+              0 12px 24px rgba(79, 70, 229, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-primary:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #312e81, 
+              0 2px 6px rgba(79, 70, 229, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 2. Success Button: 3D Vivid Emerald & Mint Green */
+.btn-success {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 45%, #059669 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 0 #047857, 
+              0 6px 14px rgba(16, 185, 129, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-success:hover, .btn-success:focus {
+  background: linear-gradient(180deg, #4ade80 0%, #10b981 45%, #047857 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #065f46, 
+              0 12px 24px rgba(16, 185, 129, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-success:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #065f46, 
+              0 2px 6px rgba(16, 185, 129, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 3. Danger Button: 3D Vivid Ruby Crimson & Coral */
+.btn-danger {
+  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 45%, #e11d48 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 0 #9f1239, 
+              0 6px 14px rgba(244, 63, 94, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-danger:hover, .btn-danger:focus {
+  background: linear-gradient(180deg, #fda4af 0%, #fb7185 45%, #be123c 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #881337, 
+              0 12px 24px rgba(244, 63, 94, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.7), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-danger:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #881337, 
+              0 2px 6px rgba(244, 63, 94, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 4. Warning Button: 3D Radiant Amber Gold & Tangerine */
+.btn-warning {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 45%, #d97706 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(120, 53, 15, 0.65);
+  box-shadow: 0 4px 0 #b45309, 
+              0 6px 14px rgba(245, 158, 11, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.65), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-warning:hover, .btn-warning:focus {
+  background: linear-gradient(180deg, #fef08a 0%, #fbbf24 45%, #b45309 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #92400e, 
+              0 12px 24px rgba(245, 158, 11, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-warning:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #92400e, 
+              0 2px 6px rgba(245, 158, 11, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 5. Info Button: 3D Electric Cyan & Neon Sky */
+.btn-info {
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 45%, #0284c7 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(3, 105, 161, 0.55);
+  box-shadow: 0 4px 0 #0369a1, 
+              0 6px 14px rgba(14, 165, 233, 0.42), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.55), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-info:hover, .btn-info:focus {
+  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #075985, 
+              0 12px 24px rgba(14, 165, 233, 0.55), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.75), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-info:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #075985, 
+              0 2px 6px rgba(14, 165, 233, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 6. Secondary Button: 3D Titanium Slate & Graphite */
+.btn-secondary {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 45%, #475569 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 0 #334155, 
+              0 6px 14px rgba(71, 85, 105, 0.35), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.45), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn-secondary:hover, .btn-secondary:focus {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 45%, #334155 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 6px 0 #1e293b, 
+              0 12px 22px rgba(71, 85, 105, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.65), 
+              inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-secondary:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #1e293b, 
+              0 2px 5px rgba(71, 85, 105, 0.3), 
+              inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 7. Light Button: 3D Pearl Frosted Bevel */
+.btn-light {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #e2e8f0 100%) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 5px 12px rgba(0, 0, 0, 0.07), 
+              inset 0 1px 1px #ffffff, 
+              inset 0 -2px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-light:hover, .btn-light:focus {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 0 #94a3b8, 
+              0 8px 18px rgba(0, 0, 0, 0.12), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.btn-light:active {
+  transform: translateY(3px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #94a3b8, 
+              0 2px 4px rgba(0, 0, 0, 0.1), 
+              inset 0 2px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 8. 3D Colorful Outline Buttons */
+.btn-outline-primary {
+  background: rgba(99, 102, 241, 0.06) !important;
+  border: 1.5px solid #6366f1 !important;
+  color: #4f46e5 !important;
+  box-shadow: 0 3px 0 #6366f1, 
+              0 4px 10px rgba(99, 102, 241, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 45%, #4f46e5 100%) !important;
+  border-color: #4f46e5 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #3730a3, 
+              0 10px 20px rgba(79, 70, 229, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-primary:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #3730a3, 
+              0 2px 4px rgba(79, 70, 229, 0.3) !important;
+}
+
+.btn-outline-success {
+  background: rgba(16, 185, 129, 0.06) !important;
+  border: 1.5px solid #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 3px 0 #10b981, 
+              0 4px 10px rgba(16, 185, 129, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-success:hover, .btn-outline-success:focus {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 45%, #059669 100%) !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #047857, 
+              0 10px 20px rgba(16, 185, 129, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-success:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #047857, 
+              0 2px 4px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-outline-danger {
+  background: rgba(244, 63, 94, 0.06) !important;
+  border: 1.5px solid #f43f5e !important;
+  color: #e11d48 !important;
+  box-shadow: 0 3px 0 #f43f5e, 
+              0 4px 10px rgba(244, 63, 94, 0.18), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-outline-danger:hover, .btn-outline-danger:focus {
+  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 45%, #e11d48 100%) !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #9f1239, 
+              0 10px 20px rgba(244, 63, 94, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-danger:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #9f1239, 
+              0 2px 4px rgba(244, 63, 94, 0.3) !important;
+}
+
+.btn-outline-secondary {
+  background: rgba(100, 116, 139, 0.05) !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #475569 !important;
+  box-shadow: 0 3px 0 #94a3b8, 
+              0 4px 8px rgba(0, 0, 0, 0.06), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 45%, #475569 100%) !important;
+  border-color: #475569 !important;
+  color: #ffffff !important;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 5px 0 #334155, 
+              0 10px 18px rgba(71, 85, 105, 0.35), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-outline-secondary:active {
+  transform: translateY(2.5px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #334155, 
+              0 2px 4px rgba(71, 85, 105, 0.25) !important;
+}
+
+body.dark-theme .btn-outline-secondary {
+  background: rgba(30, 41, 59, 0.75) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.45) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 3px 0 #0f172a, 
+              0 4px 8px rgba(0, 0, 0, 0.3), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .btn-outline-secondary:hover, 
+body.dark-theme .btn-outline-secondary:focus {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 0 #0f172a, 
+              0 10px 18px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-theme .btn-outline-secondary:active {
+  transform: translateY(2px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #0f172a, 
+              0 2px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Custom Download Button for Data Records */
+.btn-download-action {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 3px 0 #090d16, 
+              0 4px 10px rgba(0, 0, 0, 0.35), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-download-action i {
+  color: #38bdf8 !important;
+  font-size: 0.95rem;
+  margin-right: 4px;
+}
+
+.btn-download-action:hover,
+.btn-download-action:focus,
+.btn-download-action[aria-expanded="true"] {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn-download-action:active {
+  transform: translateY(1.5px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #090d16, 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Custom Clear Filters Button for Data Records */
+.btn-clear-filters {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.6) !important;
+  color: #fca5a5 !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 0.35rem 0.5rem !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-clear-filters i {
+  color: #ef4444 !important;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+
+.btn-clear-filters:hover,
+.btn-clear-filters:focus {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: #f87171 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn-clear-filters:hover i,
+.btn-clear-filters:focus i {
+  color: #ffffff !important;
+  transform: rotate(90deg);
+}
+
+.btn-clear-filters:active {
+  transform: translateY(1.5px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #991b1b, 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Header Switcher Buttons (Remark & Delete with visible gap) */
+#dropdowns-header-switcher {
+  display: flex;
+  align-items: center;
+  gap: 12px !important; /* Visible separation between Remark and Delete */
+}
+
+.header-tab-btn {
+  font-size: 0.82rem !important;
+  padding: 0.32rem 1.05rem !important;
+  border-radius: 50rem !important;
+  font-weight: 600 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.header-tab-btn-inactive {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.35) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+}
+
+.header-tab-btn-inactive:hover {
+  background: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+.header-tab-btn-active-remark {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+.header-tab-btn-active-delete {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 3px 12px rgba(244, 63, 94, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 9. Action Dropdown Dots Button (3D Micro-Dial) */
+.action-dots-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 4px 8px rgba(0, 0, 0, 0.06), 
+              inset 0 1px 1px #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  cursor: pointer;
+}
+
+.action-dots-btn:hover, .show > .action-dots-btn {
+  background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 0 #4f46e5, 
+              0 6px 14px rgba(99, 102, 241, 0.35), 
+              inset 0 1px 1px #ffffff !important;
+}
+
+.action-dots-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #4f46e5, 
+              inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 10. Theme Toggle Button (Permanently Hidden & Disabled per requirements) */
+.theme-toggle-btn {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* 11. 3D Pagination Buttons */
+.pagination .page-link {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px !important;
+  margin: 0 3px;
+  color: #475569;
+  font-weight: 600;
+  box-shadow: 0 3px 0 #cbd5e1, 
+              0 3px 6px rgba(0, 0, 0, 0.04), 
+              inset 0 1px 1px #ffffff;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pagination .page-link:hover {
+  transform: translateY(-2px);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 0 #94a3b8, 
+              0 6px 12px rgba(99, 102, 241, 0.15);
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 100%) !important;
+  border-color: #6366f1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 0 #3730a3, 
+              0 4px 12px rgba(99, 102, 241, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+/* Drag and Dropzone Container */
+.dropzone-container {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--card-radius);
+  background-color: #f8fafc;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropzone-container:hover, .dropzone-container.dragover {
+  border-color: var(--primary-color);
+  background-color: rgba(99, 102, 241, 0.04);
+  transform: scale(1.01);
+}
+
+.dropzone-icon {
+  font-size: 3.5rem;
+  color: var(--primary-color);
+  transition: transform 0.3s ease;
+}
+
+.dropzone-container:hover .dropzone-icon {
+  transform: translateY(-6px);
+}
+
+/* Fullscreen Loader Blur Overlay */
+#loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+/* View Section Fade-In Animation & Full Width */
+main {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.view-section {
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeInView 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInView {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Clickable PID Link */
+.pid-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pid-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* System Settings Dropdown Table Scroll Container (Active after 6 rows) */
+.dropdown-table-scroll-container {
+  max-height: 335px;
+  overflow-y: auto;
+}
+
+/* Police Station (PS) List Table Scroll Container (Active after 10 rows) */
+.ps-table-scroll-container {
+  max-height: 540px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.ps-table-scroll-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #ffffff;
+  box-shadow: inset 0 -1px 0 var(--card-border, rgba(0, 0, 0, 0.08));
+}
+
+body.dark-theme .ps-table-scroll-container thead th {
+  background-color: var(--dark-card, #1e293b);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Police Station (PS) List Table text uppercase */
+#ps-table-body td,
+#ps-table-body td .badge {
+  text-transform: uppercase !important;
+}
+
+/* Police Station (PS) Row Selection Highlight */
+#ps-table-body tr.table-danger-subtle {
+  background-color: rgba(254, 226, 226, 0.55) !important;
+}
+
+#ps-table-body tr.table-danger-subtle td {
+  background-color: transparent !important;
+}
+
+body.dark-theme #ps-table-body tr.table-danger-subtle {
+  background-color: rgba(239, 68, 68, 0.22) !important;
+}
+
+/* Mobile Sidebar Slide Behavior */
+@media (max-width: 767.98px) {
+  #sidebar {
+    margin-left: -220px;
+    position: fixed;
+    height: 100vh;
+  }
+  #sidebar.active {
+    margin-left: 0;
+  }
+}
+
+/* 3D Modern Close & Cross Buttons for Modals */
+.btn-close-modern {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 3px 0 #cbd5e1, 0 3px 6px rgba(0, 0, 0, 0.08), inset 0 1px 1px #ffffff;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-close-modern:hover {
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(-2px) rotate(90deg) scale(1.08);
+  box-shadow: 0 4px 0 #9f1239, 0 6px 14px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.btn-close-modern:active {
+  transform: translateY(2px) rotate(90deg) scale(0.95) !important;
+  box-shadow: 0 1px 0 #9f1239;
+}
+
+.btn-modern-close {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.45rem 1.4rem;
+  border-radius: 50px;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 3px 0 #cbd5e1, 0 3px 6px rgba(0, 0, 0, 0.05), inset 0 1px 1px #ffffff;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-modern-close i {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-modern-close:hover {
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 0 #9f1239, 0 6px 14px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.btn-modern-close:hover i {
+  transform: rotate(90deg);
+}
+
+.btn-modern-close:active {
+  transform: translateY(2px) scale(0.96) !important;
+  box-shadow: 0 1px 0 #9f1239;
+}
+
+/* ==========================================================================
+   Dark Theme System (Login Page Dark Gradient & Sleek Tokens)
+   ========================================================================== */
+body.dark-theme {
+  background: radial-gradient(circle at 50% 25%, #0d1224 0%, #060913 100%) fixed !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme header {
+  background: rgba(15, 23, 42, 0.82) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+body.dark-theme #page-title-display,
+body.dark-theme h1, body.dark-theme h2, body.dark-theme h3, 
+body.dark-theme h4, body.dark-theme h5, body.dark-theme h6 {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .text-dark {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .text-muted, 
+body.dark-theme .text-secondary {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .card, 
+body.dark-theme .stat-card, 
+body.dark-theme .custom-table-card {
+  background: rgba(30, 41, 59, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .table {
+  --bs-table-bg: transparent !important;
+  --bs-table-color: #f8fafc !important;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05) !important;
+  --bs-table-hover-color: #ffffff !important;
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.02) !important;
+  color: #f8fafc !important;
+  background-color: transparent !important;
+}
+
+body.dark-theme .table th,
+body.dark-theme .table td {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .table thead,
+body.dark-theme .table thead th,
+body.dark-theme .table-light,
+body.dark-theme .table-light th,
+body.dark-theme .table-light td {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .table tbody tr {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .table tbody tr:hover,
+body.dark-theme .table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .bg-light,
+body.dark-theme .bg-white,
+body.dark-theme .bg-body {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .badge.bg-light {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .btn-light {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 3px 0 #0f172a, 
+              0 4px 10px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .btn-light:hover {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 0 #020617, 
+              0 8px 16px rgba(0, 0, 0, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .btn-light:active {
+  transform: translateY(2px) scale(0.97) !important;
+  box-shadow: 0 1px 0 #020617 !important;
+}
+
+body.dark-theme .action-dots-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #cbd5e1 !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 4px 8px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .action-dots-btn i {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .action-dots-btn:hover,
+body.dark-theme .show > .action-dots-btn {
+  background: linear-gradient(180deg, #4338ca 0%, #3730a3 100%) !important;
+  border-color: #818cf8 !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 0 #1e1b4b, 
+              0 6px 14px rgba(99, 102, 241, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-theme .action-dots-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #1e1b4b !important;
+}
+
+body.dark-theme .pagination-container,
+body.dark-theme .pagination-container span,
+body.dark-theme .pagination-container strong {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select,
+body.dark-theme .input-group-text {
+  background-color: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .form-control::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
+
+body.dark-theme .dropdown-menu {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-theme .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .modal-content {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+body.dark-theme:not(.theme-modern-3d) .searchable-select-menu {
+  background-color: #1e293b !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme:not(.theme-modern-3d) .searchable-select-menu .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme:not(.theme-modern-3d) .searchable-select-menu .dropdown-item:hover,
+body.dark-theme:not(.theme-modern-3d) .searchable-select-menu .dropdown-item.active {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .theme-toggle-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(251, 191, 36, 0.4) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 4px 12px rgba(251, 191, 36, 0.2), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .theme-toggle-btn:hover {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+  box-shadow: 0 5px 0 #020617, 
+              0 8px 18px rgba(251, 191, 36, 0.45), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-theme .theme-toggle-btn:active {
+  transform: translateY(2px) scale(0.95) !important;
+  box-shadow: 0 1px 0 #020617 !important;
+}
+
+/* Dark Theme Calendar Picker Indicator (Date input calendar icon) */
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2) !important;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Dark Theme Modal Close Buttons */
+body.dark-theme .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+  opacity: 0.85;
+}
+
+body.dark-theme .btn-close:hover {
+  opacity: 1;
+}
+
+body.dark-theme .btn-close-modern {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 3px 6px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .btn-close-modern:hover {
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 0 #881337, 
+              0 6px 14px rgba(239, 68, 68, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-theme .btn-close-modern:active {
+  transform: translateY(2px) rotate(90deg) scale(0.95) !important;
+  box-shadow: 0 1px 0 #881337 !important;
+}
+
+body.dark-theme .btn-modern-close {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 3px 0 #020617, 
+              0 3px 6px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .btn-modern-close:hover {
+  background: linear-gradient(180deg, #fb7185 0%, #ef4444 100%) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 0 #881337, 
+              0 6px 14px rgba(239, 68, 68, 0.5), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-theme .btn-modern-close:active {
+  transform: translateY(2px) scale(0.96) !important;
+  box-shadow: 0 1px 0 #881337 !important;
+}
+
+/* Today Records Modal Date Filter */
+.today-filter-box {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.2s ease;
+}
+
+.today-filter-label {
+  color: #334155;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+
+.today-filter-date-input {
+  width: 140px;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.5rem;
+  outline: none;
+}
+
+.today-filter-date-input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.today-btn-reset {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #059669 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.today-btn-reset:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+body.dark-theme .today-filter-box {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+body.dark-theme .today-filter-label {
+  color: #cbd5e1;
+}
+
+body.dark-theme .today-filter-date-input {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+}
+
+body.dark-theme .today-btn-reset {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
+}
+
+body.dark-theme .today-btn-reset:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+/* ==========================================================================
+   UI MODE SWITCHER CAPSULE (Header Component)
+   ========================================================================== */
+.ui-mode-switcher-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ui-mode-pill {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  gap: 3px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ui-mode-btn {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 50rem !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ui-mode-btn:hover {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ui-mode-btn.active#btn-ui-classic {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+.ui-mode-btn.active#btn-ui-modern {
+  background: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 50%, #ec4899 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.6), 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ==========================================================================
+   1. CLASSIC UI MODE (Sample, Clean Dashboard with #E0EBF5 Background & Black Text)
+   Strictly Zero Animations, 3D Canvas Hidden, Simple Clean Elements
+   ========================================================================== */
+body:not(.theme-modern-3d),
+body.theme-classic {
+  background: #E0EBF5 !important; /* User specified color #E0EBF5 (224,235,245) */
+  color: #0f172a !important; /* Pure black / dark slate */
+  position: relative;
+}
+
+body:not(.theme-modern-3d) #app-shell,
+body:not(.theme-modern-3d) #content,
+body:not(.theme-modern-3d) main,
+body.theme-classic #app-shell,
+body.theme-classic #content,
+body.theme-classic main {
+  background: #E0EBF5 !important;
+}
+
+/* Classic Login Screen (#E0EBF5 Background & Clean Crisp White Card) */
+body:not(.theme-modern-3d) #login-view,
+body.theme-classic #login-view {
+  background: #E0EBF5 !important;
+}
+
+body:not(.theme-modern-3d) #login-view::before,
+body:not(.theme-modern-3d) #login-view::after,
+body.theme-classic #login-view::before,
+body.theme-classic #login-view::after {
+  display: none !important;
+}
+
+body:not(.theme-modern-3d) .login-card,
+body.theme-classic .login-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .login-title,
+body.theme-classic .login-title {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .login-subtitle,
+body.theme-classic .login-subtitle {
+  color: #64748b !important;
+}
+
+body:not(.theme-modern-3d) .login-label,
+body.theme-classic .login-label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+body:not(.theme-modern-3d) .login-card .input-group-text,
+body.theme-classic .login-card .input-group-text {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+body:not(.theme-modern-3d) .login-card .password-toggle-btn,
+body.theme-classic .login-card .password-toggle-btn {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: none !important;
+  color: #64748b !important;
+  cursor: pointer;
+}
+
+body:not(.theme-modern-3d) .login-card #login-pass-icon,
+body.theme-classic .login-card #login-pass-icon {
+  color: #64748b !important;
+  font-size: 1.05rem !important;
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+body:not(.theme-modern-3d) .login-card .password-toggle-btn:hover #login-pass-icon,
+body.theme-classic .login-card .password-toggle-btn:hover #login-pass-icon {
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .login-card .form-control,
+body.theme-classic .login-card .form-control {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+}
+
+body:not(.theme-modern-3d) .login-card .form-control::placeholder,
+body.theme-classic .login-card .form-control::placeholder {
+  color: #94a3b8 !important;
+}
+
+body:not(.theme-modern-3d) .login-card .form-control:focus,
+body.theme-classic .login-card .form-control:focus {
+  background-color: #ffffff !important;
+  border-color: #2563eb !important;
+  color: #0f172a !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+body:not(.theme-modern-3d) .login-card .form-control:-webkit-autofill,
+body:not(.theme-modern-3d) .login-card .form-control:-webkit-autofill:hover,
+body:not(.theme-modern-3d) .login-card .form-control:-webkit-autofill:focus,
+body.theme-classic .login-card .form-control:-webkit-autofill,
+body.theme-classic .login-card .form-control:-webkit-autofill:hover,
+body.theme-classic .login-card .form-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Hide 3D Canvas in Classic Mode */
+body:not(.theme-modern-3d) #webgl-3d-bg,
+body.theme-classic #webgl-3d-bg {
+  display: none !important;
+}
+
+/* Remove Ambient Glow Elements in Classic Mode */
+body:not(.theme-modern-3d)::before,
+body:not(.theme-modern-3d)::after,
+body.theme-classic::before,
+body.theme-classic::after {
+  display: none !important;
+}
+
+/* Disable ALL Animations in Classic Mode ("koi bhi anmisaction nhi hona chaiye ek dam sample website") */
+body:not(.theme-modern-3d) *,
+body.theme-classic * {
+  animation: none !important;
+}
+
+/* Classic Mode Typography & Headings (Dark / Black text, no gradients or glows) */
+body:not(.theme-modern-3d) h1,
+body:not(.theme-modern-3d) h2,
+body:not(.theme-modern-3d) h3,
+body:not(.theme-modern-3d) h4,
+body:not(.theme-modern-3d) h5,
+body:not(.theme-modern-3d) h6,
+body:not(.theme-modern-3d) .text-dark,
+body:not(.theme-modern-3d) #page-title-display,
+body:not(.theme-modern-3d) .modal-title,
+body.theme-classic h1,
+body.theme-classic h2,
+body.theme-classic h3,
+body.theme-classic h4,
+body.theme-classic h5,
+body.theme-classic h6,
+body.theme-classic .text-dark,
+body.theme-classic #page-title-display,
+body.theme-classic .modal-title {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+body:not(.theme-modern-3d) .text-muted,
+body:not(.theme-modern-3d) .text-secondary,
+body.theme-classic .text-muted,
+body.theme-classic .text-secondary {
+  color: #475569 !important;
+}
+
+body:not(.theme-modern-3d) .pid-link,
+body.theme-classic .pid-link {
+  color: #2563eb !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+/* Classic Top Navbar Header */
+body:not(.theme-modern-3d) header.top-navbar,
+body.theme-classic header.top-navbar {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  border-image: none !important;
+}
+
+/* Classic Switcher Capsule */
+body:not(.theme-modern-3d) .ui-mode-pill,
+body.theme-classic .ui-mode-pill {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body:not(.theme-modern-3d) .ui-mode-btn,
+body.theme-classic .ui-mode-btn {
+  color: #64748b !important;
+}
+
+body:not(.theme-modern-3d) .ui-mode-btn.active#btn-ui-classic,
+body.theme-classic .ui-mode-btn.active#btn-ui-classic {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Classic Header Dropdown Setting Tabs */
+body:not(.theme-modern-3d) .header-tab-pill,
+body.theme-classic .header-tab-pill {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body:not(.theme-modern-3d) .header-tab-btn-active-remark,
+body.theme-classic .header-tab-btn-active-remark {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .header-tab-btn-active-delete,
+body.theme-classic .header-tab-btn-active-delete {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Classic Sidebar */
+body:not(.theme-modern-3d) #sidebar,
+body.theme-classic #sidebar {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .sidebar-header,
+body.theme-classic #sidebar .sidebar-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .sidebar-header span,
+body.theme-classic #sidebar .sidebar-header span {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  filter: none !important;
+  font-weight: 700 !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .brand-logo-icon,
+body.theme-classic #sidebar .brand-logo-icon {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .nav-link,
+body.theme-classic #sidebar .nav-link {
+  color: #334155 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-weight: 500 !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .nav-link:hover,
+body.theme-classic #sidebar .nav-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .nav-link.active,
+body.theme-classic #sidebar .nav-link.active {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  border-left: 4px solid #0284c7 !important;
+  font-weight: 700 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .nav-link.active::before,
+body.theme-classic #sidebar .nav-link.active::before {
+  display: none !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .nav-icon-3d,
+body.theme-classic #sidebar .nav-icon-3d {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+body:not(.theme-modern-3d) #sidebar .btn-outline-danger,
+body.theme-classic #sidebar .btn-outline-danger {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Classic Cards, Tables, Filters & Modals */
+body:not(.theme-modern-3d) .card,
+body:not(.theme-modern-3d) .stat-card,
+body:not(.theme-modern-3d) .custom-table-card,
+body:not(.theme-modern-3d) .records-filter-card,
+body:not(.theme-modern-3d) .modal-content,
+body.theme-classic .card,
+body.theme-classic .stat-card,
+body.theme-classic .custom-table-card,
+body.theme-classic .records-filter-card,
+body.theme-classic .modal-content {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #0f172a !important;
+  transform: none !important;
+}
+
+body:not(.theme-modern-3d) .stat-card h2,
+body.theme-classic .stat-card h2 {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  font-size: 1.6rem !important;
+}
+
+body:not(.theme-modern-3d) .stat-icon,
+body.theme-classic .stat-icon {
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+body:not(.theme-modern-3d) .table thead th,
+body.theme-classic .table thead th {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .table,
+body.theme-classic .table {
+  --bs-table-bg: #ffffff !important;
+  --bs-table-color: #0f172a !important;
+  --bs-table-hover-bg: #f1f5f9 !important;
+  --bs-table-hover-color: #0f172a !important;
+  --bs-table-striped-bg: #f8fafc !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .table thead,
+body:not(.theme-modern-3d) .table thead tr,
+body:not(.theme-modern-3d) .table thead th,
+body:not(.theme-modern-3d) .table-light,
+body:not(.theme-modern-3d) .table-light th,
+body:not(.theme-modern-3d) .table-light td,
+body:not(.theme-modern-3d) #all-requests-table-container thead,
+body:not(.theme-modern-3d) #all-requests-table-container thead th,
+body.theme-classic .table thead,
+body.theme-classic .table thead tr,
+body.theme-classic .table thead th,
+body.theme-classic .table-light,
+body.theme-classic .table-light th,
+body.theme-classic .table-light td,
+body.theme-classic #all-requests-table-container thead,
+body.theme-classic #all-requests-table-container thead th {
+  background-color: #f8fafc !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .table tbody tr,
+body:not(.theme-modern-3d) .table tbody tr td,
+body.theme-classic .table tbody tr,
+body.theme-classic .table tbody tr td {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+/* FIX: Table row hover must NEVER make text white in Classic Mode! */
+body:not(.theme-modern-3d) .table tbody tr:hover,
+body:not(.theme-modern-3d) .table tbody tr:hover td,
+body:not(.theme-modern-3d) .table tbody tr:hover th,
+body:not(.theme-modern-3d) .table tbody tr:hover td *,
+body:not(.theme-modern-3d) .table-hover tbody tr:hover,
+body:not(.theme-modern-3d) .table-hover tbody tr:hover td,
+body.theme-classic .table tbody tr:hover,
+body.theme-classic .table tbody tr:hover td,
+body.theme-classic .table tbody tr:hover th,
+body.theme-classic .table tbody tr:hover td *,
+body.theme-classic .table-hover tbody tr:hover,
+body.theme-classic .table-hover tbody tr:hover td {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .table tbody tr:hover td .pid-link,
+body.theme-classic .table tbody tr:hover td .pid-link {
+  color: #2563eb !important;
+}
+
+body:not(.theme-modern-3d) .table tbody tr:hover td .text-muted,
+body:not(.theme-modern-3d) .table tbody tr:hover td .text-secondary,
+body.theme-classic .table tbody tr:hover td .text-muted,
+body.theme-classic .table tbody tr:hover td .text-secondary {
+  color: #475569 !important;
+}
+
+/* --- FIX: Badges in Classic UI (Created By, Aadhar #N/A, Dates, PS State, Remark OFF) --- */
+body:not(.theme-modern-3d) .badge.bg-light,
+body:not(.theme-modern-3d) td .badge.bg-light,
+body:not(.theme-modern-3d) #ps-table-body td .badge,
+body.theme-classic .badge.bg-light,
+body.theme-classic td .badge.bg-light,
+body.theme-classic #ps-table-body td .badge {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .badge.bg-light.text-dark,
+body.theme-classic .badge.bg-light.text-dark {
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .badge.bg-light.text-secondary,
+body.theme-classic .badge.bg-light.text-secondary {
+  color: #475569 !important;
+}
+
+body:not(.theme-modern-3d) .bg-light,
+body:not(.theme-modern-3d) .bg-white,
+body:not(.theme-modern-3d) .bg-body,
+body.theme-classic .bg-light,
+body.theme-classic .bg-white,
+body.theme-classic .bg-body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* --- FIX: Checkboxes & Switches in Classic UI (No black boxes!) --- */
+body:not(.theme-modern-3d) .form-check-input,
+body:not(.theme-modern-3d) .table .form-check-input,
+body:not(.theme-modern-3d) .ps-row-checkbox,
+body:not(.theme-modern-3d) #select-all-ps-checkbox,
+body:not(.theme-modern-3d) #select-all-requests-checkbox,
+body:not(.theme-modern-3d) .form-switch .form-check-input,
+body.theme-classic .form-check-input,
+body.theme-classic .table .form-check-input,
+body.theme-classic .ps-row-checkbox,
+body.theme-classic #select-all-ps-checkbox,
+body.theme-classic #select-all-requests-checkbox,
+body.theme-classic .form-switch .form-check-input {
+  background-color: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #2563eb !important;
+  box-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .form-check-input:checked,
+body:not(.theme-modern-3d) .form-check-input:indeterminate,
+body:not(.theme-modern-3d) .form-switch .form-check-input:checked,
+body.theme-classic .form-check-input:checked,
+body.theme-classic .form-check-input:indeterminate,
+body.theme-classic .form-switch .form-check-input:checked {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+/* --- FIX: System Settings Card Header & Container (No black boxes!) --- */
+body:not(.theme-modern-3d) .card-header,
+body:not(.theme-modern-3d) .card-header.bg-white,
+body:not(.theme-modern-3d) .card-header.bg-light,
+body.theme-classic .card-header,
+body.theme-classic .card-header.bg-white,
+body.theme-classic .card-header.bg-light {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+body:not(.theme-modern-3d) #dropdowns-remark-section .card,
+body:not(.theme-modern-3d) #dropdowns-remark-section .p-3.bg-light,
+body.theme-classic #dropdowns-remark-section .card,
+body.theme-classic #dropdowns-remark-section .p-3.bg-light {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* --- FIX: All Remarks & Searchable Selects in Classic UI --- */
+body:not(.theme-modern-3d) .searchable-select-input,
+body.theme-classic .searchable-select-input {
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 13px 10px !important;
+  padding-right: 2rem !important;
+  color: #0f172a !important;
+  border: 1.5px solid #94a3b8 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  cursor: pointer !important;
+}
+
+body:not(.theme-modern-3d) .searchable-select-input::placeholder,
+body.theme-classic .searchable-select-input::placeholder {
+  color: #64748b !important;
+}
+
+body:not(.theme-modern-3d) .searchable-select-menu,
+body.theme-classic .searchable-select-menu {
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+body:not(.theme-modern-3d) .searchable-select-menu .dropdown-item,
+body.theme-classic .searchable-select-menu .dropdown-item {
+  color: #0f172a !important;
+  background: transparent !important;
+}
+
+body:not(.theme-modern-3d) .searchable-select-menu .dropdown-item:hover,
+body.theme-classic .searchable-select-menu .dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .searchable-select-menu .dropdown-item.active,
+body.theme-classic .searchable-select-menu .dropdown-item.active {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+/* --- FIX: All Requests Bulk Action Bar in Classic UI --- */
+body:not(.theme-modern-3d) #all-requests-bulk-bar,
+body.theme-classic #all-requests-bulk-bar {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+}
+
+body:not(.theme-modern-3d) #all-requests-bulk-bar .text-white-50,
+body.theme-classic #all-requests-bulk-bar .text-white-50 {
+  color: #64748b !important;
+}
+
+body:not(.theme-modern-3d) #all-requests-bulk-bar .btn-outline-light,
+body.theme-classic #all-requests-bulk-bar .btn-outline-light {
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+  background: #f8fafc !important;
+}
+
+/* ==========================================================================
+   DROPDOWN HOVER CURSOR POINTER (Global Across ALL UI Modes)
+   ========================================================================== */
+select,
+select.form-select,
+.form-select,
+.form-select-sm,
+.form-select-lg,
+select option,
+optgroup,
+.dropdown,
+.dropdown-toggle,
+[data-bs-toggle="dropdown"],
+.dropdown-menu,
+.dropdown-item,
+.dropdown-menu li,
+.dropdown-menu li a,
+.dropdown-menu li button,
+.dropdown-menu a,
+.dropdown-menu button,
+.searchable-select-wrapper,
+.searchable-select-wrapper *,
+.searchable-select-input,
+.searchable-select-menu,
+.searchable-select-menu .dropdown-item,
+.action-dots-btn,
+.action-dots-btn *,
+#filter-record-type,
+#filter-remark,
+#filter-all-requests-type,
+#filter-all-requests-status,
+#filter-my-requests-type,
+#filter-my-requests-status,
+#filter-users-status,
+#modal-user-role,
+#modal-user-status,
+#pagination-size-select,
+#btn-download-records,
+.btn-download-action {
+  cursor: pointer !important;
+}
+
+select:hover,
+select.form-select:hover,
+.form-select:hover,
+.form-select-sm:hover,
+.form-select-lg:hover,
+select option:hover,
+optgroup:hover,
+.dropdown:hover,
+.dropdown-toggle:hover,
+[data-bs-toggle="dropdown"]:hover,
+.dropdown-item:hover,
+.dropdown-menu:hover,
+.dropdown-menu.show,
+.dropdown-menu.show *,
+.dropdown-menu li:hover,
+.dropdown-menu li a:hover,
+.dropdown-menu li button:hover,
+.dropdown-menu a:hover,
+.dropdown-menu button:hover,
+.searchable-select-wrapper:hover,
+.searchable-select-wrapper *:hover,
+.searchable-select-input:hover,
+.searchable-select-menu:hover,
+.searchable-select-menu.show,
+.searchable-select-menu.show *,
+.searchable-select-menu .dropdown-item:hover,
+.action-dots-btn:hover,
+.action-dots-btn *:hover,
+#filter-record-type:hover,
+#filter-remark:hover,
+#filter-all-requests-type:hover,
+#filter-all-requests-status:hover,
+#filter-my-requests-type:hover,
+#filter-my-requests-status:hover,
+#filter-users-status:hover,
+#modal-user-role:hover,
+#modal-user-status:hover,
+#pagination-size-select:hover,
+#btn-download-records:hover,
+.btn-download-action:hover {
+  cursor: pointer !important;
+}
+
+/* Classic Form Inputs, Selects & Date pickers */
+body:not(.theme-modern-3d) .form-control,
+body:not(.theme-modern-3d) .form-select,
+body:not(.theme-modern-3d) .input-group-text,
+body.theme-classic .form-control,
+body.theme-classic .form-select,
+body.theme-classic .input-group-text {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+body:not(.theme-modern-3d) .form-control:focus,
+body:not(.theme-modern-3d) .form-select:focus,
+body.theme-classic .form-control:focus,
+body.theme-classic .form-select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Classic Buttons */
+body:not(.theme-modern-3d) .btn-primary,
+body.theme-classic .btn-primary {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  text-shadow: none !important;
+  transform: none !important;
+}
+
+body:not(.theme-modern-3d) .btn-success,
+body:not(.theme-modern-3d) .btn-download-action,
+body.theme-classic .btn-success,
+body.theme-classic .btn-download-action {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+}
+
+body:not(.theme-modern-3d) .btn-danger,
+body:not(.theme-modern-3d) .btn-clear-filters,
+body.theme-classic .btn-danger,
+body.theme-classic .btn-clear-filters {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+}
+
+/* Classic Action 3-Dots Button & Popup */
+body:not(.theme-modern-3d) .action-dots-btn,
+body.theme-classic .action-dots-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+}
+
+body:not(.theme-modern-3d) .action-dots-btn i,
+body.theme-classic .action-dots-btn i {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+body:not(.theme-modern-3d) .action-dots-btn:hover,
+body.theme-classic .action-dots-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+body:not(.theme-modern-3d) .dropdown-menu,
+body.theme-classic .dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+  backdrop-filter: none !important;
+}
+
+body:not(.theme-modern-3d) .dropdown-item,
+body.theme-classic .dropdown-item {
+  color: #334155 !important;
+}
+
+body:not(.theme-modern-3d) .dropdown-item:hover,
+body.theme-classic .dropdown-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Classic Modal Styles */
+body:not(.theme-modern-3d) .modal-header,
+body:not(.theme-modern-3d) .modal-footer,
+body.theme-classic .modal-header,
+body.theme-classic .modal-footer {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+
+/* ==========================================================================
+   2. MODERN 3D UI THEME SYSTEM
+   (Standardized Text Size, 3D WebGL Canvas Visible, Cyber-Glass,
+    Modern Search Bar, Modern Dropdowns, Modern 3-Dots Action Button)
+   ========================================================================== */
+
+/* Show WebGL 3D Canvas in Modern Mode */
+body.theme-modern-3d #webgl-3d-bg {
+  display: block !important;
+}
+
+/* Standardized Typography & Overall Scale (No -90% Zoom Needed!) */
+body.theme-modern-3d {
+  font-size: 0.85rem !important;
+  line-height: 1.45 !important;
+  background: 
+    radial-gradient(ellipse 65% 50% at 50% -10%, rgba(0, 240, 255, 0.22), transparent),
+    radial-gradient(circle at 10% 25%, rgba(168, 85, 247, 0.25), transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.22), transparent 45%),
+    radial-gradient(circle at 50% 60%, rgba(6, 182, 212, 0.18), transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.24), transparent 45%),
+    radial-gradient(circle at 15% 90%, rgba(0, 245, 160, 0.16), transparent 45%),
+    linear-gradient(180deg, #040612 0%, #080c20 40%, #03050d 100%) fixed !important;
+  background-size: 200% 200%, 180% 180%, 200% 200%, 220% 220%, 190% 190%, 200% 200%, 100% 100% !important;
+  animation: modernAuroraMesh 22s ease-in-out infinite alternate !important;
+  color: #f8fafc !important;
+  position: relative;
+}
+
+/* 3D Cyber Perspective Grid Floor */
+body.theme-modern-3d::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 85, 247, 0.06) 1px, transparent 1px);
+  background-size: 42px 42px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  animation: cyberGridMove 40s linear infinite;
+}
+
+/* Standardized Modern Headings (Compact, sharp & balanced) */
+body.theme-modern-3d h1 { font-size: 1.35rem !important; }
+body.theme-modern-3d h2:not(.modal-title) { font-size: 1.2rem !important; }
+body.theme-modern-3d h3 { font-size: 1.1rem !important; }
+body.theme-modern-3d h4 { font-size: 0.95rem !important; }
+body.theme-modern-3d h5 { font-size: 0.88rem !important; }
+body.theme-modern-3d #page-title-display { font-size: 1.05rem !important; }
+
+body.theme-modern-3d h1,
+body.theme-modern-3d h2:not(.modal-title),
+body.theme-modern-3d h3,
+body.theme-modern-3d h4,
+body.theme-modern-3d h5,
+body.theme-modern-3d #page-title-display,
+body.theme-modern-3d .modal-title {
+  background: linear-gradient(135deg, #ffffff 0%, #67e8f9 35%, #c084fc 70%, #f472b6 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 2px 10px rgba(0, 240, 255, 0.35)) !important;
+  letter-spacing: -0.01em;
+}
+
+body.theme-modern-3d .text-dark {
+  color: #f8fafc !important;
+}
+
+body.theme-modern-3d .text-muted,
+body.theme-modern-3d .text-secondary {
+  color: #93c5fd !important;
+}
+
+body.theme-modern-3d .pid-link {
+  color: #00f0ff !important;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+  font-weight: 700 !important;
+  transition: all 0.2s ease;
+}
+
+body.theme-modern-3d .pid-link:hover {
+  color: #ffffff !important;
+  text-shadow: 0 0 16px rgba(0, 240, 255, 1);
+  transform: scale(1.05);
+  display: inline-block;
+}
+
+/* Modern Top Navbar Header */
+body.theme-modern-3d header.top-navbar {
+  background: rgba(7, 11, 26, 0.86) !important;
+  backdrop-filter: blur(26px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+  border-bottom: 2px solid transparent !important;
+  border-image: linear-gradient(90deg, rgba(0, 240, 255, 0.8), rgba(168, 85, 247, 0.8), rgba(236, 72, 153, 0.8), rgba(0, 240, 255, 0.8)) 1 !important;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.15) !important;
+}
+
+/* Modern UI Switcher Pill */
+body.theme-modern-3d .ui-mode-pill {
+  background: rgba(10, 15, 34, 0.95) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.6) !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-modern-3d .ui-mode-btn.active#btn-ui-modern {
+  background: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 50%, #ec4899 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.7), 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px #ffffff !important;
+  animation: modernGlowPulse 2.5s infinite alternate !important;
+}
+
+/* Modern Sidebar */
+body.theme-modern-3d #sidebar {
+  background: linear-gradient(180deg, rgba(6, 9, 22, 0.96) 0%, rgba(11, 15, 36, 0.98) 100%) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border-right: 2px solid rgba(0, 240, 255, 0.3) !important;
+  box-shadow: 10px 0 40px rgba(0, 240, 255, 0.12), 4px 0 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.theme-modern-3d #sidebar .sidebar-header {
+  padding: 0.85rem 1rem !important;
+  background: linear-gradient(180deg, rgba(12, 18, 42, 0.95) 0%, rgba(8, 12, 28, 0.9) 100%) !important;
+  border-bottom: 1.5px solid rgba(0, 240, 255, 0.25) !important;
+}
+
+body.theme-modern-3d #sidebar .brand-logo-icon {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 1.15rem !important;
+  background: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 50%, #ec4899 100%) !important;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 1px 2px #ffffff !important;
+  animation: brandLogoAura 5s ease-in-out infinite alternate !important;
+}
+
+body.theme-modern-3d #sidebar .sidebar-header span {
+  background: linear-gradient(135deg, #00f0ff 0%, #ffffff 40%, #d946ef 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.6)) !important;
+  font-weight: 800 !important;
+}
+
+body.theme-modern-3d #sidebar .nav-link {
+  color: #cbd5e1 !important;
+  border-radius: 10px;
+  margin: 3px 8px !important;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.82rem !important;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+body.theme-modern-3d #sidebar .nav-link:hover {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.18) 0%, rgba(168, 85, 247, 0.08) 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 240, 255, 0.5) !important;
+  transform: translateX(4px) scale(1.02);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.theme-modern-3d #sidebar .nav-link.active {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.28) 0%, rgba(168, 85, 247, 0.3) 60%, rgba(236, 72, 153, 0.18) 100%) !important;
+  border: 1.5px solid #00f0ff !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  transform: translateX(3px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.55), inset 0 0 12px rgba(168, 85, 247, 0.3), inset 0 1px 1px #ffffff !important;
+}
+
+body.theme-modern-3d #sidebar .nav-icon-3d {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+  animation: modernIconFloat 4s ease-in-out infinite alternate !important;
+}
+
+/* Modern Stat Cards (Standardized compact size, not oversized!) */
+body.theme-modern-3d .stat-card {
+  padding: 0.75rem 1rem !important;
+  background: linear-gradient(140deg, rgba(16, 24, 52, 0.88) 0%, rgba(9, 13, 30, 0.96) 100%) !important;
+  backdrop-filter: blur(28px) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 28px -5px rgba(0, 0, 0, 0.65), 0 0 18px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .stat-card:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 16px 36px -6px rgba(0, 240, 255, 0.4), 0 0 25px rgba(168, 85, 247, 0.3), inset 0 1px 2px #ffffff !important;
+}
+
+body.theme-modern-3d .stat-card span.text-muted {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+}
+
+body.theme-modern-3d .stat-card h2 {
+  background: linear-gradient(135deg, #00f0ff 0%, #38bdf8 50%, #d946ef 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.5)) !important;
+  font-size: 1.45rem !important; /* Compact, balanced, fixed from 2.3rem */
+  font-weight: 800 !important;
+  margin-top: 0.15rem !important;
+}
+
+body.theme-modern-3d .stat-icon {
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 1.15rem !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(0, 240, 255, 0.3), inset 0 1px 2px #ffffff !important;
+  animation: modernIconFloat 4s ease-in-out infinite alternate !important;
+}
+
+/* Modern Tables & Filter Containers */
+body.theme-modern-3d .custom-table-card {
+  padding: 0.85rem 1rem !important;
+  background: linear-gradient(180deg, rgba(14, 21, 46, 0.9) 0%, rgba(7, 11, 26, 0.97) 100%) !important;
+  backdrop-filter: blur(28px) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.3) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.theme-modern-3d .table thead th {
+  background: rgba(10, 16, 36, 0.96) !important;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.5) !important;
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.76rem !important;
+  padding: 0.5rem 0.65rem !important;
+}
+
+body.theme-modern-3d .table tbody tr td {
+  border-bottom: 1px solid rgba(0, 240, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+  font-size: 0.8rem !important;
+  padding: 0.45rem 0.65rem !important;
+}
+
+body.theme-modern-3d .table tbody tr:hover td {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+  box-shadow: inset 3px 0 0 #00f0ff, 0 0 12px rgba(0, 240, 255, 0.18) !important;
+}
+
+/* ==========================================================================
+   MODERN SEARCH BAR SYSTEM (Capsule, Glowing Cyan Border & Focus Halo)
+   ========================================================================== */
+body.theme-modern-3d .records-filter-card {
+  padding: 0.75rem 1rem !important;
+  background: linear-gradient(180deg, rgba(14, 21, 46, 0.92) 0%, rgba(7, 11, 26, 0.97) 100%) !important;
+  backdrop-filter: blur(28px) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  background: rgba(8, 14, 34, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group:focus-within {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+body.theme-modern-3d .records-filter-card .input-group .input-group-text {
+  background: transparent !important;
+  border: none !important;
+  color: #00f0ff !important;
+  font-size: 0.85rem !important;
+  padding: 0.35rem 0.65rem !important;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8) !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group #search-query-input {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 0.82rem !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.5rem !important;
+  height: 34px !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group #search-query-input::placeholder {
+  color: rgba(147, 197, 253, 0.65) !important;
+  font-size: 0.8rem !important;
+}
+
+/* Filter Date Pickers */
+body.theme-modern-3d .records-filter-card .input-group-sm {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  background: rgba(9, 15, 36, 0.94) !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group-sm .input-group-text {
+  background: rgba(0, 240, 255, 0.12) !important;
+  border: none !important;
+  color: #67e8f9 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+body.theme-modern-3d .records-filter-card .input-group-sm input[type="date"],
+body.theme-modern-3d input[type="date"] {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 0.8rem !important;
+  height: 34px !important;
+  box-shadow: none !important;
+  color-scheme: dark !important;
+  cursor: pointer !important;
+}
+
+/* White Calendar Picker Icon in Modern UI */
+body.theme-modern-3d input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2.5) contrast(1.2) !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
+body.theme-modern-3d input[type="date"]::-webkit-inner-spin-button,
+body.theme-modern-3d input[type="date"]::-webkit-clear-button {
+  filter: invert(1) !important;
+  cursor: pointer !important;
+}
+
+/* ==========================================================================
+   MODERN DROPDOWNS & SELECTS SYSTEM
+   (Custom Cyan Arrow, Neon Borders, Cyber Glass & Floating Menu)
+   ========================================================================== */
+body.theme-modern-3d select,
+body.theme-modern-3d select.form-select,
+body.theme-modern-3d .form-select,
+body.theme-modern-3d .form-select-sm,
+body.theme-modern-3d #filter-record-type,
+body.theme-modern-3d #filter-all-requests-type,
+body.theme-modern-3d #filter-all-requests-status,
+body.theme-modern-3d #filter-my-requests-type,
+body.theme-modern-3d #filter-my-requests-status,
+body.theme-modern-3d #filter-users-status,
+body.theme-modern-3d #modal-user-role,
+body.theme-modern-3d #modal-user-status,
+body.theme-modern-3d #modal-record-type,
+body.theme-modern-3d #modal-record-remark,
+body.theme-modern-3d #send-delete-reason-select,
+body.theme-modern-3d #update-remark-select,
+body.theme-modern-3d .modal select,
+body.theme-modern-3d .modal select.form-select,
+body.theme-modern-3d .modal .form-select {
+  background-color: rgba(9, 15, 36, 0.94) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300f0ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.65rem center !important;
+  background-size: 13px 10px !important;
+  border: 1.5px solid #00f0ff !important;
+  border-radius: 10px !important;
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+  height: 34px !important;
+  padding: 0.35rem 2rem 0.35rem 0.65rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.22s ease !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d select:hover,
+body.theme-modern-3d select.form-select:hover,
+body.theme-modern-3d .form-select:hover,
+body.theme-modern-3d select.form-select:focus,
+body.theme-modern-3d .form-select:focus,
+body.theme-modern-3d #filter-record-type:hover,
+body.theme-modern-3d #filter-record-type:focus,
+body.theme-modern-3d #filter-all-requests-type:hover,
+body.theme-modern-3d #filter-all-requests-type:focus,
+body.theme-modern-3d #filter-all-requests-status:hover,
+body.theme-modern-3d #filter-all-requests-status:focus,
+body.theme-modern-3d #filter-my-requests-type:hover,
+body.theme-modern-3d #filter-my-requests-type:focus,
+body.theme-modern-3d #filter-my-requests-status:hover,
+body.theme-modern-3d #filter-my-requests-status:focus,
+body.theme-modern-3d #filter-users-status:hover,
+body.theme-modern-3d #filter-users-status:focus,
+body.theme-modern-3d #modal-user-role:hover,
+body.theme-modern-3d #modal-user-role:focus,
+body.theme-modern-3d #modal-user-status:hover,
+body.theme-modern-3d #modal-user-status:focus,
+body.theme-modern-3d .modal select:hover,
+body.theme-modern-3d .modal select:focus {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d select option,
+body.theme-modern-3d select.form-select option,
+body.theme-modern-3d .form-select option,
+body.theme-modern-3d option {
+  background-color: #090e24 !important;
+  color: #ffffff !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d select option:hover,
+body.theme-modern-3d select.form-select option:hover,
+body.theme-modern-3d .form-select option:hover,
+body.theme-modern-3d option:hover,
+body.theme-modern-3d option:focus,
+body.theme-modern-3d option:checked {
+  background-color: #00f0ff !important;
+  color: #000000 !important;
+  cursor: pointer !important;
+}
+
+/* Modern Searchable Select (All Remarks Filter & Dynamic Selects) */
+body.theme-modern-3d .searchable-select-wrapper {
+  position: relative;
+  z-index: 35;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-input,
+body.theme-modern-3d .requests-filter-card .searchable-select-input,
+body.theme-modern-3d #all-requests-view .searchable-select-input,
+body.theme-modern-3d #my-requests-view .searchable-select-input,
+body.theme-modern-3d #users-view .searchable-select-input,
+body.theme-modern-3d .searchable-select-wrapper .searchable-select-input {
+  background-color: rgba(9, 15, 36, 0.94) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300f0ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 13px 10px !important;
+  border: 1.5px solid #00f0ff !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+  height: 34px !important;
+  padding: 0.35rem 2rem 0.35rem 0.75rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.22s ease !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-input::placeholder {
+  color: rgba(147, 197, 253, 0.75) !important;
+  font-size: 0.8rem !important;
+}
+
+body.theme-modern-3d .searchable-select-input:hover,
+body.theme-modern-3d .searchable-select-input:focus,
+body.theme-modern-3d .requests-filter-card .searchable-select-input:hover,
+body.theme-modern-3d .requests-filter-card .searchable-select-input:focus,
+body.theme-modern-3d #all-requests-view .searchable-select-input:hover,
+body.theme-modern-3d #all-requests-view .searchable-select-input:focus,
+body.theme-modern-3d #my-requests-view .searchable-select-input:hover,
+body.theme-modern-3d #my-requests-view .searchable-select-input:focus,
+body.theme-modern-3d #users-view .searchable-select-input:hover,
+body.theme-modern-3d #users-view .searchable-select-input:focus {
+  border: 1.5px solid #00f0ff !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-menu {
+  background: linear-gradient(165deg, rgba(12, 18, 42, 0.98) 0%, rgba(6, 10, 26, 0.99) 100%) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1.5px solid #00f0ff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 240, 255, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  padding: 0.35rem !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-menu .dropdown-item {
+  color: #e2e8f0 !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+  padding: 0.42rem 0.75rem !important;
+  background: transparent !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-menu .dropdown-item:hover,
+body.theme-modern-3d .searchable-select-menu .dropdown-item:focus {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%) !important;
+  color: #ffffff !important;
+  transform: translateX(4px) scale(1.01) !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.35) !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .searchable-select-menu .dropdown-item.active {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.35) 0%, rgba(14, 165, 233, 0.3) 100%) !important;
+  color: #00f0ff !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #00f0ff !important;
+  cursor: pointer !important;
+}
+
+/* Modern Download Dropdown Button */
+body.theme-modern-3d .btn-download-action,
+body.theme-modern-3d #btn-download-records {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.88) 0%, rgba(5, 150, 105, 0.95) 100%) !important;
+  border: 1.5px solid rgba(52, 211, 153, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 16px rgba(16, 185, 129, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+  border-radius: 10px !important;
+  height: 34px !important;
+  font-weight: 600 !important;
+  transition: all 0.22s ease !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .btn-download-action:hover,
+body.theme-modern-3d #btn-download-records:hover {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.95) 0%, rgba(16, 185, 129, 1) 100%) !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.7), inset 0 1px 2px #ffffff !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  cursor: pointer !important;
+}
+
+/* Modern Pagination Size Select */
+body.theme-modern-3d #pagination-size-select {
+  background-color: rgba(9, 15, 36, 0.94) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  color: #00f0ff !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  height: 30px !important;
+  padding: 0.2rem 1.6rem 0.2rem 0.6rem !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d #pagination-size-select:hover,
+body.theme-modern-3d #pagination-size-select:focus {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5) !important;
+  cursor: pointer !important;
+}
+
+/* Floating Cyber-Glass Dropdown Menu */
+body.theme-modern-3d .dropdown-menu {
+  background: linear-gradient(165deg, rgba(12, 18, 42, 0.96) 0%, rgba(6, 10, 26, 0.98) 100%) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1.5px solid #00f0ff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 240, 255, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  padding: 0.35rem !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .dropdown-item {
+  color: #e2e8f0 !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+  padding: 0.42rem 0.75rem !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d .dropdown-item:hover,
+body.theme-modern-3d .dropdown-item:focus {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.25) 0%, rgba(168, 85, 247, 0.18) 100%) !important;
+  color: #ffffff !important;
+  transform: translateX(4px) scale(1.02) !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35) !important;
+  cursor: pointer !important;
+}
+
+/* ==========================================================================
+   ALL REQUESTS & MY REQUESTS FILTER CARDS & DROPDOWNS (Modern 3D Mode)
+   ========================================================================== */
+body.theme-modern-3d .requests-filter-card,
+body.theme-modern-3d #all-requests-view .card:not(.stat-card):not(.custom-table-card),
+body.theme-modern-3d #my-requests-view .card:not(.stat-card):not(.custom-table-card),
+body.theme-modern-3d #users-view .card:not(.stat-card):not(.custom-table-card) {
+  padding: 0.75rem 1rem !important;
+  background: linear-gradient(180deg, rgba(14, 21, 46, 0.92) 0%, rgba(7, 11, 26, 0.97) 100%) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Search input groups in All Requests, My Requests & User Management */
+body.theme-modern-3d .requests-filter-card .input-group,
+body.theme-modern-3d #all-requests-view .input-group,
+body.theme-modern-3d #my-requests-view .input-group,
+body.theme-modern-3d #users-view .input-group {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  background: rgba(8, 14, 34, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(0, 240, 255, 0.15) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .requests-filter-card .input-group:focus-within,
+body.theme-modern-3d #all-requests-view .input-group:focus-within,
+body.theme-modern-3d #my-requests-view .input-group:focus-within,
+body.theme-modern-3d #users-view .input-group:focus-within {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+body.theme-modern-3d .requests-filter-card .input-group .input-group-text,
+body.theme-modern-3d #all-requests-view .input-group-text,
+body.theme-modern-3d #my-requests-view .input-group-text,
+body.theme-modern-3d #users-view .input-group-text {
+  background: transparent !important;
+  border: none !important;
+  color: #00f0ff !important;
+  font-size: 0.85rem !important;
+  padding: 0.35rem 0.65rem !important;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8) !important;
+}
+
+body.theme-modern-3d .requests-filter-card .input-group .form-control,
+body.theme-modern-3d #all-requests-view .input-group .form-control,
+body.theme-modern-3d #my-requests-view .input-group .form-control,
+body.theme-modern-3d #users-view .input-group .form-control {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 0.82rem !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.5rem !important;
+  height: 34px !important;
+}
+
+body.theme-modern-3d .requests-filter-card .input-group .form-control::placeholder,
+body.theme-modern-3d #all-requests-view .input-group .form-control::placeholder,
+body.theme-modern-3d #my-requests-view .input-group .form-control::placeholder,
+body.theme-modern-3d #users-view .input-group .form-control::placeholder {
+  color: rgba(147, 197, 253, 0.65) !important;
+  font-size: 0.8rem !important;
+}
+
+/* Filter Labels in All Requests, My Requests & User Management */
+body.theme-modern-3d #all-requests-view label,
+body.theme-modern-3d #my-requests-view label,
+body.theme-modern-3d #users-view label,
+body.theme-modern-3d .requests-filter-card label {
+  color: #67e8f9 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4) !important;
+  font-size: 0.82rem !important;
+}
+
+/* ==========================================================================
+   ADD NEW USER MODAL & GENERAL MODAL INPUTS (Modern 3D Mode)
+   ========================================================================== */
+body.theme-modern-3d .modal .modal-body label,
+body.theme-modern-3d #userModal .modal-body label {
+  color: #67e8f9 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4) !important;
+  font-size: 0.82rem !important;
+}
+
+body.theme-modern-3d .modal .form-control,
+body.theme-modern-3d #userModal .form-control {
+  background: rgba(8, 14, 34, 0.94) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+  font-size: 0.85rem !important;
+  height: 38px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.22s ease !important;
+}
+
+body.theme-modern-3d .modal .form-control:focus,
+body.theme-modern-3d #userModal .form-control:focus {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  outline: none !important;
+}
+
+body.theme-modern-3d .modal .form-control::placeholder,
+body.theme-modern-3d #userModal .form-control::placeholder {
+  color: rgba(147, 197, 253, 0.65) !important;
+}
+
+body.theme-modern-3d #userModal .form-check.form-switch.card {
+  background: rgba(14, 21, 46, 0.88) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.theme-modern-3d #userModal .form-check.form-switch.card .form-check-label {
+  color: #e2e8f0 !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+}
+
+body.theme-modern-3d #userModal .form-check-input {
+  background-color: rgba(8, 14, 34, 0.9) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.4) !important;
+  cursor: pointer !important;
+}
+
+body.theme-modern-3d #userModal .form-check-input:checked {
+  background-color: #00f0ff !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.7) !important;
+}
+
+/* ==========================================================================
+   MODERN 3-DOTS ACTION BUTTON & POPUP MENU
+   ========================================================================== */
+body.theme-modern-3d .action-dots-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, rgba(14, 22, 52, 0.95) 0%, rgba(8, 12, 32, 0.98) 100%) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  color: #00f0ff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+body.theme-modern-3d .action-dots-btn i {
+  color: #00f0ff !important;
+  font-size: 0.85rem !important;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.75) !important;
+  transition: transform 0.26s ease !important;
+}
+
+body.theme-modern-3d .action-dots-btn:hover,
+body.theme-modern-3d .action-dots-btn[aria-expanded="true"] {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%) !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.8), inset 0 1px 2px #ffffff !important;
+  transform: rotate(90deg) scale(1.12) !important;
+}
+
+body.theme-modern-3d .action-dots-btn:hover i,
+body.theme-modern-3d .action-dots-btn[aria-expanded="true"] i {
+  color: #ffffff !important;
+  text-shadow: 0 0 14px #00f0ff !important;
+}
+
+/* Edit Record Menu Item */
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Edit"],
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-info,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-primary {
+  color: #38bdf8 !important;
+  font-weight: 600 !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Edit"] i,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-info i,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-primary i {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.8) !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Edit"]:hover,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-info:hover,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-primary:hover {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.28) 0%, rgba(0, 240, 255, 0.15) 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4) !important;
+}
+
+/* Delete Record Menu Item */
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Delete"],
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-danger {
+  color: #ff4d6d !important;
+  font-weight: 600 !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Delete"] i,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-danger i {
+  color: #ff4d6d !important;
+  text-shadow: 0 0 10px rgba(255, 77, 109, 0.8) !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item[onclick*="Delete"]:hover,
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-danger:hover {
+  background: linear-gradient(90deg, rgba(255, 77, 109, 0.28) 0%, rgba(225, 29, 72, 0.18) 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 77, 109, 0.4) !important;
+}
+
+/* Request Edit & Delete Menu Items */
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-warning {
+  color: #facc15 !important;
+  font-weight: 600 !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-warning i {
+  color: #facc15 !important;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.8) !important;
+}
+
+body.theme-modern-3d .dropdown-menu a.dropdown-item.text-warning:hover {
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.28) 0%, rgba(234, 179, 8, 0.15) 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.4) !important;
+}
+
+/* Modern Buttons (Primary, Success/Download, Danger/Clear) */
+body.theme-modern-3d .btn-primary {
+  font-size: 0.82rem !important;
+  padding: 0.4rem 0.85rem !important;
+  background: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 50%, #ec4899 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #4c1d95, 0 8px 25px rgba(139, 92, 246, 0.55), 0 0 20px rgba(0, 240, 255, 0.35), inset 0 1px 2px #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-primary:hover,
+body.theme-modern-3d .btn-primary:focus {
+  background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #f43f5e 100%) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #4c1d95, 0 14px 30px rgba(236, 72, 153, 0.65), 0 0 26px rgba(0, 240, 255, 0.5), inset 0 1px 3px #ffffff !important;
+}
+
+body.theme-modern-3d .btn-primary:active {
+  transform: translateY(2px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #4c1d95, 0 3px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.theme-modern-3d .btn-success,
+body.theme-modern-3d .btn-download-action {
+  font-size: 0.82rem !important;
+  padding: 0.4rem 0.85rem !important;
+  background: linear-gradient(135deg, #00f5a0 0%, #00d9f5 50%, #0284c7 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  color: #032030 !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #0369a1, 0 8px 24px rgba(0, 245, 160, 0.5), 0 0 20px rgba(0, 217, 245, 0.4), inset 0 1px 2px #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-success i,
+body.theme-modern-3d .btn-download-action i {
+  color: #032030 !important;
+  font-weight: 800;
+}
+
+body.theme-modern-3d .btn-success:hover,
+body.theme-modern-3d .btn-download-action:hover,
+body.theme-modern-3d .btn-download-action[aria-expanded="true"] {
+  background: linear-gradient(135deg, #00d9f5 0%, #00f5a0 100%) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #0369a1, 0 14px 28px rgba(0, 217, 245, 0.6), 0 0 26px rgba(0, 245, 160, 0.55), inset 0 1px 3px #ffffff !important;
+  color: #032030 !important;
+}
+
+body.theme-modern-3d .btn-danger,
+body.theme-modern-3d .btn-clear-filters {
+  font-size: 0.82rem !important;
+  padding: 0.4rem 0.85rem !important;
+  background: linear-gradient(135deg, #ff0055 0%, #ff4b4b 50%, #fb7185 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #9f1239, 0 8px 24px rgba(255, 0, 85, 0.55), 0 0 20px rgba(255, 75, 75, 0.4), inset 0 1px 2px #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-danger:hover,
+body.theme-modern-3d .btn-clear-filters:hover {
+  background: linear-gradient(135deg, #ff4b4b 0%, #ff0055 100%) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #9f1239, 0 14px 28px rgba(255, 0, 85, 0.65), 0 0 26px rgba(255, 75, 75, 0.55), inset 0 1px 3px #ffffff !important;
+}
+
+/* Modern Modals */
+body.theme-modern-3d .modal-content {
+  background: linear-gradient(160deg, rgba(16, 23, 50, 0.98) 0%, rgba(8, 12, 28, 0.99) 100%) !important;
+  backdrop-filter: blur(32px) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.3) !important;
+}
+
+body.theme-modern-3d .modal-header {
+  border-bottom: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  background: rgba(11, 17, 38, 0.8) !important;
+}
+
+body.theme-modern-3d .modal-footer {
+  border-top: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  background: rgba(11, 17, 38, 0.8) !important;
+}
+
+/* Modern 3D Login Screen */
+body.theme-modern-3d #login-view {
+  background: transparent !important;
+}
+
+body.theme-modern-3d .login-card {
+  background: linear-gradient(160deg, rgba(14, 21, 46, 0.94) 0%, rgba(8, 12, 28, 0.98) 100%) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.25) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  color: #f8fafc !important;
+}
+
+body.theme-modern-3d .login-title {
+  background: linear-gradient(135deg, #ffffff 0%, #67e8f9 40%, #c084fc 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 2px 10px rgba(0, 240, 255, 0.4)) !important;
+}
+
+body.theme-modern-3d .login-subtitle {
+  color: #93c5fd !important;
+}
+
+body.theme-modern-3d .login-label {
+  color: #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+body.theme-modern-3d .login-card .input-group-text {
+  background-color: rgba(14, 22, 52, 0.95) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  color: #00f0ff !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7) !important;
+}
+
+body.theme-modern-3d .login-card .password-toggle-btn {
+  background-color: rgba(14, 22, 52, 0.95) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  border-left: none !important;
+  color: #00f0ff !important;
+  cursor: pointer;
+}
+
+body.theme-modern-3d .login-card #login-pass-icon {
+  color: #00f0ff !important;
+  font-size: 1.05rem !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7) !important;
+}
+
+body.theme-modern-3d .login-card .password-toggle-btn:hover #login-pass-icon {
+  color: #ffffff !important;
+  text-shadow: 0 0 12px #00f0ff !important;
+}
+
+body.theme-modern-3d .login-card .form-control {
+  background-color: rgba(8, 14, 34, 0.92) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+}
+
+body.theme-modern-3d .login-card .form-control::placeholder {
+  color: rgba(147, 197, 253, 0.6) !important;
+}
+
+body.theme-modern-3d .login-card .form-control:focus {
+  background-color: rgba(10, 18, 44, 0.96) !important;
+  border-color: #00f0ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.5) !important;
+}
+
+body.theme-modern-3d .login-card .form-control:-webkit-autofill,
+body.theme-modern-3d .login-card .form-control:-webkit-autofill:hover,
+body.theme-modern-3d .login-card .form-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080e22 inset !important;
+  box-shadow: 0 0 0px 1000px #080e22 inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* ==========================================================================
+   ANIMATION KEYFRAMES
+   ========================================================================== */
+@keyframes modernAuroraMesh {
+  0% {
+    background-position: 0% 0%, 100% 0%, 50% 50%, 0% 100%, 100% 100%, 0% 0%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 100%, 80% 20%, 100% 0%, 30% 70%, 50% 100%, 0% 0%;
+  }
+  100% {
+    background-position: 50% 100%, 50% 50%, 20% 80%, 70% 30%, 0% 0%, 100% 0%, 0% 0%;
+  }
+}
+
+@keyframes cyberGridMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 42px 42px;
+  }
+}
+
+@keyframes brandLogoAura {
+  0% {
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.6), inset 0 1px 2px #ffffff;
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(236, 72, 153, 0.8), 0 0 12px rgba(0, 240, 255, 0.6), inset 0 1px 2px #ffffff;
+  }
+}
+
+@keyframes modernIconFloat {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+}
+
+@keyframes modernGlowPulse {
+  0% {
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 26px rgba(0, 240, 255, 0.9), 0 0 15px rgba(236, 72, 153, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 2px #ffffff;
+  }
+}
+
+/* Print Media Styles for PDF Report */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media print {
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+
+  body > *:not(#pdf-print-area) {
+    display: none !important;
+  }
+
+  #pdf-print-area {
+    display: block !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    visibility: visible !important;
+  }
+
+  #pdf-print-area * {
+    visibility: visible !important;
+  }
+
+  #pdf-print-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    margin-top: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  #pdf-print-table th, 
+  #pdf-print-table td {
+    border: 1px solid #333333 !important;
+    padding: 6px 8px !important;
+    font-size: 9.5pt !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  #pdf-print-table th {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #pdf-print-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #pdf-print-table thead {
+    display: table-header-group !important;
+  }
+}
+
+/* ==========================================================================
+   Search Bar Keyboard Shortcut Badge ('/' Key)
+   ========================================================================== */
+.search-shortcut-kbd-wrap {
+  background: transparent !important;
+  border-left: none !important;
+  cursor: pointer;
+  padding: 0 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 4;
+}
+
+.search-slash-kbd {
+  font-family: inherit, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  padding: 3px 7px !important;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.search-shortcut-kbd-wrap:hover .search-slash-kbd,
+.search-slash-kbd:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: scale(1.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Modern 3D Cyber Theme */
+body.theme-modern-3d .search-shortcut-kbd-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.theme-modern-3d .search-slash-kbd {
+  color: #00f0ff !important;
+  background: rgba(0, 240, 255, 0.14) !important;
+  border: 1px solid rgba(0, 240, 255, 0.5) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.8) !important;
+}
+
+body.theme-modern-3d .search-shortcut-kbd-wrap:hover .search-slash-kbd,
+body.theme-modern-3d .search-slash-kbd:hover {
+  background: rgba(0, 240, 255, 0.28) !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+  transform: scale(1.1) !important;
+}
