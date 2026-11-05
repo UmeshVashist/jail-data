@@ -75,7 +75,7 @@ export default function UserManagement() {
   });
 
   return (
-    <div className="view-section">
+    <div id="users-view" className="view-section">
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
@@ -117,6 +117,7 @@ export default function UserManagement() {
             <div className="d-flex align-items-center gap-2">
               <span className="text-muted small fw-semibold text-nowrap">Status:</span>
               <select
+                id="filter-users-status"
                 className="form-select custom-modern-dropdown"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}

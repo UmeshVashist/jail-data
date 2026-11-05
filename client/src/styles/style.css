@@ -2940,6 +2940,31 @@ body.theme-modern-3d .custom-table-card {
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
 }
 
+body.theme-modern-3d .table {
+  --bs-table-bg: transparent !important;
+  --bs-table-accent-bg: transparent !important;
+  --bs-table-striped-bg: transparent !important;
+  --bs-table-striped-color: #f1f5f9 !important;
+  --bs-table-active-bg: rgba(0, 240, 255, 0.15) !important;
+  --bs-table-active-color: #ffffff !important;
+  --bs-table-hover-bg: rgba(0, 240, 255, 0.12) !important;
+  --bs-table-hover-color: #ffffff !important;
+  --bs-table-color: #f1f5f9 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(0, 240, 255, 0.15) !important;
+}
+
+body.theme-modern-3d .table-responsive {
+  background: transparent !important;
+}
+
+body.theme-modern-3d .table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: #f1f5f9 !important;
+}
+
 body.theme-modern-3d .table thead th {
   background: rgba(10, 16, 36, 0.96) !important;
   border-bottom: 2px solid rgba(0, 240, 255, 0.5) !important;
@@ -2951,15 +2976,22 @@ body.theme-modern-3d .table thead th {
   padding: 0.5rem 0.65rem !important;
 }
 
-body.theme-modern-3d .table tbody tr td {
+body.theme-modern-3d .table tbody tr,
+body.theme-modern-3d .table tbody tr td,
+body.theme-modern-3d .table tbody tr th {
+  background-color: transparent !important;
+  background: transparent !important;
   border-bottom: 1px solid rgba(0, 240, 255, 0.12) !important;
   color: #f1f5f9 !important;
   font-size: 0.8rem !important;
   padding: 0.45rem 0.65rem !important;
 }
 
-body.theme-modern-3d .table tbody tr:hover td {
-  background-color: rgba(0, 240, 255, 0.1) !important;
+body.theme-modern-3d .table tbody tr:hover,
+body.theme-modern-3d .table tbody tr:hover td,
+body.theme-modern-3d .table tbody tr:hover th {
+  background-color: rgba(0, 240, 255, 0.12) !important;
+  color: #ffffff !important;
   box-shadow: inset 3px 0 0 #00f0ff, 0 0 12px rgba(0, 240, 255, 0.18) !important;
 }
 
@@ -3621,6 +3653,155 @@ body.theme-modern-3d .btn-clear-filters:hover {
   background: linear-gradient(135deg, #ff4b4b 0%, #ff0055 100%) !important;
   transform: translateY(-2px) scale(1.02) !important;
   box-shadow: 0 6px 0 #9f1239, 0 14px 28px rgba(255, 0, 85, 0.65), 0 0 26px rgba(255, 75, 75, 0.55), inset 0 1px 3px #ffffff !important;
+}
+
+/* Modern Outline & Action Buttons */
+body.theme-modern-3d .btn-outline-primary {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border: 1.5px solid #818cf8 !important;
+  color: #a5b4fc !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(99, 102, 241, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-outline-primary:hover,
+body.theme-modern-3d .btn-outline-primary:focus {
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #4f46e5 100%) !important;
+  border-color: #a5b4fc !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.65), inset 0 1px 2px #ffffff !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+body.theme-modern-3d .btn-outline-danger {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border: 1.5px solid #f43f5e !important;
+  color: #fda4af !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(244, 63, 94, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-outline-danger:hover,
+body.theme-modern-3d .btn-outline-danger:focus {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%) !important;
+  border-color: #fda4af !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.65), inset 0 1px 2px #ffffff !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+body.theme-modern-3d .btn-outline-cyan {
+  background: rgba(0, 240, 255, 0.12) !important;
+  border: 1.5px solid #00f0ff !important;
+  color: #00f0ff !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-outline-cyan:hover,
+body.theme-modern-3d .btn-outline-cyan:focus {
+  background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%) !important;
+  border-color: #38bdf8 !important;
+  color: #032030 !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.7), inset 0 1px 2px #ffffff !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+body.theme-modern-3d .btn-outline-success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 1.5px solid #10b981 !important;
+  color: #6ee7b7 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(16, 185, 129, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-outline-success:hover,
+body.theme-modern-3d .btn-outline-success:focus {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%) !important;
+  border-color: #6ee7b7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.65), inset 0 1px 2px #ffffff !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+body.theme-modern-3d .btn-outline-secondary {
+  background: rgba(148, 163, 184, 0.12) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.4) !important;
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-modern-3d .btn-outline-secondary:hover:not(:disabled),
+body.theme-modern-3d .btn-outline-secondary:focus:not(:disabled) {
+  background: rgba(148, 163, 184, 0.25) !important;
+  border-color: #00f0ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+body.theme-modern-3d .btn-outline-secondary:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+body.theme-modern-3d .btn-secondary {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.35) !important;
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+body.theme-modern-3d .btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(30, 41, 59, 1) 100%) !important;
+  border-color: rgba(0, 240, 255, 0.4) !important;
+  color: #ffffff !important;
+  transform: translateY(-1.5px) !important;
+}
+
+body.theme-modern-3d .btn-link.pid-link {
+  color: #00f0ff !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+body.theme-modern-3d .btn-link.pid-link:hover {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.8) !important;
+  transform: translateX(2px) !important;
+  text-decoration: underline !important;
+}
+
+body:not(.theme-modern-3d) .btn-link.pid-link,
+body.theme-classic .btn-link.pid-link {
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+body:not(.theme-modern-3d) .btn-link.pid-link:hover,
+body.theme-classic .btn-link.pid-link:hover {
+  color: #0369a1 !important;
+  text-decoration: underline !important;
 }
 
 /* Modern Modals */

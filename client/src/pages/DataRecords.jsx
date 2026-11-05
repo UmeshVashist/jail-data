@@ -130,7 +130,7 @@ export default function DataRecords() {
   };
 
   return (
-    <div className="view-section">
+    <div id="records-view" className="view-section">
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
@@ -195,6 +195,7 @@ export default function DataRecords() {
           {/* 2. Type Filter (All, UT, CT) */}
           <div className="col-6 col-md-2">
             <select
+              id="filter-record-type"
               className="form-select custom-modern-dropdown"
               value={recordType}
               onChange={(e) => {
@@ -211,6 +212,7 @@ export default function DataRecords() {
           {/* 3. Remark Filter */}
           <div className="col-6 col-md-2">
             <select
+              id="filter-record-remark"
               className="form-select custom-modern-dropdown"
               value={remarkFilter}
               onChange={(e) => {
@@ -220,7 +222,7 @@ export default function DataRecords() {
             >
               <option value="all">All Remarks</option>
               {remarkOptions.map((opt, idx) => {
-                const val = typeof opt === 'object' ? opt.optionValue : opt;
+                const val = opt && typeof opt === 'object' ? opt.optionValue : opt;
                 return (
                   <option key={idx} value={val}>
                     {val}
@@ -320,7 +322,17 @@ export default function DataRecords() {
               ) : (
                 records.map((rec, idx) => (
                   <tr key={rec.id || idx}>
-                    <td className="fw-bold text-cyan font-monospace">{rec.pid}</td>
+                    <td className="fw-bold font-monospace">
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 text-cyan fw-bold font-monospace text-decoration-none pid-link"
+                        onClick={() => setViewRecord(rec)}
+                        title="Click to view record details"
+                        style={{ fontSize: 'inherit', letterSpacing: '0.05em' }}
+                      >
+                        {rec.pid}
+                      </button>
+                    </td>
                     <td className="fw-semibold text-white">
                       {rec.name}
                       {rec.hasPendingEditRequest && (
@@ -349,14 +361,6 @@ export default function DataRecords() {
                     <td className="small text-muted">{rec.createdDate}</td>
                     <td className="text-end">
                       <div className="d-flex align-items-center justify-content-end gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-cyan p-1 px-2"
-                          onClick={() => setViewRecord(rec)}
-                          title="View Record Details"
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary p-1 px-2"

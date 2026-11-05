@@ -4,21 +4,29 @@
  */
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword }) {
   const { user, logout, isAdmin, canImport, canAccessPS } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLinkClick = () => {
+  const handleNav = (e, path) => {
+    e.preventDefault();
+    navigate(path);
     if (setMobileOpen) setMobileOpen(false);
   };
 
   return (
-    <nav id="sidebar" className={`d-flex flex-column ${mobileOpen ? 'mobile-open' : ''}`}>
+    <nav id="sidebar" className={`d-flex flex-column ${mobileOpen ? 'active mobile-open' : ''}`}>
       {/* Brand / Logo */}
       <div className="sidebar-header d-flex align-items-center justify-content-between p-3 border-bottom border-secondary border-opacity-25">
-        <NavLink to="/dashboard" className="navbar-brand d-flex align-items-center gap-2 m-0 text-decoration-none" onClick={handleLinkClick}>
+        <NavLink
+          to="/dashboard"
+          id="brand-logo-link"
+          className="navbar-brand d-flex align-items-center gap-2 m-0 text-decoration-none"
+          onClick={(e) => handleNav(e, '/dashboard')}
+        >
           <div className="brand-icon-3d">
             <i className="bi bi-layers-half text-cyan fs-4"></i>
           </div>
@@ -41,8 +49,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
         <li className="nav-item">
           <NavLink
             to="/dashboard"
+            id="nav-dashboard"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={handleLinkClick}
+            onClick={(e) => handleNav(e, '/dashboard')}
           >
             <div className="nav-icon-3d nav-icon-dashboard">
               <i className="bi bi-speedometer2"></i>
@@ -55,8 +64,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
         <li className="nav-item">
           <NavLink
             to="/records"
+            id="nav-records"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={handleLinkClick}
+            onClick={(e) => handleNav(e, '/records')}
           >
             <div className="nav-icon-3d nav-icon-records">
               <i className="bi bi-table"></i>
@@ -70,8 +80,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
           <li className="nav-item">
             <NavLink
               to="/import"
+              id="nav-import"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={handleLinkClick}
+              onClick={(e) => handleNav(e, '/import')}
             >
               <div className="nav-icon-3d nav-icon-import">
                 <i className="bi bi-file-earmark-arrow-up-fill"></i>
@@ -83,11 +94,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
 
         {/* All Requests (Admin) */}
         {isAdmin && (
-          <li className="nav-item">
+          <li className="nav-item" id="nav-item-all-requests">
             <NavLink
               to="/all-requests"
+              id="nav-all-requests"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={handleLinkClick}
+              onClick={(e) => handleNav(e, '/all-requests')}
             >
               <div className="nav-icon-3d nav-icon-all-requests">
                 <i className="bi bi-inbox-fill"></i>
@@ -98,11 +110,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
         )}
 
         {/* My Requests */}
-        <li className="nav-item">
+        <li className="nav-item" id="nav-item-my-requests">
           <NavLink
             to="/my-requests"
+            id="nav-my-requests"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={handleLinkClick}
+            onClick={(e) => handleNav(e, '/my-requests')}
           >
             <div className="nav-icon-3d nav-icon-my-requests">
               <i className="bi bi-send-fill"></i>
@@ -113,11 +126,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
 
         {/* User Management (Admin) */}
         {isAdmin && (
-          <li className="nav-item">
+          <li className="nav-item" id="nav-item-users">
             <NavLink
               to="/users"
+              id="nav-users"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={handleLinkClick}
+              onClick={(e) => handleNav(e, '/users')}
             >
               <div className="nav-icon-3d nav-icon-users">
                 <i className="bi bi-people-fill"></i>
@@ -129,11 +143,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
 
         {/* PS List */}
         {canAccessPS && (
-          <li className="nav-item">
+          <li className="nav-item" id="nav-item-ps-list">
             <NavLink
               to="/ps"
+              id="nav-ps"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={handleLinkClick}
+              onClick={(e) => handleNav(e, '/ps')}
             >
               <div className="nav-icon-3d nav-icon-ps">
                 <i className="bi bi-shield-check"></i>
@@ -145,11 +160,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
 
         {/* System Settings (Admin) */}
         {isAdmin && (
-          <li className="nav-item">
+          <li className="nav-item" id="nav-item-dropdowns">
             <NavLink
               to="/settings"
+              id="nav-settings"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              onClick={handleLinkClick}
+              onClick={(e) => handleNav(e, '/settings')}
             >
               <div className="nav-icon-3d nav-icon-settings">
                 <i className="bi bi-gear-wide-connected"></i>

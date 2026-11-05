@@ -31,12 +31,21 @@ export default function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="records" element={<DataRecords />} />
+              <Route path="data-records" element={<DataRecords />} />
               <Route path="import" element={<ImportData />} />
+              <Route path="import-data" element={<ImportData />} />
               <Route path="all-requests" element={<AllRequests />} />
+              <Route path="edit-requests" element={<AllRequests />} />
+              <Route path="delete-requests" element={<AllRequests />} />
               <Route path="my-requests" element={<MyRequests />} />
+              <Route path="reactive-list" element={<MyRequests />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="user-management" element={<UserManagement />} />
               <Route path="ps" element={<PSList />} />
+              <Route path="ps-list" element={<PSList />} />
               <Route path="settings" element={<SystemSettings />} />
+              <Route path="dropdowns" element={<SystemSettings />} />
+              <Route path="system-settings" element={<SystemSettings />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>

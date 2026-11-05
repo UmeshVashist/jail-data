@@ -98,7 +98,7 @@ function terminalRequestLogger(req, res, next) {
     } else if (statusCode >= 300) {
       color = COLORS.brightCyan;
       statusBadge = '🔵';
-      statusText = `${statusCode} REDIRECT`;
+      statusText = statusCode === 304 ? '304 NOT MODIFIED' : `${statusCode} REDIRECT`;
     } else {
       color = COLORS.brightGreen;
       statusBadge = '🟢';
@@ -202,3 +202,4 @@ module.exports = {
   setupProcessErrorDiagnostics,
   COLORS
 };
+

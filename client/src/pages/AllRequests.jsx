@@ -80,7 +80,7 @@ export default function AllRequests() {
   const listPending = requests.filter(r => r.requestType === 'List Add' && (r.status || 'Pending') === 'Pending').length;
 
   return (
-    <div className="view-section">
+    <div id="all-requests-view" className="view-section">
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
@@ -178,6 +178,7 @@ export default function AllRequests() {
             <div className="d-flex align-items-center gap-2">
               <span className="text-muted small fw-semibold text-nowrap">Type:</span>
               <select
+                id="filter-all-requests-type"
                 className="form-select custom-modern-dropdown"
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -194,6 +195,7 @@ export default function AllRequests() {
             <div className="d-flex align-items-center gap-2">
               <span className="text-muted small fw-semibold text-nowrap">Status:</span>
               <select
+                id="filter-all-requests-status"
                 className="form-select custom-modern-dropdown"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -277,7 +279,7 @@ export default function AllRequests() {
                           {req.requestType}
                         </span>
                       </td>
-                      <td className="fw-bold text-white font-monospace">{req.pid || '-'}</td>
+                      <td className="fw-bold text-cyan font-monospace">{req.pid || '-'}</td>
                       <td className="fw-semibold text-white">{req.name || req.optionValue || '-'}</td>
                       <td><span className="badge bg-secondary">{req.requestedBy || '-'}</span></td>
                       <td className="small text-muted text-truncate" style={{ maxWidth: '200px' }}>

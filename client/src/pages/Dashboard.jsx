@@ -15,7 +15,7 @@ import DeleteRecordModal from '../components/modals/DeleteRecordModal';
 import RequestDeleteModal from '../components/modals/RequestDeleteModal';
 
 export default function Dashboard() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canImport } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalRecords: 0,
@@ -52,7 +52,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="view-section">
+    <div id="dashboard-view" className="view-section">
       {/* Page Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
@@ -133,7 +133,12 @@ export default function Dashboard() {
 
         {/* Today's Imports */}
         <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card stat-card h-100 p-3">
+          <div
+            className="card stat-card h-100 p-3"
+            onClick={() => canImport && navigate('/import')}
+            style={{ cursor: canImport ? 'pointer' : 'default' }}
+            title={canImport ? 'Click to import data' : 'Import today'}
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Import Today</span>
@@ -188,7 +193,17 @@ export default function Dashboard() {
               ) : (
                 stats.recentActivities.map((rec, idx) => (
                   <tr key={rec.id || idx}>
-                    <td className="fw-bold text-cyan font-monospace">{rec.pid}</td>
+                    <td className="fw-bold font-monospace">
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 text-cyan fw-bold font-monospace text-decoration-none pid-link"
+                        onClick={() => setViewRecord(rec)}
+                        title="Click to view record details"
+                        style={{ fontSize: 'inherit', letterSpacing: '0.05em' }}
+                      >
+                        {rec.pid}
+                      </button>
+                    </td>
                     <td className="fw-semibold text-white">{rec.name}</td>
                     <td className="text-muted">{rec.father || '-'}</td>
                     <td><span className="badge bg-secondary">{rec.utNo || '-'}</span></td>
@@ -198,14 +213,6 @@ export default function Dashboard() {
                     <td className="small text-muted">{rec.createdDate} {rec.createdTime}</td>
                     <td className="text-end">
                       <div className="d-flex align-items-center justify-content-end gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-cyan p-1 px-2"
-                          onClick={() => setViewRecord(rec)}
-                          title="View Details"
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary p-1 px-2"

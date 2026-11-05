@@ -66,7 +66,7 @@ export default function ImportData() {
   };
 
   return (
-    <div className="view-section">
+    <div id="import-view" className="view-section">
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>

@@ -15,26 +15,16 @@ export default function Header({ toggleMobileSidebar, onOpenSelfPassword }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getPageInfo = () => {
-    switch (location.pathname) {
-      case '/dashboard':
-        return { title: 'Dashboard Overview', icon: 'bi-speedometer2 text-primary' };
-      case '/records':
-        return { title: 'Data Records & Operations', icon: 'bi-table text-cyan' };
-      case '/import':
-        return { title: 'Import Data File', icon: 'bi-file-earmark-arrow-up-fill text-warning' };
-      case '/all-requests':
-        return { title: 'Requests Management Hub', icon: 'bi-inbox-fill text-info' };
-      case '/my-requests':
-        return { title: 'My Sent Requests', icon: 'bi-send-fill text-success' };
-      case '/users':
-        return { title: 'Admin User Management', icon: 'bi-people-fill text-primary' };
-      case '/ps':
-        return { title: 'Police Stations (PS List)', icon: 'bi-shield-check text-cyan' };
-      case '/settings':
-        return { title: 'System Settings & Options', icon: 'bi-gear-wide-connected text-warning' };
-      default:
-        return { title: 'JAM Management Portal', icon: 'bi-layers-half text-cyan' };
-    }
+    const p = location.pathname;
+    if (p === '/dashboard') return { title: 'Dashboard Overview', icon: 'bi-speedometer2 text-primary' };
+    if (p === '/records' || p === '/data-records') return { title: 'Data Records & Operations', icon: 'bi-table text-cyan' };
+    if (p === '/import' || p === '/import-data') return { title: 'Import Data File', icon: 'bi-file-earmark-arrow-up-fill text-warning' };
+    if (p === '/all-requests' || p === '/edit-requests' || p === '/delete-requests') return { title: 'Requests Management Hub', icon: 'bi-inbox-fill text-info' };
+    if (p === '/my-requests' || p === '/reactive-list') return { title: 'My Sent Requests', icon: 'bi-send-fill text-success' };
+    if (p === '/users' || p === '/user-management') return { title: 'Admin User Management', icon: 'bi-people-fill text-primary' };
+    if (p === '/ps' || p === '/ps-list') return { title: 'Police Stations (PS List)', icon: 'bi-shield-check text-cyan' };
+    if (p === '/settings' || p === '/dropdowns' || p === '/system-settings') return { title: 'System Settings & Options', icon: 'bi-gear-wide-connected text-warning' };
+    return { title: 'JAM Management Portal', icon: 'bi-layers-half text-cyan' };
   };
 
   const pageInfo = getPageInfo();
