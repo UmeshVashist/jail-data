@@ -452,13 +452,14 @@ router.get('/', requireAuth, async (req, res) => {
       if (startDate !== '' && rec.date < startDate) continue;
       if (endDate !== '' && rec.date > endDate) continue;
 
-      // Add permission flags
-      rec.canEdit = canModifyRecord(req.user, rec);
-      rec.canDelete = canModifyRecord(req.user, rec);
-      rec.hasPendingDeleteRequest = pendingDeleteRecordIds.has(String(rec.id)) || pendingDeleteRecordIds.has(String(rec.rowIndex)) || pendingDeleteRecordIds.has(String(rec.pid));
-      rec.hasPendingEditRequest = pendingEditRecordIds.has(String(rec.id)) || pendingEditRecordIds.has(String(rec.rowIndex)) || pendingEditRecordIds.has(String(rec.pid));
-
-      filteredRecords.push(rec);
+      // Add permission flags to cloned object to avoid mutating memory store
+      filteredRecords.push({
+        ...rec,
+        canEdit: canModifyRecord(req.user, rec),
+        canDelete: canModifyRecord(req.user, rec),
+        hasPendingDeleteRequest: pendingDeleteRecordIds.has(String(rec.id)) || pendingDeleteRecordIds.has(String(rec.rowIndex)) || pendingDeleteRecordIds.has(String(rec.pid)),
+        hasPendingEditRequest: pendingEditRecordIds.has(String(rec.id)) || pendingEditRecordIds.has(String(rec.rowIndex)) || pendingEditRecordIds.has(String(rec.pid))
+      });
     }
 
     // Sort Records
@@ -513,15 +514,24 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+const inFlightAddPids = new Set();
+
 // POST /api/records - Add New Record with Numeric PID & Aadhar Uniqueness Checks
 router.post('/', requireAuth, async (req, res) => {
+  const { pid } = req.body;
+  const cleanPid = (pid || '').toString().trim();
+
+  if (cleanPid && inFlightAddPids.has(cleanPid)) {
+    return res.status(409).json({ success: false, message: 'A record with this PID is currently being processed. Please wait.' });
+  }
+  if (cleanPid) inFlightAddPids.add(cleanPid);
+
   try {
     if (req.user.role === 'View') {
       return res.status(403).json({ success: false, message: 'View users cannot add records.' });
     }
 
-    const { pid, name, father, utNo, recordType, aadharNo, date, remark } = req.body;
-    const cleanPid = (pid || '').toString().trim();
+    const { name, father, utNo, recordType, aadharNo, date, remark } = req.body;
     const cleanName = (name || '').toString().trim();
     const cleanRemark = (remark || '').trim();
     let cleanUtNo = (utNo || '').trim();
@@ -609,6 +619,8 @@ router.post('/', requireAuth, async (req, res) => {
     res.json({ success: true, message: 'Record created successfully!', record: createdRec });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Add record error: ' + err.message });
+  } finally {
+    if (cleanPid) inFlightAddPids.delete(cleanPid);
   }
 });
 

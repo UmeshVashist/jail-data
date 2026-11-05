@@ -5,6 +5,7 @@
 const express = require('express');
 const cookieSession = require('cookie-session');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 require('dotenv').config();
 
@@ -27,6 +28,17 @@ const PORT = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
+
+// High-Performance HTTP Compression (Gzip / Deflate for all API responses and static assets)
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -39,20 +51,23 @@ app.use(
   })
 );
 
-// Middleware to ensure Cloudflare R2 connection on every request
-app.use(async (req, res, next) => {
-  try {
-    if (!getIsConnected()) {
-      await initCloudflareStorage();
-    }
-  } catch (err) {
-    console.error('Connection middleware warning:', err.message);
+// Non-blocking auto-reconnect for Cloudflare R2 if disconnected (never stalls HTTP requests)
+let lastReconnectAttempt = 0;
+app.use((req, res, next) => {
+  const now = Date.now();
+  if (!getIsConnected() && (now - lastReconnectAttempt > 30000)) {
+    lastReconnectAttempt = now;
+    initCloudflareStorage().catch(err => console.warn('[R2 Background Init Warning]:', err.message));
   }
   next();
 });
 
-// Serve Static Frontend Assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve Static Frontend Assets with Smart Browser Caching & ETags
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : '1h',
+  etag: true,
+  lastModified: true
+}));
 
 // Mount API Routes
 app.use('/api/auth', authRoutes);

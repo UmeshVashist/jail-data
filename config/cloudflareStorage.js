@@ -201,211 +201,424 @@ const lastSyncTimestamps = {
   settings: 0,
   psList: 0
 };
-const SYNC_CACHE_TTL = 3000; // 3 seconds cache TTL ensures instant updates across all computers without excess network calls
+
+const syncInFlight = {
+  users: false,
+  records: false,
+  deleteRequests: false,
+  editRequests: false,
+  listAddRequests: false,
+  remarkOptions: false,
+  deleteOptions: false,
+  settings: false,
+  psList: false
+};
+
+const CACHE_TTLS = {
+  records: 15000,        // 15s cache TTL for records
+  deleteRequests: 15000, // 15s cache TTL for delete requests
+  editRequests: 15000,   // 15s cache TTL for edit requests
+  listAddRequests: 15000,// 15s cache TTL for list add requests
+  users: 30000,          // 30s cache TTL for users
+  remarkOptions: 60000,  // 60s cache TTL for remark options
+  deleteOptions: 60000,  // 60s cache TTL for delete options
+  settings: 60000,       // 60s cache TTL for settings
+  psList: 10 * 60 * 1000 // 10 minutes cache TTL for 3.3MB Police Station list
+};
 
 async function ensureRecordsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.records > SYNC_CACHE_TTL)) {
-    const remote = await readFromR2(R2_KEYS.RECORDS);
-    if (remote && Array.isArray(remote)) {
-      memoryStore.records = remote;
-      lastSyncTimestamps.records = now;
+  const isStale = (now - lastSyncTimestamps.records > CACHE_TTLS.records);
+
+  const fetchRecords = async () => {
+    try {
+      const remote = await readFromR2(R2_KEYS.RECORDS);
+      if (remote && Array.isArray(remote)) {
+        memoryStore.records = remote;
+        lastSyncTimestamps.records = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Records Warning]:', err.message);
     }
+  };
+
+  if (force) {
+    if (syncInFlight.records) return;
+    syncInFlight.records = true;
+    try {
+      await fetchRecords();
+    } finally {
+      syncInFlight.records = false;
+    }
+  } else if (isStale && !syncInFlight.records) {
+    // Non-blocking background sync: instant response to user, fresh data synced in background
+    syncInFlight.records = true;
+    fetchRecords().finally(() => {
+      syncInFlight.records = false;
+    });
   }
 }
 
 async function ensurePSSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.psList > SYNC_CACHE_TTL)) {
-    const remote = await readFromR2(R2_KEYS.PS_LIST);
-    if (remote && Array.isArray(remote)) {
-      memoryStore.psList = remote.filter(p => {
-        const name = (p.psName || p.ps || '').trim().toLowerCase();
-        return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
-      });
-      lastSyncTimestamps.psList = now;
+  const isStale = (now - lastSyncTimestamps.psList > CACHE_TTLS.psList);
+
+  const fetchPS = async () => {
+    try {
+      const remote = await readFromR2(R2_KEYS.PS_LIST);
+      if (remote && Array.isArray(remote)) {
+        memoryStore.psList = remote.filter(p => {
+          const name = (p.psName || p.ps || '').trim().toLowerCase();
+          return !['sadar bazar', 'civil lines', 'sector 14', 'indirapuram'].includes(name);
+        });
+        lastSyncTimestamps.psList = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync PS List Warning]:', err.message);
     }
+  };
+
+  if (force) {
+    if (syncInFlight.psList) return;
+    syncInFlight.psList = true;
+    try {
+      await fetchPS();
+    } finally {
+      syncInFlight.psList = false;
+    }
+  } else if (isStale && !syncInFlight.psList) {
+    syncInFlight.psList = true;
+    fetchPS().finally(() => {
+      syncInFlight.psList = false;
+    });
   }
 }
 
 async function ensureUsersSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.users > SYNC_CACHE_TTL)) {
-    const remote = await readFromR2(R2_KEYS.USERS);
-    if (remote && Array.isArray(remote)) {
-      memoryStore.users = remote;
-      lastSyncTimestamps.users = now;
+  const isStale = (now - lastSyncTimestamps.users > CACHE_TTLS.users);
+
+  const fetchUsers = async () => {
+    try {
+      const remote = await readFromR2(R2_KEYS.USERS);
+      if (remote && Array.isArray(remote)) {
+        memoryStore.users = remote;
+        lastSyncTimestamps.users = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Users Warning]:', err.message);
     }
+  };
+
+  if (force) {
+    if (syncInFlight.users) return;
+    syncInFlight.users = true;
+    try {
+      await fetchUsers();
+    } finally {
+      syncInFlight.users = false;
+    }
+  } else if (isStale && !syncInFlight.users) {
+    syncInFlight.users = true;
+    fetchUsers().finally(() => {
+      syncInFlight.users = false;
+    });
   }
 }
 
 async function ensureSettingsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.settings > SYNC_CACHE_TTL)) {
-    const remote = await readFromR2(R2_KEYS.SETTINGS);
-    if (remote && typeof remote === 'object') {
-      memoryStore.settings = remote;
-      lastSyncTimestamps.settings = now;
+  const isStale = (now - lastSyncTimestamps.settings > CACHE_TTLS.settings);
+
+  const fetchSettings = async () => {
+    try {
+      const remote = await readFromR2(R2_KEYS.SETTINGS);
+      if (remote && typeof remote === 'object') {
+        memoryStore.settings = remote;
+        lastSyncTimestamps.settings = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Settings Warning]:', err.message);
     }
+  };
+
+  if (force) {
+    if (syncInFlight.settings) return;
+    syncInFlight.settings = true;
+    try {
+      await fetchSettings();
+    } finally {
+      syncInFlight.settings = false;
+    }
+  } else if (isStale && !syncInFlight.settings) {
+    syncInFlight.settings = true;
+    fetchSettings().finally(() => {
+      syncInFlight.settings = false;
+    });
   }
 }
 
 async function ensureDeleteRequestsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.deleteRequests > SYNC_CACHE_TTL)) {
-    let remote = await readFromR2(R2_KEYS.DELETE_REQUESTS);
-    if (!remote || !Array.isArray(remote) || remote.length === 0) {
-      try {
-        const { dbAll } = require('./database');
-        const rows = await dbAll('SELECT * FROM delete_requests ORDER BY id DESC');
-        if (rows && rows.length > 0) {
-          remote = rows.map(r => ({
-            id: r.id,
-            rowIndex: r.id,
-            recordId: (r.record_id || r.recordId || r.id).toString(),
-            pid: (r.pid || '').toString().trim(),
-            name: (r.name || '').toString().trim(),
-            father: (r.father || '').toString().trim(),
-            utNo: (r.ut_no || r.utNo || '').toString().trim(),
-            aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
-            requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
-            requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
-            requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
-            reason: (r.reason || r.remark || '').toString().trim(),
-            remark: (r.remark || r.reason || '').toString().trim(),
-            status: (r.status || 'Pending').toString().trim(),
-            actionBy: (r.action_by || r.actionBy || '').toString().trim(),
-            actionDate: (r.action_date || r.actionDate || '').toString().trim()
-          }));
-        }
-      } catch (e) {}
+  const isStale = (now - lastSyncTimestamps.deleteRequests > CACHE_TTLS.deleteRequests);
+
+  const fetchDeleteRequests = async () => {
+    try {
+      let remote = await readFromR2(R2_KEYS.DELETE_REQUESTS);
+      if (!remote || !Array.isArray(remote) || remote.length === 0) {
+        try {
+          const { dbAll } = require('./database');
+          const rows = await dbAll('SELECT * FROM delete_requests ORDER BY id DESC');
+          if (rows && rows.length > 0) {
+            remote = rows.map(r => ({
+              id: r.id,
+              rowIndex: r.id,
+              recordId: (r.record_id || r.recordId || r.id).toString(),
+              pid: (r.pid || '').toString().trim(),
+              name: (r.name || '').toString().trim(),
+              father: (r.father || '').toString().trim(),
+              utNo: (r.ut_no || r.utNo || '').toString().trim(),
+              aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
+              requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
+              requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
+              requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
+              reason: (r.reason || r.remark || '').toString().trim(),
+              remark: (r.remark || r.reason || '').toString().trim(),
+              status: (r.status || 'Pending').toString().trim(),
+              actionBy: (r.action_by || r.actionBy || '').toString().trim(),
+              actionDate: (r.action_date || r.actionDate || '').toString().trim()
+            }));
+          }
+        } catch (e) {}
+      }
+      if (remote && Array.isArray(remote)) {
+        memoryStore.deleteRequests = remote;
+        lastSyncTimestamps.deleteRequests = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Delete Requests Warning]:', err.message);
     }
-    if (remote && Array.isArray(remote)) {
-      memoryStore.deleteRequests = remote;
-      lastSyncTimestamps.deleteRequests = now;
+  };
+
+  if (force) {
+    if (syncInFlight.deleteRequests) return;
+    syncInFlight.deleteRequests = true;
+    try {
+      await fetchDeleteRequests();
+    } finally {
+      syncInFlight.deleteRequests = false;
     }
+  } else if (isStale && !syncInFlight.deleteRequests) {
+    syncInFlight.deleteRequests = true;
+    fetchDeleteRequests().finally(() => {
+      syncInFlight.deleteRequests = false;
+    });
   }
 }
 
 async function ensureEditRequestsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.editRequests > SYNC_CACHE_TTL)) {
-    let remote = await readFromR2(R2_KEYS.EDIT_REQUESTS);
-    if (!remote || !Array.isArray(remote) || remote.length === 0) {
-      try {
-        const { dbAll } = require('./database');
-        const rows = await dbAll('SELECT * FROM edit_requests ORDER BY id DESC');
-        if (rows && rows.length > 0) {
-          remote = rows.map(r => ({
-            id: r.id,
-            rowIndex: r.id,
-            recordId: (r.record_id || r.recordId || r.id).toString(),
-            pid: (r.pid || '').toString().trim(),
-            name: (r.name || '').toString().trim(),
-            father: (r.father || '').toString().trim(),
-            utNo: (r.ut_no || r.utNo || '').toString().trim(),
-            aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
-            date: (r.date || '').toString().trim(),
-            remark: (r.remark || '').toString().trim(),
-            proposedData: typeof r.proposed_data === 'string' ? JSON.parse(r.proposed_data || '{}') : (r.proposed_data || r.proposedData || {}),
-            requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
-            requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
-            requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
-            reason: (r.reason || '').toString().trim(),
-            status: (r.status || 'Pending').toString().trim(),
-            actionBy: (r.action_by || r.actionBy || '').toString().trim(),
-            actionDate: (r.action_date || r.actionDate || '').toString().trim()
-          }));
-        }
-      } catch (e) {}
+  const isStale = (now - lastSyncTimestamps.editRequests > CACHE_TTLS.editRequests);
+
+  const fetchEditRequests = async () => {
+    try {
+      let remote = await readFromR2(R2_KEYS.EDIT_REQUESTS);
+      if (!remote || !Array.isArray(remote) || remote.length === 0) {
+        try {
+          const { dbAll } = require('./database');
+          const rows = await dbAll('SELECT * FROM edit_requests ORDER BY id DESC');
+          if (rows && rows.length > 0) {
+            remote = rows.map(r => ({
+              id: r.id,
+              rowIndex: r.id,
+              recordId: (r.record_id || r.recordId || r.id).toString(),
+              pid: (r.pid || '').toString().trim(),
+              name: (r.name || '').toString().trim(),
+              father: (r.father || '').toString().trim(),
+              utNo: (r.ut_no || r.utNo || '').toString().trim(),
+              aadharNo: (r.aadhar_no || r.aadharNo || '').toString().trim(),
+              date: (r.date || '').toString().trim(),
+              remark: (r.remark || '').toString().trim(),
+              proposedData: typeof r.proposed_data === 'string' ? JSON.parse(r.proposed_data || '{}') : (r.proposed_data || r.proposedData || {}),
+              requestedBy: (r.requested_by || r.requestedBy || '').toString().trim(),
+              requestedDate: (r.requested_date || r.requestedDate || '').toString().trim(),
+              requestedTime: (r.requested_time || r.requestedTime || '').toString().trim(),
+              reason: (r.reason || '').toString().trim(),
+              status: (r.status || 'Pending').toString().trim(),
+              actionBy: (r.action_by || r.actionBy || '').toString().trim(),
+              actionDate: (r.action_date || r.actionDate || '').toString().trim()
+            }));
+          }
+        } catch (e) {}
+      }
+      if (remote && Array.isArray(remote)) {
+        memoryStore.editRequests = remote;
+        lastSyncTimestamps.editRequests = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Edit Requests Warning]:', err.message);
     }
-    if (remote && Array.isArray(remote)) {
-      memoryStore.editRequests = remote;
-      lastSyncTimestamps.editRequests = now;
+  };
+
+  if (force) {
+    if (syncInFlight.editRequests) return;
+    syncInFlight.editRequests = true;
+    try {
+      await fetchEditRequests();
+    } finally {
+      syncInFlight.editRequests = false;
     }
+  } else if (isStale && !syncInFlight.editRequests) {
+    syncInFlight.editRequests = true;
+    fetchEditRequests().finally(() => {
+      syncInFlight.editRequests = false;
+    });
   }
 }
 
 async function ensureListAddRequestsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.listAddRequests > SYNC_CACHE_TTL)) {
-    let remote = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS);
-    if (!remote || !Array.isArray(remote) || remote.length === 0) {
-      try {
-        const { dbAll } = require('./database');
-        const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
-        if (rows && rows.length > 0) {
-          remote = rows.map(r => ({
-            id: r.id,
-            rowIndex: r.id,
-            optionValue: r.option_value || r.optionValue,
-            requestedBy: r.requested_by || r.requestedBy,
-            requestedDate: r.requested_date || r.requestedDate,
-            requestedTime: r.requested_time || r.requestedTime,
-            reason: r.reason,
-            status: r.status || 'Pending',
-            actionBy: r.action_by || r.actionBy,
-            actionDate: r.action_date || r.actionDate,
-            createdAt: r.created_at || r.createdAt || Date.now(),
-            disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
-          }));
-        }
-      } catch (e) {}
+  const isStale = (now - lastSyncTimestamps.listAddRequests > CACHE_TTLS.listAddRequests);
+
+  const fetchListAddRequests = async () => {
+    try {
+      let remote = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS);
+      if (!remote || !Array.isArray(remote) || remote.length === 0) {
+        try {
+          const { dbAll } = require('./database');
+          const rows = await dbAll('SELECT * FROM list_add_requests ORDER BY id DESC');
+          if (rows && rows.length > 0) {
+            remote = rows.map(r => ({
+              id: r.id,
+              rowIndex: r.id,
+              optionValue: r.option_value || r.optionValue,
+              requestedBy: r.requested_by || r.requestedBy,
+              requestedDate: r.requested_date || r.requestedDate,
+              requestedTime: r.requested_time || r.requestedTime,
+              reason: r.reason,
+              status: r.status || 'Pending',
+              actionBy: r.action_by || r.actionBy,
+              actionDate: r.action_date || r.actionDate,
+              createdAt: r.created_at || r.createdAt || Date.now(),
+              disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
+            }));
+          }
+        } catch (e) {}
+      }
+      if (remote && Array.isArray(remote)) {
+        memoryStore.listAddRequests = remote.map(r => ({
+          ...r,
+          disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
+        }));
+        lastSyncTimestamps.listAddRequests = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync List Add Requests Warning]:', err.message);
     }
-    if (remote && Array.isArray(remote)) {
-      memoryStore.listAddRequests = remote.map(r => ({
-        ...r,
-        disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
-      }));
-      lastSyncTimestamps.listAddRequests = now;
+  };
+
+  if (force) {
+    if (syncInFlight.listAddRequests) return;
+    syncInFlight.listAddRequests = true;
+    try {
+      await fetchListAddRequests();
+    } finally {
+      syncInFlight.listAddRequests = false;
     }
+  } else if (isStale && !syncInFlight.listAddRequests) {
+    syncInFlight.listAddRequests = true;
+    fetchListAddRequests().finally(() => {
+      syncInFlight.listAddRequests = false;
+    });
   }
 }
 
 async function ensureRemarkOptionsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - lastSyncTimestamps.remarkOptions > SYNC_CACHE_TTL)) {
-    let remote = await readFromR2(R2_KEYS.REMARK_OPTIONS);
-    if (!remote || !Array.isArray(remote) || remote.length === 0) {
-      try {
-        const { dbAll } = require('./database');
-        const rows = await dbAll('SELECT * FROM remark_options ORDER BY id ASC');
-        if (rows && rows.length > 0) {
-          remote = rows.map(r => ({
-            id: r.id,
-            optionValue: r.option_value,
-            disableAadhar: !!r.disable_aadhar
-          }));
-        }
-      } catch (e) {}
+  const isStale = (now - lastSyncTimestamps.remarkOptions > CACHE_TTLS.remarkOptions);
+
+  const fetchRemarkOptions = async () => {
+    try {
+      let remote = await readFromR2(R2_KEYS.REMARK_OPTIONS);
+      if (!remote || !Array.isArray(remote) || remote.length === 0) {
+        try {
+          const { dbAll } = require('./database');
+          const rows = await dbAll('SELECT * FROM remark_options ORDER BY id ASC');
+          if (rows && rows.length > 0) {
+            remote = rows.map(r => ({
+              id: r.id,
+              optionValue: r.option_value,
+              disableAadhar: !!r.disable_aadhar
+            }));
+          }
+        } catch (e) {}
+      }
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        memoryStore.remarkOptions = remote;
+        lastSyncTimestamps.remarkOptions = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Remark Options Warning]:', err.message);
     }
-    if (remote && Array.isArray(remote) && remote.length > 0) {
-      memoryStore.remarkOptions = remote;
-      lastSyncTimestamps.remarkOptions = now;
+  };
+
+  if (force) {
+    if (syncInFlight.remarkOptions) return;
+    syncInFlight.remarkOptions = true;
+    try {
+      await fetchRemarkOptions();
+    } finally {
+      syncInFlight.remarkOptions = false;
     }
+  } else if (isStale && !syncInFlight.remarkOptions) {
+    syncInFlight.remarkOptions = true;
+    fetchRemarkOptions().finally(() => {
+      syncInFlight.remarkOptions = false;
+    });
   }
 }
 
 async function ensureDeleteOptionsSynced(force = false) {
   const now = Date.now();
-  if (force || (now - (lastSyncTimestamps.deleteOptions || 0) > SYNC_CACHE_TTL)) {
-    let remote = await readFromR2(R2_KEYS.DELETE_OPTIONS);
-    if (!remote || !Array.isArray(remote) || remote.length === 0) {
-      try {
-        const { dbAll } = require('./database');
-        const rows = await dbAll('SELECT * FROM delete_options ORDER BY id ASC');
-        if (rows && rows.length > 0) {
-          remote = rows.map(r => ({
-            id: r.id,
-            optionValue: r.option_value
-          }));
-        }
-      } catch (e) {}
+  const isStale = (now - (lastSyncTimestamps.deleteOptions || 0) > CACHE_TTLS.deleteOptions);
+
+  const fetchDeleteOptions = async () => {
+    try {
+      let remote = await readFromR2(R2_KEYS.DELETE_OPTIONS);
+      if (!remote || !Array.isArray(remote) || remote.length === 0) {
+        try {
+          const { dbAll } = require('./database');
+          const rows = await dbAll('SELECT * FROM delete_options ORDER BY id ASC');
+          if (rows && rows.length > 0) {
+            remote = rows.map(r => ({
+              id: r.id,
+              optionValue: r.option_value
+            }));
+          }
+        } catch (e) {}
+      }
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        memoryStore.deleteOptions = remote;
+        lastSyncTimestamps.deleteOptions = Date.now();
+      }
+    } catch (err) {
+      console.warn('[Sync Delete Options Warning]:', err.message);
     }
-    if (remote && Array.isArray(remote) && remote.length > 0) {
-      memoryStore.deleteOptions = remote;
-      lastSyncTimestamps.deleteOptions = now;
+  };
+
+  if (force) {
+    if (syncInFlight.deleteOptions) return;
+    syncInFlight.deleteOptions = true;
+    try {
+      await fetchDeleteOptions();
+    } finally {
+      syncInFlight.deleteOptions = false;
     }
+  } else if (isStale && !syncInFlight.deleteOptions) {
+    syncInFlight.deleteOptions = true;
+    fetchDeleteOptions().finally(() => {
+      syncInFlight.deleteOptions = false;
+    });
   }
 }
 
@@ -760,6 +973,14 @@ async function getRecords() {
 async function addRecord(recObj) {
   // Always fetch latest from Cloudflare R2 first to prevent overwriting multi-computer data
   await ensureRecordsSynced(true);
+  const cleanPid = (recObj.pid || '').toString().trim().toLowerCase();
+  if (cleanPid) {
+    const existingIndex = memoryStore.records.findIndex(r => String(r.pid).toLowerCase() === cleanPid);
+    if (existingIndex !== -1) {
+      // Record with this PID was already saved concurrently; return it instead of creating a duplicate
+      return memoryStore.records[existingIndex];
+    }
+  }
   const newId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => r.id || 0)) + 1 : 1;
   const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
 
@@ -1442,19 +1663,7 @@ async function updateSystemSetting(key, value) {
 
 async function getPSList() {
   await ensurePSSynced();
-  return (memoryStore.psList || []).map(p => {
-    const val = (p.psName || p.ps || p.name || '').toString().trim();
-    return {
-      id: p.id,
-      psName: val,
-      ps: val,
-      district: (p.district || '').toString().trim(),
-      state: (p.state || '').toString().trim(),
-      createdBy: p.createdBy || 'Admin',
-      createdDate: p.createdDate || '',
-      updatedDate: p.updatedDate || ''
-    };
-  });
+  return memoryStore.psList || [];
 }
 
 async function addPSEntry(entryObj) {

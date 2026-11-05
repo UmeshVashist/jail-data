@@ -84,6 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const psImportModalEl = document.getElementById('psImportModal');
   if (psImportModalEl) psImportModalInstance = new bootstrap.Modal(psImportModalEl);
 
+  const recModalEl = document.getElementById('recordModal');
+  if (recModalEl) {
+    recModalEl.addEventListener('hidden.bs.modal', function () {
+      setRecordSaveBtnLoading(false);
+    });
+  }
+
   const recRemarkEl = document.getElementById('modal-record-remark');
   if (recRemarkEl) recRemarkEl.addEventListener('change', handleRecordRemarkChange);
 
@@ -2057,7 +2064,23 @@ function validateRecordDate(showToastWarning = false) {
   return true;
 }
 
+let isSubmittingRecord = false;
+
+function setRecordSaveBtnLoading(loading) {
+  isSubmittingRecord = loading;
+  const saveBtn = document.getElementById('modal-record-save-btn');
+  if (!saveBtn) return;
+  if (loading) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
+  } else {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = 'Save Record';
+  }
+}
+
 async function showAddRecordModal() {
+  setRecordSaveBtnLoading(false);
   await loadRemarkOptions();
   await fetchSystemSettings();
   document.getElementById('recordModalTitle').innerText = 'Add New Data Record';
@@ -2094,6 +2117,7 @@ async function showAddRecordModal() {
 }
 
 async function showEditRecordModal(encodedRecJson) {
+  setRecordSaveBtnLoading(false);
   await loadRemarkOptions();
   const rec = JSON.parse(decodeURIComponent(encodedRecJson));
   document.getElementById('recordModalTitle').innerText = 'Edit Record (' + rec.pid + ')';
@@ -2136,7 +2160,16 @@ async function showEditRecordModal(encodedRecJson) {
 }
 
 async function handleRecordFormSubmit(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
+
+  // Prevent multiple clicks / duplicate submissions
+  if (isSubmittingRecord) {
+    return false;
+  }
+
+  // Set submitting state immediately on first click
+  setRecordSaveBtnLoading(true);
+
   const mode = document.getElementById('record-edit-mode').value;
   const recordId = document.getElementById('record-id').value;
 
@@ -2157,12 +2190,14 @@ async function handleRecordFormSubmit(event) {
 
   // Validate numeric PID
   if (!/^\d+$/.test(pid)) {
+    setRecordSaveBtnLoading(false);
     showToast('danger', 'Validation Error', 'PID must contain numbers only.');
     return;
   }
 
   const isDup = await checkAddRecordPidExists(true);
   if (isDup) {
+    setRecordSaveBtnLoading(false);
     showToast('danger', 'Validation Error', 'This PID already exists! Please enter a unique PID.');
     return;
   }
@@ -2170,6 +2205,7 @@ async function handleRecordFormSubmit(event) {
   // Check mandatory Aadhar setting
   if (window.systemSettings && window.systemSettings.aadharMandatory && !isAadharDisabledRemark(remark)) {
     if (!aadharInput || aadharInput === '#N/A') {
+      setRecordSaveBtnLoading(false);
       showToast('danger', 'Validation Error', 'Aadhar No. is mandatory according to system settings.');
       return;
     }
@@ -2177,12 +2213,14 @@ async function handleRecordFormSubmit(event) {
 
   if (!isAadharDisabledRemark(remark) && aadharInput !== '' && aadharInput !== '#N/A') {
     if (!/^\d+$/.test(aadharInput)) {
+      setRecordSaveBtnLoading(false);
       showToast('danger', 'Validation Error', 'Aadhar No must contain numbers only.');
       document.getElementById('modal-record-aadhar').focus();
       return;
     }
     const cleanDigits = aadharInput.replace(/\D/g, '');
     if (cleanDigits.length < 12) {
+      setRecordSaveBtnLoading(false);
       showToast('danger', 'Validation Error', 'Aadhar No must contain at least 12 digits.');
       document.getElementById('modal-record-aadhar').focus();
       return;
@@ -2196,6 +2234,7 @@ async function handleRecordFormSubmit(event) {
   const todayStr = getTodayDateStr();
 
   if (!rawDate || !normalizedDate) {
+    setRecordSaveBtnLoading(false);
     if (dateInput) {
       dateInput.classList.add('is-invalid');
       dateInput.focus();
@@ -2205,6 +2244,7 @@ async function handleRecordFormSubmit(event) {
   }
 
   if (normalizedDate > todayStr) {
+    setRecordSaveBtnLoading(false);
     if (dateInput) {
       dateInput.classList.add('is-invalid');
       dateInput.focus();
@@ -2279,6 +2319,8 @@ async function handleRecordFormSubmit(event) {
   } catch (err) {
     hideLoader();
     showToast('danger', 'Server Error', err.message);
+  } finally {
+    setRecordSaveBtnLoading(false);
   }
 }
 
