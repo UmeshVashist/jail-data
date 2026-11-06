@@ -127,23 +127,71 @@ export default function DataRecords() {
     setSearchParams({});
   };
 
-  // Export to Excel / CSV (Direct file download)
-  const handleExport = (format = 'xlsx') => {
-    const q = new URLSearchParams({
-      format,
-      query: query.trim(),
-      recordType,
-      remark: remarkFilter === 'all' ? '' : remarkFilter,
-      startDate,
-      endDate
-    });
-    const downloadUrl = `/api/export?${q.toString()}`;
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = `records.${format}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Export to Excel / CSV with Direct Blob Download and Error Handling
+  const handleExport = async (format = 'xlsx') => {
+    setIsExporting(true);
+    try {
+      const q = new URLSearchParams({
+        format,
+        query: query.trim(),
+        recordType,
+        remark: remarkFilter === 'all' ? '' : remarkFilter,
+        startDate,
+        endDate
+      });
+
+      const res = await fetch(`/api/export?${q.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'x-no-compression': '1'
+        }
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Failed to export records';
+        try {
+          const errData = await res.json();
+          if (errData && errData.message) errorMsg = errData.message;
+        } catch (_) {}
+        showToast(errorMsg, 'danger');
+        return;
+      }
+
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get('Content-Disposition') || '';
+      let filename = `records.${format}`;
+      const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].trim();
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 200);
+
+      showToast(`Exported ${format.toUpperCase()} successfully!`, 'success');
+    } catch (err) {
+      console.error('Export error:', err);
+      showToast('Error exporting file: ' + err.message, 'danger');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Direct Print Table Data
+  const handleDirectPrint = () => {
+    window.print();
   };
 
   return (
@@ -154,7 +202,7 @@ export default function DataRecords() {
           <h3 className="fw-bold page-title-text mb-1">Data Records</h3>
           <p className="text-muted small mb-0">Search, filter, view, edit, and export database entries</p>
         </div>
-        <div className="mt-3 mt-md-0 d-flex align-items-center gap-2">
+        <div className="mt-3 mt-md-0 d-flex align-items-center gap-2 flex-wrap">
           {/* Found Records Pill */}
           <span className="badge rounded-pill px-3 py-2 bg-info bg-opacity-25 text-cyan border border-info border-opacity-25 fs-6 fw-bold">
             <i className="bi bi-database me-1"></i> Found Records: {totalCount}
@@ -165,19 +213,51 @@ export default function DataRecords() {
           >
             <i className="bi bi-plus-lg"></i> Add Record
           </button>
+          {/* Direct Print Button */}
+          <button
+            type="button"
+            className="btn btn-outline-info btn-sm rounded-2 d-flex align-items-center gap-1.5 px-3 py-2 fw-semibold"
+            onClick={handleDirectPrint}
+            title="Direct Print Current Records Table"
+          >
+            <i className="bi bi-printer"></i> Print
+          </button>
+          {/* Download Dropdown */}
           <div className="dropdown">
-            <button className="btn btn-outline-success btn-sm dropdown-toggle px-3 py-2 fw-semibold" data-bs-toggle="dropdown">
-              <i className="bi bi-download me-1"></i> Download
+            <button
+              className="btn btn-outline-success btn-sm dropdown-toggle px-3 py-2 fw-semibold d-flex align-items-center gap-1.5"
+              data-bs-toggle="dropdown"
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-download"></i> Download
+                </>
+              )}
             </button>
             <ul className="dropdown-menu dropdown-menu-end shadow border-0">
               <li>
-                <button className="dropdown-item" onClick={() => handleExport('xlsx')}>
-                  <i className="bi bi-file-earmark-excel text-success me-2"></i> Export Excel (.xlsx)
+                <button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleExport('xlsx')} disabled={isExporting}>
+                  <i className="bi bi-file-earmark-excel text-success fs-6"></i>
+                  <span>Export Excel (.xlsx)</span>
                 </button>
               </li>
               <li>
-                <button className="dropdown-item" onClick={() => handleExport('csv')}>
-                  <i className="bi bi-file-earmark-text text-primary me-2"></i> Export CSV (.csv)
+                <button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleExport('csv')} disabled={isExporting}>
+                  <i className="bi bi-file-earmark-text text-primary fs-6"></i>
+                  <span>Export CSV (.csv)</span>
+                </button>
+              </li>
+              <li><hr className="dropdown-divider my-1" /></li>
+              <li>
+                <button className="dropdown-item d-flex align-items-center gap-2" onClick={handleDirectPrint}>
+                  <i className="bi bi-printer text-info fs-6"></i>
+                  <span>Direct Print Data</span>
                 </button>
               </li>
             </ul>
@@ -293,7 +373,7 @@ export default function DataRecords() {
 
       {/* Records Table */}
       <div className="custom-table-card p-3 rounded-3">
-        <div className="table-responsive">
+        <div className="table-responsive table-scroll-container">
           <table className="table table-hover align-middle mb-0">
             <thead>
               <tr className="text-uppercase small user-select-none">

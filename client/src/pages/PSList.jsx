@@ -175,7 +175,7 @@ export default function PSList() {
 
       {/* PS Table */}
       <div className="custom-table-card p-3 rounded-3">
-        <div className="table-responsive">
+        <div className="table-responsive table-scroll-container">
           <table className="table table-hover align-middle mb-0">
             <thead>
               <tr className="text-uppercase small">

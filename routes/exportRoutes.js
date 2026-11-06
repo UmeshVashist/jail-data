@@ -129,10 +129,15 @@ router.get('/', requireAuth, async (req, res) => {
       });
 
       const filename = `JAM_Data_Records_${todayDateStr}.xlsx`;
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      await workbook.xlsx.write(res);
-      return res.end();
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.set({
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'x-no-compression': '1'
+      });
+      return res.end(Buffer.from(buffer));
     }
 
     // 2. Export as CSV (.csv) file
@@ -143,10 +148,15 @@ router.get('/', requireAuth, async (req, res) => {
       formattedRows.forEach(row => worksheet.addRow(row));
 
       const filename = `JAM_Data_Records_${todayDateStr}.csv`;
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      await workbook.csv.write(res, { encoding: 'utf-8' });
-      return res.end();
+      const buffer = await workbook.csv.writeBuffer({ encoding: 'utf-8' });
+      res.set({
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'x-no-compression': '1'
+      });
+      return res.end(Buffer.from(buffer));
     }
 
     // 3. Fallback: Raw JSON response

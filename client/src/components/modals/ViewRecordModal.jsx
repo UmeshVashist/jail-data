@@ -18,7 +18,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+      <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div className="modal-content border-0 shadow-lg">
           {/* Header */}
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">

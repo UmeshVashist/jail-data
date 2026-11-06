@@ -118,7 +118,7 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
 
   return createPortal(
     <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+      <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div className="modal-content border-0 shadow-lg">
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
             <h5 className="modal-title fw-bold card-title-text d-flex align-items-center gap-2 mb-0">

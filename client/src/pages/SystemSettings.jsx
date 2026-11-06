@@ -240,7 +240,7 @@ export default function SystemSettings() {
             </form>
 
             {/* Options List */}
-            <div className="table-responsive">
+            <div className="table-responsive table-scroll-container">
               <table className="table table-hover align-middle mb-0">
                 <thead>
                   <tr className="text-uppercase small">
@@ -320,7 +320,7 @@ export default function SystemSettings() {
             </form>
 
             {/* Delete Reasons List */}
-            <div className="table-responsive">
+            <div className="table-responsive table-scroll-container">
               <table className="table table-hover align-middle mb-0">
                 <thead>
                   <tr className="text-uppercase small">

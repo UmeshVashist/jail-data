@@ -3167,6 +3167,213 @@ body.theme-classic .modal-content .form-control::placeholder {
   color: #94a3b8 !important;
 }
 
+/* ==========================================================================
+   PAGE & POPUP (MODAL) SCROLLBAR SYSTEM + RESPONSIVE HEIGHTS
+   Prevents excessive page heights and adds smooth scrolling to all pages & popups
+   ========================================================================== */
+
+/* 1. All Popups / Modals: Responsive Heights & Scrollable Body */
+.modal-dialog {
+  max-height: 90vh !important;
+  margin: 1.75rem auto !important;
+}
+
+.modal-content {
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.modal-body {
+  max-height: calc(90vh - 130px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+/* 2. All Pages: Table Scroll Containers & Sticky Headers */
+.table-scroll-container,
+.custom-table-card .table-responsive {
+  max-height: calc(100vh - 280px) !important;
+  min-height: 260px !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  position: relative !important;
+}
+
+.table-scroll-container table thead,
+.custom-table-card .table-responsive table thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
+}
+
+body:not(.theme-modern-3d) .table-scroll-container table thead th,
+body.theme-classic .table-scroll-container table thead th,
+body:not(.theme-modern-3d) .custom-table-card .table-responsive table thead th,
+body.theme-classic .custom-table-card .table-responsive table thead th {
+  background: #f8fafc !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+body.theme-modern-3d .table-scroll-container table thead th,
+body.theme-modern-3d .custom-table-card .table-responsive table thead th {
+  background: rgba(8, 12, 32, 0.96) !important;
+  backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+}
+
+/* 3. Universal Clean Sleek Scrollbars across all elements */
+* {
+  scrollbar-width: thin !important;
+}
+
+*::-webkit-scrollbar {
+  width: 7px !important;
+  height: 7px !important;
+}
+
+body:not(.theme-modern-3d) *::-webkit-scrollbar-track,
+body.theme-classic *::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+body:not(.theme-modern-3d) *::-webkit-scrollbar-thumb,
+body.theme-classic *::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+
+body:not(.theme-modern-3d) *::-webkit-scrollbar-thumb:hover,
+body.theme-classic *::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+body.theme-modern-3d *::-webkit-scrollbar-track {
+  background: rgba(10, 16, 36, 0.6) !important;
+  border-radius: 4px !important;
+}
+
+body.theme-modern-3d *::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.4) !important;
+  border-radius: 4px !important;
+}
+
+body.theme-modern-3d *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.7) !important;
+}
+
+/* ==========================================================================
+   GLOBAL STANDARDIZED TYPOGRAPHY (CONSISTENT SIZING ON ALL PAGES & MODALS)
+   ========================================================================== */
+.table th,
+.custom-table-card th {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  padding: 0.65rem 0.75rem !important;
+  white-space: nowrap !important;
+}
+
+.table td,
+.custom-table-card td {
+  font-size: 0.84rem !important;
+  padding: 0.65rem 0.75rem !important;
+  vertical-align: middle !important;
+}
+
+.form-label,
+label {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+}
+
+.form-control,
+.form-select {
+  font-size: 0.85rem !important;
+  padding: 0.45rem 0.75rem !important;
+}
+
+.btn {
+  font-size: 0.84rem !important;
+}
+
+.badge {
+  font-size: 0.75rem !important;
+}
+
+/* ==========================================================================
+   DIRECT PRINT STYLES (@media print)
+   ========================================================================== */
+@media print {
+  #sidebar,
+  header,
+  .filter-bar,
+  .records-filter-card,
+  .dropdown,
+  .btn,
+  .pagination,
+  .search-shortcut-kbd-wrap,
+  .toast-container,
+  .modal-backdrop,
+  #webgl-3d-bg,
+  .theme-toggle-btn {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 9pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #content {
+    margin: 0 !important;
+    padding: 8px !important;
+    width: 100% !important;
+    position: static !important;
+  }
+
+  .custom-table-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .table-responsive,
+  .table-scroll-container {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 6px !important;
+    color: #000000 !important;
+    font-size: 8.5pt !important;
+  }
+
+  th {
+    background: #f1f5f9 !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+  }
+
+  /* Hide Actions column in print */
+  th:last-child, td:last-child {
+    display: none !important;
+  }
+}
+
 
 /* ==========================================================================
    2. MODERN 3D UI THEME SYSTEM

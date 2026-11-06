@@ -57,7 +57,17 @@ app.use(compression({
   level: 6,
   threshold: 1024,
   filter: (req, res) => {
-    if (req.headers['x-no-compression']) return false;
+    if (req.headers['x-no-compression'] || res.getHeader('x-no-compression')) return false;
+    const type = String(res.getHeader('Content-Type') || '').toLowerCase();
+    if (
+      type.includes('spreadsheet') ||
+      type.includes('excel') ||
+      type.includes('zip') ||
+      type.includes('octet-stream') ||
+      type.includes('officedocument')
+    ) {
+      return false;
+    }
     return compression.filter(req, res);
   }
 }));
