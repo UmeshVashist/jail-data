@@ -361,3 +361,4 @@ export default function PrintRecordsModal({
     document.body
   );
 }
+

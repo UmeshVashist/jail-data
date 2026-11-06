@@ -11,14 +11,13 @@ const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
-// Support .env.local, .env, and root environment configuration
+// Environment Configuration: Load .env.local (Single Source of Truth)
 const envLocalPath = path.join(__dirname, '.env.local');
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envLocalPath)) {
   dotenv.config({ path: envLocalPath });
-}
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath, override: true });
+} else if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
 }
 
 // Initialize Cloudflare R2 Database Service

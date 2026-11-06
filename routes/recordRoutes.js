@@ -479,14 +479,7 @@ router.get('/', requireAuth, async (req, res) => {
       if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
       if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
 
-      // Tie-breaker if primary values are equal
-      if (sortColumn === 'createdDate') {
-        const timeA = a.createdTime || '';
-        const timeB = b.createdTime || '';
-        if (timeA !== timeB) {
-          return sortDirection === 'asc' ? (timeA < timeB ? -1 : 1) : (timeA > timeB ? -1 : 1);
-        }
-      }
+      // Tie-breaker if primary values are equal: newest ID first when desc
       const idA = Number(a.id || a.rowIndex || 0);
       const idB = Number(b.id || b.rowIndex || 0);
       return sortDirection === 'asc' ? idA - idB : idB - idA;

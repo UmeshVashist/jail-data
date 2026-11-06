@@ -14,18 +14,24 @@ const {
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+const envLocalPath = path.join(__dirname, '..', '.env.local');
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envLocalPath)) {
+  require('dotenv').config({ path: envLocalPath });
+} else if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+}
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 }
 
-const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID ? process.env.CLOUDFLARE_ACCOUNT_ID.replace(/"/g, '').trim() : '';
-const ENDPOINT = process.env.CLOUDFLARE_R2_ENDPOINT ? process.env.CLOUDFLARE_R2_ENDPOINT.replace(/"/g, '').trim() : (ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : '');
-const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ? process.env.CLOUDFLARE_R2_ACCESS_KEY_ID.replace(/"/g, '').trim() : '';
-const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ? process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY.replace(/"/g, '').trim() : '';
-const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME ? process.env.CLOUDFLARE_R2_BUCKET_NAME.replace(/"/g, '').trim() : 'jam-data';
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID ? process.env.CLOUDFLARE_ACCOUNT_ID.replace(/['"]/g, '').trim() : '';
+const ENDPOINT = process.env.CLOUDFLARE_R2_ENDPOINT ? process.env.CLOUDFLARE_R2_ENDPOINT.replace(/['"]/g, '').trim() : (ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : '');
+const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ? process.env.CLOUDFLARE_R2_ACCESS_KEY_ID.replace(/['"]/g, '').trim() : '';
+const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ? process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY.replace(/['"]/g, '').trim() : '';
+const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME ? process.env.CLOUDFLARE_R2_BUCKET_NAME.replace(/['"]/g, '').trim() : 'jam-data';
 
 let s3Client = null;
 let isConnected = false;
@@ -184,7 +190,9 @@ async function readFromR2(key) {
             }
           });
         }
-        saveLocal(key, parsed);
+        if (!(key === R2_KEYS.RECORDS && lastWriteTimestamps.records > 0 && (Date.now() - lastWriteTimestamps.records < 30000))) {
+          saveLocal(key, parsed);
+        }
         return parsed;
       }
     } catch (err) {
@@ -198,6 +206,18 @@ async function readFromR2(key) {
 
 /* Dynamic Sync Cache Tracking for Multi-User & Multi-Computer Real-Time Sync */
 const lastSyncTimestamps = {
+  users: 0,
+  records: 0,
+  deleteRequests: 0,
+  editRequests: 0,
+  listAddRequests: 0,
+  remarkOptions: 0,
+  deleteOptions: 0,
+  settings: 0,
+  psList: 0
+};
+
+const lastWriteTimestamps = {
   users: 0,
   records: 0,
   deleteRequests: 0,
@@ -234,14 +254,21 @@ const CACHE_TTLS = {
 };
 
 async function ensureRecordsSynced(force = false) {
+  const needsInitialLoad = (!memoryStore.records || memoryStore.records.length === 0);
   const now = Date.now();
   const isStale = (now - lastSyncTimestamps.records > CACHE_TTLS.records);
 
   const fetchRecords = async () => {
+    const fetchStart = Date.now();
     try {
       const remote = await readFromR2(R2_KEYS.RECORDS);
       if (remote && Array.isArray(remote)) {
+        // Guard against race conditions: if a local write occurred during or after fetch, do not overwrite memory
+        if (lastWriteTimestamps.records > fetchStart) {
+          return;
+        }
         memoryStore.records = remote;
+        saveLocal(R2_KEYS.RECORDS, remote);
         lastSyncTimestamps.records = Date.now();
       }
     } catch (err) {
@@ -249,7 +276,7 @@ async function ensureRecordsSynced(force = false) {
     }
   };
 
-  if (force) {
+  if (force || needsInitialLoad) {
     if (syncInFlight.records) return;
     syncInFlight.records = true;
     try {
@@ -257,8 +284,8 @@ async function ensureRecordsSynced(force = false) {
     } finally {
       syncInFlight.records = false;
     }
-  } else if (isStale && !syncInFlight.records) {
-    // Non-blocking background sync: instant response to user, fresh data synced in background
+  } else if (isStale && !syncInFlight.records && (now - lastWriteTimestamps.records > 15000)) {
+    // Non-blocking background sync: instant response to user, fresh data synced in background only if no recent write
     syncInFlight.records = true;
     fetchRecords().finally(() => {
       syncInFlight.records = false;
@@ -675,9 +702,9 @@ function formatDateValue(val) {
  */
 async function initCloudflareStorage() {
   if (!ENDPOINT || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY) {
-    connectionError = 'Cloudflare R2 credentials missing in .env (CLOUDFLARE_R2_ACCESS_KEY_ID or SECRET).';
+    connectionError = 'Cloudflare R2 credentials missing in .env.local (CLOUDFLARE_R2_ACCESS_KEY_ID or SECRET).';
     console.warn('\n===============================================================');
-    console.warn('  [NOTICE] Cloudflare R2 credentials missing in .env');
+    console.warn('  [NOTICE] Cloudflare R2 credentials missing in .env.local');
     console.warn('  Running in Resilient Local Storage mode.');
     console.warn('===============================================================\n');
     return false;
@@ -1022,8 +1049,9 @@ async function getRecords() {
 }
 
 async function addRecord(recObj) {
-  // Always fetch latest from Cloudflare R2 first to prevent overwriting multi-computer data
-  await ensureRecordsSynced(true);
+  if (!memoryStore.records || memoryStore.records.length === 0) {
+    await ensureRecordsSynced(true);
+  }
   const cleanPid = (recObj.pid || '').toString().trim().toLowerCase();
   if (cleanPid) {
     const existingIndex = memoryStore.records.findIndex(r => String(r.pid).toLowerCase() === cleanPid);
@@ -1055,6 +1083,9 @@ async function addRecord(recObj) {
   };
 
   memoryStore.records.unshift(newRec);
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
   // Sync to local SQLite
   try {
@@ -1066,13 +1097,16 @@ async function addRecord(recObj) {
   } catch (e) {}
 
   // Sync to Cloudflare R2
-  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
-  lastSyncTimestamps.records = Date.now();
+  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return newRec;
 }
 
 async function updateRecord(rowIndex, recObj) {
-  await ensureRecordsSynced(true);
+  if (!memoryStore.records || memoryStore.records.length === 0) {
+    await ensureRecordsSynced(true);
+  }
   const target = memoryStore.records.find(r => (r.id === parseInt(rowIndex, 10) || r.rowIndex === parseInt(rowIndex, 10)));
   if (!target) return false;
 
@@ -1090,6 +1124,10 @@ async function updateRecord(rowIndex, recObj) {
   target.updatedDate = recObj.updatedDate || formatDateValue(new Date().toISOString().slice(0, 10));
   target.updatedTime = recObj.updatedTime || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: true });
 
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
+
   // Sync to local SQLite
   try {
     const { dbRun } = require('./database');
@@ -1100,15 +1138,21 @@ async function updateRecord(rowIndex, recObj) {
   } catch (e) {}
 
   // Sync to Cloudflare R2
-  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
-  lastSyncTimestamps.records = Date.now();
+  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
 async function deleteRecord(rowIndex) {
-  await ensureRecordsSynced(true);
+  if (!memoryStore.records || memoryStore.records.length === 0) {
+    await ensureRecordsSynced(true);
+  }
   const idNum = parseInt(rowIndex, 10);
   memoryStore.records = memoryStore.records.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
   // Sync to local SQLite
   try {
@@ -1117,8 +1161,9 @@ async function deleteRecord(rowIndex) {
   } catch (e) {}
 
   // Sync to Cloudflare R2
-  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
-  lastSyncTimestamps.records = Date.now();
+  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 

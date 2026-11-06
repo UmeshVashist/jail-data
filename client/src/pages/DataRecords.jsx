@@ -105,9 +105,14 @@ export default function DataRecords() {
   // Optimistic Instant State Updates (0ms latency, no full page reload)
   const handleRecordAdded = (newRecord) => {
     if (newRecord) {
-      setRecords(prev => [newRecord, ...prev]);
+      setRecords(prev => {
+        const cleanPid = String(newRecord.pid || '').trim();
+        const exists = prev.some(r => String(r.pid).trim() === cleanPid);
+        return exists ? prev : [newRecord, ...prev];
+      });
       setTotalCount(prev => prev + 1);
     }
+    setPage(1);
     fetchRecords(true);
   };
 
@@ -124,11 +129,11 @@ export default function DataRecords() {
 
   const handleRecordDeleted = (deletedRecord) => {
     if (deletedRecord) {
-      const delId = deletedRecord.id || deletedRecord.rowIndex || deletedRecord.pid;
+      const delId = String(deletedRecord.id || deletedRecord.rowIndex || deletedRecord.pid || '');
       setRecords(prev => prev.filter(r => 
-        String(r.id) !== String(delId) &&
-        String(r.rowIndex) !== String(delId) &&
-        String(r.pid) !== String(delId)
+        String(r.id) !== delId &&
+        String(r.rowIndex) !== delId &&
+        String(r.pid) !== delId
       ));
       setTotalCount(prev => Math.max(0, prev - 1));
     }
