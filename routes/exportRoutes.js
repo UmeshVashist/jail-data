@@ -130,14 +130,12 @@ router.get('/', requireAuth, async (req, res) => {
 
       const filename = `JAM_Data_Records_${todayDateStr}.xlsx`;
       const buffer = await workbook.xlsx.writeBuffer();
-      res.set({
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': buffer.length,
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'x-no-compression': '1'
-      });
-      return res.end(Buffer.from(buffer));
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('x-no-compression', '1');
+      return res.status(200).send(Buffer.from(buffer));
     }
 
     // 2. Export as CSV (.csv) file

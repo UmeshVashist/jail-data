@@ -242,19 +242,16 @@ function processAadharInput(inputStr) {
   }
 
   const str = inputStr.trim();
-  if (/[^\d\s]/.test(str)) {
-    return { valid: false, error: 'Aadhar No must contain numbers only.' };
-  }
-
   const cleanDigits = str.replace(/\D/g, '');
 
   if (cleanDigits.length < 12) {
     return { valid: false, error: 'Aadhar No must contain at least 12 digits.' };
   }
 
-  // Format 12 digits as 'XXXX XXXX XXXX'
-  const formatted = cleanDigits.slice(0, 12).replace(/^(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3').trim();
-  return { valid: true, value: formatted, cleanDigits: cleanDigits.slice(0, 12) };
+  // Format 12 digits strictly as 'XXXX XXXX XXXX'
+  const d = cleanDigits.slice(0, 12);
+  const formatted = `${d.slice(0, 4)} ${d.slice(4, 8)} ${d.slice(8, 12)}`;
+  return { valid: true, value: formatted, cleanDigits: d };
 }
 
 async function isAadharDisabledRemark(remarkValue) {
@@ -636,7 +633,7 @@ router.post('/', requireAuth, async (req, res) => {
       createdTime: createdTime
     });
 
-    res.json({ success: true, message: 'Record created successfully!', record: createdRec });
+    res.json({ success: true, message: 'Record created successfully!', record: createdRec, data: createdRec });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Add record error: ' + err.message });
   } finally {

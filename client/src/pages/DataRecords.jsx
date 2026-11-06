@@ -13,6 +13,7 @@ import EditRecordModal from '../components/modals/EditRecordModal';
 import RequestEditModal from '../components/modals/RequestEditModal';
 import DeleteRecordModal from '../components/modals/DeleteRecordModal';
 import RequestDeleteModal from '../components/modals/RequestDeleteModal';
+import PrintRecordsModal from '../components/modals/PrintRecordsModal';
 
 export default function DataRecords() {
   const { user, isAdmin, showToast } = useAuth();
@@ -46,6 +47,7 @@ export default function DataRecords() {
   const [reqEditRecord, setReqEditRecord] = useState(null);
   const [delRecord, setDelRecord] = useState(null);
   const [reqDelRecord, setReqDelRecord] = useState(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Fetch Remark options for dropdown
   useEffect(() => {
@@ -58,8 +60,8 @@ export default function DataRecords() {
       .catch(() => {});
   }, []);
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true);
+  const fetchRecords = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = {
         query: query.trim(),
@@ -96,9 +98,42 @@ export default function DataRecords() {
     } catch (err) {
       showToast('Error loading records: ' + err.message, 'danger');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [query, recordType, remarkFilter, startDate, endDate, todayOnly, page, pageSize, sortColumn, sortDirection, showToast]);
+
+  // Optimistic Instant State Updates (0ms latency, no full page reload)
+  const handleRecordAdded = (newRecord) => {
+    if (newRecord) {
+      setRecords(prev => [newRecord, ...prev]);
+      setTotalCount(prev => prev + 1);
+    }
+    fetchRecords(true);
+  };
+
+  const handleRecordUpdated = (updatedRecord) => {
+    if (updatedRecord) {
+      setRecords(prev => prev.map(r => 
+        (String(r.id) === String(updatedRecord.id) || String(r.pid) === String(updatedRecord.pid) || String(r.rowIndex) === String(updatedRecord.rowIndex))
+          ? { ...r, ...updatedRecord }
+          : r
+      ));
+    }
+    fetchRecords(true);
+  };
+
+  const handleRecordDeleted = (deletedRecord) => {
+    if (deletedRecord) {
+      const delId = deletedRecord.id || deletedRecord.rowIndex || deletedRecord.pid;
+      setRecords(prev => prev.filter(r => 
+        String(r.id) !== String(delId) &&
+        String(r.rowIndex) !== String(delId) &&
+        String(r.pid) !== String(delId)
+      ));
+      setTotalCount(prev => Math.max(0, prev - 1));
+    }
+    fetchRecords(true);
+  };
 
   useEffect(() => {
     fetchRecords();
@@ -160,9 +195,12 @@ export default function DataRecords() {
         return;
       }
 
-      const blob = await res.blob();
+      const arrayBuffer = await res.arrayBuffer();
+      const blob = new Blob([arrayBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
       const contentDisposition = res.headers.get('Content-Disposition') || '';
-      let filename = `records.${format}`;
+      let filename = `JAM_Data_Records_${new Date().toISOString().slice(0, 10)}.xlsx`;
       const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
       if (filenameMatch && filenameMatch[1]) {
         filename = filenameMatch[1].trim();
@@ -289,12 +327,12 @@ export default function DataRecords() {
           >
             <i className="bi bi-plus-lg"></i> Add Record
           </button>
-          {/* Direct Print Button */}
+          {/* Print Button (Opens Column Selection Popup) */}
           <button
             type="button"
             className="btn btn-outline-info btn-sm rounded-2 d-flex align-items-center gap-1.5 px-3 py-2 fw-semibold"
-            onClick={handleDirectPrint}
-            title="Direct Print Current Records Table"
+            onClick={() => setIsPrintModalOpen(true)}
+            title="Print Data Records with Column Selection"
           >
             <i className="bi bi-printer"></i> Print
           </button>
@@ -590,7 +628,7 @@ export default function DataRecords() {
       <AddRecordModal
         isOpen={addRecordOpen}
         onClose={() => setAddRecordOpen(false)}
-        onRecordAdded={() => fetchRecords()}
+        onRecordAdded={handleRecordAdded}
       />
       <ViewRecordModal
         isOpen={!!viewRecord}
@@ -601,27 +639,38 @@ export default function DataRecords() {
         isOpen={!!editRecord}
         record={editRecord}
         onClose={() => setEditRecord(null)}
-        onRecordUpdated={() => fetchRecords()}
+        onRecordUpdated={handleRecordUpdated}
         onOpenRequestEdit={(rec) => setReqEditRecord(rec)}
       />
       <RequestEditModal
         isOpen={!!reqEditRecord}
         record={reqEditRecord}
         onClose={() => setReqEditRecord(null)}
-        onRequestSubmitted={() => fetchRecords()}
+        onRequestSubmitted={() => fetchRecords(true)}
       />
       <DeleteRecordModal
         isOpen={!!delRecord}
         record={delRecord}
         onClose={() => setDelRecord(null)}
-        onRecordDeleted={() => fetchRecords()}
+        onRecordDeleted={handleRecordDeleted}
         onOpenRequestDelete={(rec) => setReqDelRecord(rec)}
       />
       <RequestDeleteModal
         isOpen={!!reqDelRecord}
         record={reqDelRecord}
         onClose={() => setReqDelRecord(null)}
-        onRequestSubmitted={() => fetchRecords()}
+        onRequestSubmitted={() => fetchRecords(true)}
+      />
+      <PrintRecordsModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        records={records}
+        totalCount={totalCount}
+        query={query}
+        recordType={recordType}
+        remarkFilter={remarkFilter}
+        startDate={startDate}
+        endDate={endDate}
       />
     </div>
   );

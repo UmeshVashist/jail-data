@@ -104,11 +104,19 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     if (isAadharDisabled) return;
     const clean = val.replace(/\D/g, '').slice(0, 12);
     if (clean.length > 8) {
-      setAadharNo(clean.replace(/^(\d{4})(\d{4})(\d{0,4})/, '$1 $2 $3').trim());
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
     } else if (clean.length > 4) {
-      setAadharNo(clean.replace(/^(\d{4})(\d{0,4})/, '$1 $2').trim());
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)}`);
     } else {
       setAadharNo(clean);
+    }
+  };
+
+  const handleAadharBlur = () => {
+    if (isAadharDisabled || !aadharNo || aadharNo === '#N/A') return;
+    const clean = aadharNo.replace(/\D/g, '');
+    if (clean.length === 12) {
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
     }
   };
 
@@ -154,6 +162,15 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
         return;
       }
 
+      // Ensure Aadhar is strictly formatted as XXXX XXXX XXXX if 12 digits provided
+      let finalAadhar = aadharNo.trim();
+      const aadharDigits = finalAadhar.replace(/\D/g, '');
+      if (aadharDigits.length === 12) {
+        finalAadhar = `${aadharDigits.slice(0, 4)} ${aadharDigits.slice(4, 8)} ${aadharDigits.slice(8, 12)}`;
+      } else if (!finalAadhar || isAadharDisabled) {
+        finalAadhar = '#N/A';
+      }
+
       const res = await api.post('/api/records', {
         pid: pid.trim(),
         name: name.trim().toUpperCase(),
@@ -161,16 +178,28 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
         utNo: utNo.trim().toUpperCase(),
         type: recordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utNo) ? 'CT' : 'UT'),
         recordType: recordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utNo) ? 'CT' : 'UT'),
-        aadharNo: aadharNo.trim(),
+        aadharNo: finalAadhar,
         date: date,
         remark: remark.trim()
       });
 
       if (res && res.success) {
         showToast(res.message || 'Record added successfully!', 'success');
+        const createdRecord = res.record || res.data || {
+          pid: pid.trim(),
+          name: name.trim().toUpperCase(),
+          father: father.trim().toUpperCase(),
+          utNo: utNo.trim().toUpperCase(),
+          recordType: recordType || 'UT',
+          aadharNo: finalAadhar,
+          date: date,
+          remark: remark.trim(),
+          createdBy: 'admin',
+          createdDate: new Date().toISOString().slice(0, 10)
+        };
         resetForm();
         onClose();
-        if (onRecordAdded) onRecordAdded(res.data);
+        if (onRecordAdded) onRecordAdded(createdRecord);
       } else {
         showToast(res.message || 'Failed to add record.', 'danger');
         submittingLockRef.current = false;
@@ -313,6 +342,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                     placeholder="12 digit Aadhar number"
                     value={aadharNo}
                     onChange={(e) => handleAadharChange(e.target.value)}
+                    onBlur={handleAadharBlur}
                     disabled={isAadharDisabled || isSubmitting}
                     required={!isAadharDisabled}
                   />

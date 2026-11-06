@@ -40,6 +40,25 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
       .catch(() => {});
   }, [isOpen, record]);
 
+  const handleAadharChange = (val) => {
+    const clean = val.replace(/\D/g, '').slice(0, 12);
+    if (clean.length > 8) {
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
+    } else if (clean.length > 4) {
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)}`);
+    } else {
+      setAadharNo(clean);
+    }
+  };
+
+  const handleAadharBlur = () => {
+    if (!aadharNo || aadharNo === '#N/A') return;
+    const clean = aadharNo.replace(/\D/g, '');
+    if (clean.length === 12) {
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting || !record) return;
@@ -51,6 +70,12 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
 
     setIsSubmitting(true);
     try {
+      let finalAadhar = aadharNo.trim();
+      const aadharDigits = finalAadhar.replace(/\D/g, '');
+      if (aadharDigits.length === 12) {
+        finalAadhar = `${aadharDigits.slice(0, 4)} ${aadharDigits.slice(4, 8)} ${aadharDigits.slice(8, 12)}`;
+      }
+
       const res = await api.post('/api/edit-requests', {
         recordId: record.id || record.rowIndex,
         pid: record.pid,
@@ -64,7 +89,7 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
           name: name.trim().toUpperCase(),
           father: father.trim().toUpperCase(),
           utNo: utNo.trim().toUpperCase(),
-          aadharNo: aadharNo.trim(),
+          aadharNo: finalAadhar,
           date: date,
           remark: remark.trim()
         },
@@ -119,7 +144,7 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label small fw-semibold">Proposed Aadhar No.</label>
-                  <input type="text" className="form-control" value={aadharNo} onChange={(e) => setAadharNo(e.target.value)} disabled={isSubmitting} />
+                  <input type="text" className="form-control" placeholder="12 digit Aadhar number" value={aadharNo} onChange={(e) => handleAadharChange(e.target.value)} onBlur={handleAadharBlur} disabled={isSubmitting} />
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label small fw-semibold">Proposed Date</label>

@@ -69,11 +69,19 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
     if (isAadharDisabled) return;
     const clean = val.replace(/\D/g, '').slice(0, 12);
     if (clean.length > 8) {
-      setAadharNo(clean.replace(/^(\d{4})(\d{4})(\d{0,4})/, '$1 $2 $3').trim());
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
     } else if (clean.length > 4) {
-      setAadharNo(clean.replace(/^(\d{4})(\d{0,4})/, '$1 $2').trim());
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)}`);
     } else {
       setAadharNo(clean);
+    }
+  };
+
+  const handleAadharBlur = () => {
+    if (isAadharDisabled || !aadharNo || aadharNo === '#N/A') return;
+    const clean = aadharNo.replace(/\D/g, '');
+    if (clean.length === 12) {
+      setAadharNo(`${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`);
     }
   };
 
@@ -88,6 +96,14 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
 
     setIsSubmitting(true);
     try {
+      let finalAadhar = aadharNo.trim();
+      const aadharDigits = finalAadhar.replace(/\D/g, '');
+      if (aadharDigits.length === 12) {
+        finalAadhar = `${aadharDigits.slice(0, 4)} ${aadharDigits.slice(4, 8)} ${aadharDigits.slice(8, 12)}`;
+      } else if (!finalAadhar || isAadharDisabled) {
+        finalAadhar = '#N/A';
+      }
+
       const res = await api.put(`/api/records/${record.id || record.rowIndex}`, {
         pid: record.pid,
         name: name.trim().toUpperCase(),
@@ -95,15 +111,25 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
         utNo: utNo.trim().toUpperCase(),
         type: recordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utNo) ? 'CT' : 'UT'),
         recordType: recordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utNo) ? 'CT' : 'UT'),
-        aadharNo: aadharNo.trim(),
+        aadharNo: finalAadhar,
         date: date,
         remark: remark.trim()
       });
 
       if (res && res.success) {
         showToast(res.message || 'Record updated successfully!', 'success');
+        const updatedRec = res.data || res.record || {
+          ...record,
+          name: name.trim().toUpperCase(),
+          father: father.trim().toUpperCase(),
+          utNo: utNo.trim().toUpperCase(),
+          recordType: recordType || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(utNo) ? 'CT' : 'UT'),
+          aadharNo: finalAadhar,
+          date: date,
+          remark: remark.trim()
+        };
         onClose();
-        if (onRecordUpdated) onRecordUpdated(res.data);
+        if (onRecordUpdated) onRecordUpdated(updatedRec);
       } else {
         showToast(res.message || 'Failed to update record.', 'danger');
         setIsSubmitting(false);
@@ -197,8 +223,10 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
                   <input
                     type="text"
                     className="form-control"
+                    placeholder="12 digit Aadhar number"
                     value={aadharNo}
                     onChange={(e) => handleAadharChange(e.target.value)}
+                    onBlur={handleAadharBlur}
                     disabled={isAadharDisabled || isSubmitting}
                   />
                 </div>

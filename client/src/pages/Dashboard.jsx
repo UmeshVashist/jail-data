@@ -51,6 +51,49 @@ export default function Dashboard() {
     }
   };
 
+  // Optimistic Dashboard Updates (Instant table refresh without reloading)
+  const handleRecordAdded = (newRecord) => {
+    if (newRecord) {
+      setStats(prev => ({
+        ...prev,
+        totalRecords: (prev.totalRecords || 0) + 1,
+        todayRecords: (prev.todayRecords || 0) + 1,
+        recentActivities: [newRecord, ...(prev.recentActivities || []).slice(0, 9)]
+      }));
+    }
+    fetchDashboardData();
+  };
+
+  const handleRecordUpdated = (updatedRecord) => {
+    if (updatedRecord) {
+      setStats(prev => ({
+        ...prev,
+        recentActivities: (prev.recentActivities || []).map(r =>
+          (String(r.id) === String(updatedRecord.id) || String(r.pid) === String(updatedRecord.pid) || String(r.rowIndex) === String(updatedRecord.rowIndex))
+            ? { ...r, ...updatedRecord }
+            : r
+        )
+      }));
+    }
+    fetchDashboardData();
+  };
+
+  const handleRecordDeleted = (deletedRecord) => {
+    if (deletedRecord) {
+      const delId = deletedRecord.id || deletedRecord.rowIndex || deletedRecord.pid;
+      setStats(prev => ({
+        ...prev,
+        totalRecords: Math.max(0, (prev.totalRecords || 0) - 1),
+        recentActivities: (prev.recentActivities || []).filter(r =>
+          String(r.id) !== String(delId) &&
+          String(r.rowIndex) !== String(delId) &&
+          String(r.pid) !== String(delId)
+        )
+      }));
+    }
+    fetchDashboardData();
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -255,7 +298,7 @@ export default function Dashboard() {
       <AddRecordModal
         isOpen={addRecordOpen}
         onClose={() => setAddRecordOpen(false)}
-        onRecordAdded={() => fetchDashboardData()}
+        onRecordAdded={handleRecordAdded}
       />
       <ViewRecordModal
         isOpen={!!viewRecord}
@@ -266,7 +309,7 @@ export default function Dashboard() {
         isOpen={!!editRecord}
         record={editRecord}
         onClose={() => setEditRecord(null)}
-        onRecordUpdated={() => fetchDashboardData()}
+        onRecordUpdated={handleRecordUpdated}
         onOpenRequestEdit={(rec) => setReqEditRecord(rec)}
       />
       <RequestEditModal
@@ -279,7 +322,7 @@ export default function Dashboard() {
         isOpen={!!delRecord}
         record={delRecord}
         onClose={() => setDelRecord(null)}
-        onRecordDeleted={() => fetchDashboardData()}
+        onRecordDeleted={handleRecordDeleted}
         onOpenRequestDelete={(rec) => setReqDelRecord(rec)}
       />
       <RequestDeleteModal

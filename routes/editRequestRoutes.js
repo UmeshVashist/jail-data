@@ -131,15 +131,12 @@ router.post('/', async (req, res) => {
       }
     }
 
-    if (propAadhar && propAadhar !== '#N/A' && /[^\d\s]/.test(propAadhar)) {
-      return res.status(400).json({ success: false, message: 'Aadhar No must contain numbers only.' });
-    }
-
     if (propAadhar && propAadhar !== '#N/A') {
       const cleanDigits = propAadhar.replace(/\D/g, '');
-      if (cleanDigits.length === 12) {
-        propAadhar = cleanDigits.replace(/^(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3');
+      if (cleanDigits.length < 12) {
+        return res.status(400).json({ success: false, message: 'Aadhar No must contain at least 12 digits.' });
       }
+      propAadhar = `${cleanDigits.slice(0, 4)} ${cleanDigits.slice(4, 8)} ${cleanDigits.slice(8, 12)}`;
     } else if (!propAadhar && (!targetRecord.aadharNo || targetRecord.aadharNo === '#N/A')) {
       propAadhar = '#N/A';
     }
