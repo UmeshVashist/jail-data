@@ -73,10 +73,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
+      {/* Stat Cards */}
       <div className="row g-3 mb-4">
         {/* Total Records */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className={isAdmin ? "col-12 col-sm-6 col-xl-3" : "col-12 col-sm-6 col-xl-4"}>
           <div
             className="card stat-card h-100 p-3"
             onClick={() => navigate('/records')}
@@ -96,7 +96,7 @@ export default function Dashboard() {
         </div>
 
         {/* Today's Records */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className={isAdmin ? "col-12 col-sm-6 col-xl-3" : "col-12 col-sm-6 col-xl-4"}>
           <div
             className="card stat-card h-100 p-3"
             onClick={() => setTodayModalOpen(true)}
@@ -115,28 +115,30 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Total Users */}
-        <div className="col-12 col-sm-6 col-xl-3">
-          <div
-            className="card stat-card h-100 p-3"
-            onClick={() => setUsersModalOpen(true)}
-            style={{ cursor: 'pointer' }}
-            title="Click to view user accounts popup"
-          >
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <span className="text-muted small fw-semibold text-uppercase">Total Users</span>
-                <h2 className="fw-bold text-white mb-0 mt-1">{loading ? '...' : stats.totalUsers}</h2>
-              </div>
-              <div className="stat-icon bg-info-subtle-custom">
-                <i className="bi bi-people"></i>
+        {/* Total Users (Admin Only) */}
+        {isAdmin && (
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div
+              className="card stat-card h-100 p-3"
+              onClick={() => setUsersModalOpen(true)}
+              style={{ cursor: 'pointer' }}
+              title="Click to view user accounts popup"
+            >
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <span className="text-muted small fw-semibold text-uppercase">Total Users</span>
+                  <h2 className="fw-bold text-white mb-0 mt-1">{loading ? '...' : stats.totalUsers}</h2>
+                </div>
+                <div className="stat-icon bg-info-subtle-custom">
+                  <i className="bi bi-people"></i>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Today's Imports */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className={isAdmin ? "col-12 col-sm-6 col-xl-3" : "col-12 col-sm-6 col-xl-4"}>
           <div
             className="card stat-card h-100 p-3"
             onClick={() => canImport && navigate('/import')}

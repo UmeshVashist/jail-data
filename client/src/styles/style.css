@@ -4705,7 +4705,12 @@ body.theme-modern-3d .login-card .form-control:-webkit-autofill:focus {
     overflow: visible !important;
   }
 
-  body > *:not(#pdf-print-area) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  body:has(#pdf-print-area) > *:not(#pdf-print-area) {
     display: none !important;
   }
 
@@ -5030,4 +5035,46 @@ body.theme-modern-3d .table-text-main,
 body.theme-modern-3d .page-title-text,
 body.theme-modern-3d .card-title-text {
   color: #ffffff !important;
+}
+
+/* ==========================================================================
+   MODAL NOTICE BANNER & TARGET RECORD BOX STYLING
+   ========================================================================== */
+.modal-notice-banner {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.825rem;
+  line-height: 1.45;
+}
+
+.modal-notice-banner i {
+  color: #d97706;
+}
+
+.modal-target-record-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+body.theme-modern-3d .modal-notice-banner {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #fde68a !important;
+}
+
+body.theme-modern-3d .modal-notice-banner i {
+  color: #fbbf24 !important;
+}
+
+body.theme-modern-3d .modal-target-record-box {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(0, 240, 255, 0.25) !important;
+  color: #f8fafc !important;
 }

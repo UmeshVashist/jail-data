@@ -189,9 +189,85 @@ export default function DataRecords() {
     }
   };
 
-  // Direct Print Table Data
+  // Direct Print Table Data (Opens dedicated clean print document - 100% reliable, never blank)
   const handleDirectPrint = () => {
-    window.print();
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const rowsHtml = (records || []).map(r => `
+      <tr>
+        <td style="font-family: monospace; font-weight: bold;">${r.pid || ''}</td>
+        <td>${r.name || ''}</td>
+        <td>${r.father || ''}</td>
+        <td>${r.utNo || ''}</td>
+        <td>${r.aadharNo || ''}</td>
+        <td>${r.date || ''}</td>
+        <td>${r.remark || ''}</td>
+        <td>${r.createdBy || ''}</td>
+        <td>${r.createdDate || ''}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>JAM Portal - Data Records Report</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 20px; color: #000; }
+            h2 { margin-bottom: 4px; color: #1e3a8a; }
+            .meta { font-size: 11px; color: #475569; margin-bottom: 16px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #94a3b8; padding: 5px 7px; text-align: left; }
+            th { background-color: #f1f5f9; font-weight: bold; text-transform: uppercase; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            @media print {
+              body { padding: 0; }
+              @page { size: landscape; margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>JAM Portal - Data Records Report</h2>
+          <div class="meta">
+            <strong>Generated:</strong> ${new Date().toLocaleString()} | 
+            <strong>Showing Records:</strong> ${records.length} of ${totalCount} | 
+            <strong>Filter:</strong> ${query.trim() || 'All'}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Name</th>
+                <th>Father</th>
+                <th>UT No</th>
+                <th>Aadhar</th>
+                <th>Record Date</th>
+                <th>Remark</th>
+                <th>Created By</th>
+                <th>Created Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px;">No records found.</td></tr>'}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   return (
@@ -222,46 +298,25 @@ export default function DataRecords() {
           >
             <i className="bi bi-printer"></i> Print
           </button>
-          {/* Download Dropdown */}
-          <div className="dropdown">
-            <button
-              className="btn btn-outline-success btn-sm dropdown-toggle px-3 py-2 fw-semibold d-flex align-items-center gap-1.5"
-              data-bs-toggle="dropdown"
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-1" role="status"></span>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-download"></i> Download
-                </>
-              )}
-            </button>
-            <ul className="dropdown-menu dropdown-menu-end shadow border-0">
-              <li>
-                <button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleExport('xlsx')} disabled={isExporting}>
-                  <i className="bi bi-file-earmark-excel text-success fs-6"></i>
-                  <span>Export Excel (.xlsx)</span>
-                </button>
-              </li>
-              <li>
-                <button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleExport('csv')} disabled={isExporting}>
-                  <i className="bi bi-file-earmark-text text-primary fs-6"></i>
-                  <span>Export CSV (.csv)</span>
-                </button>
-              </li>
-              <li><hr className="dropdown-divider my-1" /></li>
-              <li>
-                <button className="dropdown-item d-flex align-items-center gap-2" onClick={handleDirectPrint}>
-                  <i className="bi bi-printer text-info fs-6"></i>
-                  <span>Direct Print Data</span>
-                </button>
-              </li>
-            </ul>
-          </div>
+          {/* Single Direct Excel Download Button */}
+          <button
+            type="button"
+            className="btn btn-outline-success btn-sm rounded-2 d-flex align-items-center gap-1.5 px-3 py-2 fw-semibold"
+            onClick={() => handleExport('xlsx')}
+            disabled={isExporting}
+            title="Download records as Excel (.xlsx)"
+          >
+            {isExporting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                Downloading...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-file-earmark-excel"></i> Download Excel
+              </>
+            )}
+          </button>
         </div>
       </div>
 

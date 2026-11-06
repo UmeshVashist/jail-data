@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -62,36 +63,37 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
 
   if (!isOpen || !record) return null;
 
-  return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1055 }}>
-      <div className="modal-dialog modal-dialog-centered">
+  return createPortal(
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
+      <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header border-bottom border-secondary border-opacity-25">
-            <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
-              <i className="bi bi-trash3 text-warning"></i> Request Record Deletion
+          <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
+            <h5 className="modal-title fw-bold card-title-text d-flex align-items-center gap-2 mb-0">
+              <i className="bi bi-trash3 text-danger"></i> Request Record Deletion
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose} aria-label="Close" disabled={loading}></button>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close" disabled={loading}></button>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body p-4">
-              <div className="alert alert-warning small rounded-3 border-0 bg-warning bg-opacity-15 text-warning mb-3">
-                <i className="bi bi-info-circle-fill me-1"></i> This record is older than 12 hours. Deletion requires Admin review and confirmation.
+              <div className="modal-notice-banner d-flex align-items-center gap-2 mb-3">
+                <i className="bi bi-info-circle-fill fs-6 flex-shrink-0"></i>
+                <span>This record is older than 12 hours. Deletion requires Admin review and confirmation.</span>
               </div>
 
               <div className="mb-3">
-                <label className="form-label text-white small fw-semibold">Target Record</label>
-                <div className="p-2 rounded bg-dark border border-secondary border-opacity-25 text-white small">
-                  <div><strong>PID:</strong> {record.pid} | <strong>Name:</strong> {record.name}</div>
+                <label className="form-label small fw-semibold">Target Record</label>
+                <div className="modal-target-record-box small">
+                  <div className="mb-1"><strong>PID:</strong> <span className="font-monospace text-cyan fw-bold">{record.pid}</span> | <strong>Name:</strong> {record.name}</div>
                   <div><strong>UT No:</strong> {record.utNo || '-'} | <strong>Aadhar:</strong> {record.aadharNo || '-'}</div>
                 </div>
               </div>
 
               <div className="mb-3">
-                <label className="form-label text-white small fw-semibold">
+                <label className="form-label small fw-semibold">
                   Reason for Deletion <span className="text-danger">*</span>
                 </label>
                 <select
-                  className="form-select"
+                  className="form-select custom-modern-dropdown"
                   value={selectedReason}
                   onChange={(e) => setSelectedReason(e.target.value)}
                   required
@@ -108,7 +110,7 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
 
               {selectedReason === 'Other' && (
                 <div className="mb-3">
-                  <label className="form-label text-white small fw-semibold">
+                  <label className="form-label small fw-semibold">
                     Custom Reason <span className="text-danger">*</span>
                   </label>
                   <textarea
@@ -123,11 +125,11 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
                 </div>
               )}
             </div>
-            <div className="modal-footer border-top border-secondary border-opacity-25">
+            <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
               <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={loading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-warning btn-sm px-4 fw-semibold text-dark" disabled={loading}>
+              <button type="submit" className="btn btn-danger btn-sm px-4 fw-semibold shadow-sm" disabled={loading}>
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status"></span> Submitting...
@@ -140,7 +142,8 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

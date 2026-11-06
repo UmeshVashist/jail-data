@@ -192,10 +192,18 @@ export default function AllRequests() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Clickable to Filter Requests) */}
       <div className="row g-3 mb-4">
         <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card stat-card h-100 p-3">
+          <div
+            className={`card stat-card h-100 p-3 ${typeFilter === 'All' && statusFilter === 'Pending' ? 'border-primary border-2 shadow-sm' : ''}`}
+            onClick={() => {
+              setTypeFilter('All');
+              setStatusFilter('Pending');
+            }}
+            style={{ cursor: 'pointer' }}
+            title="Click to filter All Pending requests"
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Total Pending</span>
@@ -208,7 +216,15 @@ export default function AllRequests() {
           </div>
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card stat-card h-100 p-3">
+          <div
+            className={`card stat-card h-100 p-3 ${typeFilter === 'Edit' && statusFilter === 'Pending' ? 'border-cyan border-2 shadow-sm' : ''}`}
+            onClick={() => {
+              setTypeFilter('Edit');
+              setStatusFilter('Pending');
+            }}
+            style={{ cursor: 'pointer' }}
+            title="Click to filter Pending Edit requests"
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Edit Requests</span>
@@ -221,7 +237,15 @@ export default function AllRequests() {
           </div>
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card stat-card h-100 p-3">
+          <div
+            className={`card stat-card h-100 p-3 ${typeFilter === 'Delete' && statusFilter === 'Pending' ? 'border-danger border-2 shadow-sm' : ''}`}
+            onClick={() => {
+              setTypeFilter('Delete');
+              setStatusFilter('Pending');
+            }}
+            style={{ cursor: 'pointer' }}
+            title="Click to filter Pending Delete requests"
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Delete Requests</span>
@@ -234,7 +258,15 @@ export default function AllRequests() {
           </div>
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card stat-card h-100 p-3">
+          <div
+            className={`card stat-card h-100 p-3 ${typeFilter === 'List Add' && statusFilter === 'Pending' ? 'border-success border-2 shadow-sm' : ''}`}
+            onClick={() => {
+              setTypeFilter('List Add');
+              setStatusFilter('Pending');
+            }}
+            style={{ cursor: 'pointer' }}
+            title="Click to filter Pending List Add requests"
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">List Add Requests</span>
