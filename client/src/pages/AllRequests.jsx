@@ -85,7 +85,7 @@ export default function AllRequests() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">Requests Management Hub</h3>
+          <h3 className="fw-bold page-title-text mb-1">Requests Management Hub</h3>
           <p className="text-muted small mb-0">Review, compare, approve, or reject user Edit, Delete, and List Add requests</p>
         </div>
         <div className="mt-3 mt-md-0">
@@ -281,7 +281,7 @@ export default function AllRequests() {
                         </span>
                       </td>
                       <td className="fw-bold text-cyan font-monospace">{req.pid || '-'}</td>
-                      <td className="fw-semibold text-white">{req.name || req.optionValue || '-'}</td>
+                      <td className="fw-semibold table-text-main">{req.name || req.optionValue || '-'}</td>
                       <td><span className="badge bg-secondary">{req.requestedBy || '-'}</span></td>
                       <td className="small text-muted text-truncate" style={{ maxWidth: '200px' }}>
                         {req.reason || req.remark || '-'}

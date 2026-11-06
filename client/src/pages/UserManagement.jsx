@@ -80,7 +80,7 @@ export default function UserManagement() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">User Management</h3>
+          <h3 className="fw-bold page-title-text mb-1">User Management</h3>
           <p className="text-muted small mb-0">Manage portal user accounts, assign roles, grant permissions, and configure delete request access</p>
         </div>
         <div className="mt-3 mt-md-0 d-flex gap-2">
@@ -187,7 +187,7 @@ export default function UserManagement() {
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <i className="bi bi-person-circle fs-5 text-cyan"></i>
-                          <span className="fw-bold text-white">{u.username}</span>
+                          <span className="fw-bold table-text-main">{u.username}</span>
                         </div>
                       </td>
                       <td>

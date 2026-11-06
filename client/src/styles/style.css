@@ -2345,15 +2345,85 @@ body.theme-classic #all-requests-table-container thead th {
   text-shadow: none !important;
 }
 
+/* ==========================================================================
+   CLASSIC UI: DATA TABLE TEXT COLOR MASTER FIX (ALL PAGES & MODALS)
+   ========================================================================== */
+
 body:not(.theme-modern-3d) .table tbody tr,
 body:not(.theme-modern-3d) .table tbody tr td,
 body.theme-classic .table tbody tr,
 body.theme-classic .table tbody tr td {
   background-color: #ffffff !important;
   background: #ffffff !important;
-  color: #1e293b !important;
+  color: #0f172a !important;
   border-bottom: 1px solid #e2e8f0 !important;
   box-shadow: none !important;
+}
+
+/* Force dark readable text for any .text-white inside classic tables & cards */
+body:not(.theme-modern-3d) .table td.text-white,
+body:not(.theme-modern-3d) .table td .text-white,
+body:not(.theme-modern-3d) .table th.text-white,
+body:not(.theme-modern-3d) .table th .text-white,
+body:not(.theme-modern-3d) .table .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body:not(.theme-modern-3d) .custom-table-card .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body:not(.theme-modern-3d) .modal-content .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body.theme-classic .table td.text-white,
+body.theme-classic .table td .text-white,
+body.theme-classic .table th.text-white,
+body.theme-classic .table th .text-white,
+body.theme-classic .table .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body.theme-classic .custom-table-card .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body.theme-classic .modal-content .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *),
+body.theme-classic .table-text-main {
+  color: #0f172a !important;
+}
+
+/* Headings in Classic Mode */
+body:not(.theme-modern-3d) .view-section h3.text-white,
+body:not(.theme-modern-3d) .custom-table-card h6.text-white,
+body:not(.theme-modern-3d) .page-title-text,
+body:not(.theme-modern-3d) .card-title-text,
+body.theme-classic .view-section h3.text-white,
+body.theme-classic .custom-table-card h6.text-white,
+body.theme-classic .page-title-text,
+body.theme-classic .card-title-text {
+  color: #0f172a !important;
+}
+
+/* PID Link & Cyan Text in Classic Mode (High-contrast ocean blue) */
+body:not(.theme-modern-3d) .table td.text-cyan,
+body:not(.theme-modern-3d) .table td .text-cyan,
+body:not(.theme-modern-3d) .table .text-cyan,
+body:not(.theme-modern-3d) .table .pid-link,
+body:not(.theme-modern-3d) .pid-link,
+body:not(.theme-modern-3d) .btn-link.pid-link,
+body.theme-classic .table td.text-cyan,
+body.theme-classic .table td .text-cyan,
+body.theme-classic .table .text-cyan,
+body.theme-classic .table .pid-link,
+body.theme-classic .pid-link,
+body.theme-classic .btn-link.pid-link {
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+body:not(.theme-modern-3d) .pid-link:hover,
+body:not(.theme-modern-3d) .btn-link.pid-link:hover,
+body.theme-classic .pid-link:hover,
+body.theme-classic .btn-link.pid-link:hover {
+  color: #0369a1 !important;
+  text-decoration: underline !important;
+}
+
+/* Secondary & Muted Text in Classic Tables */
+body:not(.theme-modern-3d) .table td.text-muted,
+body:not(.theme-modern-3d) .table td .text-muted,
+body:not(.theme-modern-3d) .table .text-muted:not(.btn):not(.badge),
+body.theme-classic .table td.text-muted,
+body.theme-classic .table td .text-muted,
+body.theme-classic .table .text-muted:not(.btn):not(.badge) {
+  color: #475569 !important;
 }
 
 /* FIX: Table row hover must NEVER make text white in Classic Mode! */
@@ -2369,13 +2439,13 @@ body.theme-classic .table tbody tr:hover th,
 body.theme-classic .table tbody tr:hover td *,
 body.theme-classic .table-hover tbody tr:hover,
 body.theme-classic .table-hover tbody tr:hover td {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
 body:not(.theme-modern-3d) .table tbody tr:hover td .pid-link,
 body.theme-classic .table tbody tr:hover td .pid-link {
-  color: #2563eb !important;
+  color: #0284c7 !important;
 }
 
 body:not(.theme-modern-3d) .table tbody tr:hover td .text-muted,
@@ -2385,7 +2455,65 @@ body.theme-classic .table tbody tr:hover td .text-secondary {
   color: #475569 !important;
 }
 
-/* --- FIX: Badges in Classic UI (Created By, Aadhar #N/A, Dates, PS State, Remark OFF) --- */
+/* --- Badges in Classic UI Tables --- */
+
+/* UT No Badge Pill in Classic */
+body:not(.theme-modern-3d) .badge-ut-pill,
+body.theme-classic .badge-ut-pill {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.12) !important;
+}
+
+/* Remark Badge in Classic */
+body:not(.theme-modern-3d) .badge.bg-primary.bg-opacity-25,
+body:not(.theme-modern-3d) .table td .badge.bg-primary.bg-opacity-25,
+body.theme-classic .badge.bg-primary.bg-opacity-25,
+body.theme-classic .table td .badge.bg-primary.bg-opacity-25 {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+  border: 1px solid #c4b5fd !important;
+  font-weight: 600 !important;
+}
+
+/* Request Type Badges in Classic */
+body:not(.theme-modern-3d) .badge.bg-cyan.bg-opacity-25,
+body:not(.theme-modern-3d) .table td .badge.bg-cyan,
+body.theme-classic .badge.bg-cyan.bg-opacity-25,
+body.theme-classic .table td .badge.bg-cyan {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+}
+
+body:not(.theme-modern-3d) .badge.bg-danger.bg-opacity-25,
+body:not(.theme-modern-3d) .table td .badge.bg-danger.bg-opacity-25,
+body.theme-classic .badge.bg-danger.bg-opacity-25,
+body.theme-classic .table td .badge.bg-danger.bg-opacity-25 {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+body:not(.theme-modern-3d) .badge.bg-success.bg-opacity-25,
+body:not(.theme-modern-3d) .table td .badge.bg-success.bg-opacity-25,
+body.theme-classic .badge.bg-success.bg-opacity-25,
+body.theme-classic .table td .badge.bg-success.bg-opacity-25 {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+}
+
+/* Disabled permission badges in Classic (replaces dark boxes) */
+body:not(.theme-modern-3d) .table td .badge.bg-dark,
+body.theme-classic .table td .badge.bg-dark {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
 body:not(.theme-modern-3d) .badge.bg-light,
 body:not(.theme-modern-3d) td .badge.bg-light,
 body:not(.theme-modern-3d) #ps-table-body td .badge,
@@ -2644,37 +2772,248 @@ body.theme-classic .form-select:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 }
 
-/* Classic Buttons */
-body:not(.theme-modern-3d) .btn-primary,
-body.theme-classic .btn-primary {
-  background: #2563eb !important;
-  border-color: #1d4ed8 !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-  text-shadow: none !important;
-  transform: none !important;
+/* ==========================================================================
+   MODERN BUTTONS WITH 3D STYLING & ANIMATIONS IN CLASSIC UI
+   ========================================================================== */
+
+@keyframes modernClassicBtnPulse {
+  0%, 100% {
+    box-shadow: 0 4px 0 #4338ca, 0 8px 18px rgba(99, 102, 241, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  }
+  50% {
+    box-shadow: 0 4px 0 #4338ca, 0 10px 24px rgba(217, 70, 239, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+  }
 }
 
+/* Base button transitions and icon animations */
+body.theme-classic .btn,
+body:not(.theme-modern-3d) .btn {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-classic .btn i,
+body:not(.theme-modern-3d) .btn i {
+  display: inline-block;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-classic .btn:hover i,
+body:not(.theme-modern-3d) .btn:hover i {
+  transform: scale(1.18);
+}
+
+/* Modern Primary Button */
+body:not(.theme-modern-3d) .btn-primary,
+body.theme-classic .btn-primary {
+  font-size: 0.84rem !important;
+  padding: 0.45rem 1rem !important;
+  background: linear-gradient(135deg, #0284c7 0%, #6366f1 50%, #d946ef 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #4338ca, 0 8px 18px rgba(99, 102, 241, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+  animation: modernClassicBtnPulse 3.5s infinite ease-in-out;
+  cursor: pointer;
+}
+
+body:not(.theme-modern-3d) .btn-primary:hover,
+body:not(.theme-modern-3d) .btn-primary:focus,
+body.theme-classic .btn-primary:hover,
+body.theme-classic .btn-primary:focus {
+  background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 50%, #ec4899 100%) !important;
+  transform: translateY(-2.5px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #4338ca, 0 14px 28px rgba(217, 70, 239, 0.45), inset 0 1px 3px #ffffff !important;
+  color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .btn-primary:active,
+body.theme-classic .btn-primary:active {
+  transform: translateY(2px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #4338ca, 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Modern Success & Download Button */
 body:not(.theme-modern-3d) .btn-success,
 body:not(.theme-modern-3d) .btn-download-action,
 body.theme-classic .btn-success,
 body.theme-classic .btn-download-action {
-  background: #16a34a !important;
-  border-color: #15803d !important;
+  font-size: 0.84rem !important;
+  padding: 0.45rem 1rem !important;
+  background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0284c7 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-  transform: none !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #047857, 0 8px 18px rgba(5, 150, 105, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+  cursor: pointer;
 }
 
+body:not(.theme-modern-3d) .btn-success i,
+body:not(.theme-modern-3d) .btn-download-action i,
+body.theme-classic .btn-success i,
+body.theme-classic .btn-download-action i {
+  color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .btn-success:hover,
+body:not(.theme-modern-3d) .btn-download-action:hover,
+body:not(.theme-modern-3d) .btn-download-action[aria-expanded="true"],
+body.theme-classic .btn-success:hover,
+body.theme-classic .btn-download-action:hover,
+body.theme-classic .btn-download-action[aria-expanded="true"] {
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%) !important;
+  transform: translateY(-2.5px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #047857, 0 14px 28px rgba(13, 148, 136, 0.45), inset 0 1px 3px #ffffff !important;
+  color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .btn-success:active,
+body:not(.theme-modern-3d) .btn-download-action:active,
+body.theme-classic .btn-success:active,
+body.theme-classic .btn-download-action:active {
+  transform: translateY(2px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #047857, 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Modern Danger & Clear/Reset Button */
 body:not(.theme-modern-3d) .btn-danger,
 body:not(.theme-modern-3d) .btn-clear-filters,
 body.theme-classic .btn-danger,
 body.theme-classic .btn-clear-filters {
-  background: #dc2626 !important;
-  border-color: #b91c1c !important;
+  font-size: 0.84rem !important;
+  padding: 0.45rem 1rem !important;
+  background: linear-gradient(135deg, #f43f5e 0%, #ef4444 50%, #dc2626 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-  transform: none !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 #991b1b, 0 8px 18px rgba(239, 68, 68, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+  cursor: pointer;
+}
+
+body:not(.theme-modern-3d) .btn-danger:hover,
+body:not(.theme-modern-3d) .btn-clear-filters:hover,
+body.theme-classic .btn-danger:hover,
+body.theme-classic .btn-clear-filters:hover {
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%) !important;
+  transform: translateY(-2.5px) scale(1.02) !important;
+  box-shadow: 0 6px 0 #991b1b, 0 14px 28px rgba(244, 63, 94, 0.45), inset 0 1px 3px #ffffff !important;
+  color: #ffffff !important;
+}
+
+body:not(.theme-modern-3d) .btn-danger:active,
+body:not(.theme-modern-3d) .btn-clear-filters:active,
+body.theme-classic .btn-danger:active,
+body.theme-classic .btn-clear-filters:active {
+  transform: translateY(2px) scale(0.98) !important;
+  box-shadow: 0 1px 0 #991b1b, 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Modern Outline Action Buttons in Classic UI */
+body:not(.theme-modern-3d) .btn-outline-primary,
+body.theme-classic .btn-outline-primary {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border: 1.5px solid #3b82f6 !important;
+  color: #1d4ed8 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-primary:hover,
+body:not(.theme-modern-3d) .btn-outline-primary:focus,
+body.theme-classic .btn-outline-primary:hover,
+body.theme-classic .btn-outline-primary:focus {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-danger,
+body.theme-classic .btn-outline-danger {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1.5px solid #ef4444 !important;
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.12) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-danger:hover,
+body:not(.theme-modern-3d) .btn-outline-danger:focus,
+body.theme-classic .btn-outline-danger:hover,
+body.theme-classic .btn-outline-danger:focus {
+  background: linear-gradient(135deg, #f43f5e 0%, #ef4444 50%, #dc2626 100%) !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-cyan,
+body.theme-classic .btn-outline-cyan {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #0284c7 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.12) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-cyan:hover,
+body:not(.theme-modern-3d) .btn-outline-cyan:focus,
+body.theme-classic .btn-outline-cyan:hover,
+body.theme-classic .btn-outline-cyan:focus {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  border-color: #0369a1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-success,
+body.theme-classic .btn-outline-success {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border: 1.5px solid #10b981 !important;
+  color: #059669 !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.12) !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-success:hover,
+body:not(.theme-modern-3d) .btn-outline-success:focus,
+body.theme-classic .btn-outline-success:hover,
+body.theme-classic .btn-outline-success:focus {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%) !important;
+  border-color: #047857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+body:not(.theme-modern-3d) .btn-secondary,
+body.theme-classic .btn-secondary {
+  background: #64748b !important;
+  border: 1.5px solid #475569 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 9px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+}
+
+body:not(.theme-modern-3d) .btn-secondary:hover,
+body.theme-classic .btn-secondary:hover {
+  background: #475569 !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3) !important;
 }
 
 /* Classic Action 3-Dots Button & Popup */
@@ -2683,22 +3022,23 @@ body.theme-classic .action-dots-btn {
   background: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
   color: #475569 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body:not(.theme-modern-3d) .action-dots-btn i,
 body.theme-classic .action-dots-btn i {
   color: #475569 !important;
-  text-shadow: none !important;
 }
 
 body:not(.theme-modern-3d) .action-dots-btn:hover,
 body.theme-classic .action-dots-btn:hover {
   background: #f1f5f9 !important;
-  border-color: #94a3b8 !important;
-  transform: none !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+  transform: translateY(-2px) scale(1.08) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
 }
 
 body:not(.theme-modern-3d) .dropdown-menu,
@@ -4217,9 +4557,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   transform: scale(1.15);
 }
 
-body.theme-classic input[type="date"]::-webkit-calendar-picker-indicator {
+body.theme-classic input[type="date"],
+body:not(.theme-modern-3d) input[type="date"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  color-scheme: light !important;
+}
+
+body.theme-classic input[type="date"]::-webkit-calendar-picker-indicator,
+body:not(.theme-modern-3d) input[type="date"]::-webkit-calendar-picker-indicator {
   filter: none !important;
-  opacity: 0.65;
+  opacity: 0.75 !important;
+  cursor: pointer !important;
 }
 
 /* ==========================================================================
@@ -4240,10 +4591,17 @@ body.theme-classic input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 body.theme-classic .badge-ut-pill {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: none !important;
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.12) !important;
+}
+
+body.theme-classic .user-avatar-badge {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
 }
 
 /* ==========================================================================
@@ -4290,4 +4648,32 @@ body.theme-classic .view-record-table td.view-td {
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   THEME-AWARE TABLE TEXT & TITLE HELPERS
+   ========================================================================== */
+.table-text-main {
+  color: #0f172a;
+}
+.page-title-text {
+  color: #0f172a;
+}
+.card-title-text {
+  color: #0f172a;
+}
+
+body.theme-classic .table-text-main,
+body:not(.theme-modern-3d) .table-text-main,
+body.theme-classic .page-title-text,
+body:not(.theme-modern-3d) .page-title-text,
+body.theme-classic .card-title-text,
+body:not(.theme-modern-3d) .card-title-text {
+  color: #0f172a !important;
+}
+
+body.theme-modern-3d .table-text-main,
+body.theme-modern-3d .page-title-text,
+body.theme-modern-3d .card-title-text {
+  color: #ffffff !important;
 }

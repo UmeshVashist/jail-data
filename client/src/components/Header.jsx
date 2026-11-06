@@ -47,30 +47,8 @@ export default function Header({ toggleMobileSidebar, onOpenSelfPassword }) {
         </h5>
       </div>
 
-      {/* Right controls: Theme switcher + Profile chip */}
+      {/* Right controls: Theme switcher (temporarily removed as requested) + Profile chip */}
       <div className="d-flex align-items-center gap-2 gap-md-3">
-        {/* UI Theme Switcher */}
-        <div className="ui-mode-switcher-container">
-          <div className="ui-mode-pill d-flex align-items-center rounded-pill p-0.5 border" role="group">
-            <button
-              type="button"
-              className={`btn btn-sm ui-mode-btn ${!isModern ? 'active' : ''}`}
-              onClick={() => toggleTheme('classic')}
-              title="Classic UI"
-            >
-              <i className="bi bi-display me-1"></i> <span className="d-none d-sm-inline">Classic</span> UI
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ui-mode-btn ${isModern ? 'active' : ''}`}
-              onClick={() => toggleTheme('modern')}
-              title="Modern 3D Cyber UI"
-            >
-              <i className="bi bi-stars me-1 text-warning"></i> <span className="d-none d-sm-inline">Modern</span> 3D
-            </button>
-          </div>
-        </div>
-
         {/* User Profile Chip */}
         <div className="position-relative">
           <button

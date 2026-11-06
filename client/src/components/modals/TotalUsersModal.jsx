@@ -60,7 +60,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
       }}
     >
       <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow-lg" style={{ background: 'var(--card-bg, #0b1329)' }}>
+        <div className="modal-content border-0 shadow-lg">
           {/* Header */}
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">
@@ -71,7 +71,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
                 <i className="bi bi-people fs-5"></i>
               </div>
               <div>
-                <h5 className="modal-title fw-bold text-white mb-0">Portal User Accounts</h5>
+                <h5 className="modal-title fw-bold card-title-text mb-0">Portal User Accounts</h5>
                 <span className="text-muted small">
                   Manage and view system users (<span className="badge bg-info text-white fw-bold">{filteredUsers.length}</span>)
                 </span>
@@ -170,13 +170,13 @@ export default function TotalUsersModal({ isOpen, onClose }) {
                           <td className="ps-4">
                             <div className="d-flex align-items-center gap-2">
                               <div
-                                className="rounded-circle d-flex align-items-center justify-content-center bg-dark text-cyan fw-bold"
+                                className="rounded-circle d-flex align-items-center justify-content-center user-avatar-badge text-cyan fw-bold"
                                 style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
                               >
                                 {u.username?.charAt(0)?.toUpperCase() || 'U'}
                               </div>
                               <div>
-                                <span className="fw-semibold text-white d-block">{u.username}</span>
+                                <span className="fw-semibold table-text-main d-block">{u.username}</span>
                                 {isSelf && <span className="badge bg-info text-dark x-small py-0 px-1">You</span>}
                               </div>
                             </div>

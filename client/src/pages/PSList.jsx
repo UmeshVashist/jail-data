@@ -83,7 +83,7 @@ export default function PSList() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">Police Stations (PS List)</h3>
+          <h3 className="fw-bold page-title-text mb-1">Police Stations (PS List)</h3>
           <p className="text-muted small mb-0">Search, verify, and manage 15,000+ Police Stations across India</p>
         </div>
         <div className="mt-3 mt-md-0 d-flex align-items-center gap-2">
@@ -205,7 +205,7 @@ export default function PSList() {
                 (stations || []).map((st, idx) => (
                   <tr key={st.id || idx}>
                     <td className="text-muted font-monospace">{st.id}</td>
-                    <td className="fw-bold text-white">{st.psName || st.ps}</td>
+                    <td className="fw-bold table-text-main">{st.psName || st.ps}</td>
                     <td className="text-muted">{st.district || '-'}</td>
                     <td className="text-muted">{st.state || '-'}</td>
                     {isAdmin && (

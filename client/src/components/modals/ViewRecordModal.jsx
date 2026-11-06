@@ -18,13 +18,13 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
       }}
     >
       <div className="modal-dialog modal-dialog-centered modal-lg">
-        <div className="modal-content border-0 shadow-lg" style={{ background: 'var(--card-bg, #0b1329)' }}>
+        <div className="modal-content border-0 shadow-lg">
           {/* Header */}
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
-            <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2 mb-0">
+            <h5 className="modal-title fw-bold card-title-text d-flex align-items-center gap-2 mb-0">
               <i className="bi bi-person-badge text-cyan"></i> Record Details &mdash; PID: {record.pid}
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose} aria-label="Close"></button>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
           </div>
 
           {/* Body: Structured Table Format */}
@@ -43,7 +43,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-person text-cyan me-1.5"></i> Full Name
                     </th>
                     <td className="view-td">
-                      <span className="fw-bold text-white">{record.name || '-'}</span>
+                      <span className="fw-bold table-text-main">{record.name || '-'}</span>
                     </td>
                   </tr>
                   <tr>
@@ -51,7 +51,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-person-heart text-cyan me-1.5"></i> Father's Name
                     </th>
                     <td className="view-td">
-                      <span className="text-white">{record.father || '-'}</span>
+                      <span className="table-text-main">{record.father || '-'}</span>
                     </td>
                     <th className="view-th">
                       <i className="bi bi-card-text text-cyan me-1.5"></i> UT No.
@@ -81,7 +81,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-calendar3 text-cyan me-1.5"></i> Record Date
                     </th>
                     <td className="view-td">
-                      <span className="text-white">{record.date || '-'}</span>
+                      <span className="table-text-main">{record.date || '-'}</span>
                     </td>
                     <th className="view-th">
                       <i className="bi bi-chat-left-dots text-cyan me-1.5"></i> Remark
@@ -97,13 +97,13 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-person-check text-cyan me-1.5"></i> Created By
                     </th>
                     <td className="view-td">
-                      <span className="text-white">{record.createdBy || '-'}</span>
+                      <span className="table-text-main">{record.createdBy || '-'}</span>
                     </td>
                     <th className="view-th">
                       <i className="bi bi-clock-history text-cyan me-1.5"></i> Created At
                     </th>
                     <td className="view-td">
-                      <span className="text-white small">
+                      <span className="table-text-main small">
                         {(record.createdDate || '') + ' ' + (record.createdTime || '')}
                       </span>
                     </td>
@@ -114,7 +114,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                         <i className="bi bi-arrow-repeat text-cyan me-1.5"></i> Last Updated
                       </th>
                       <td className="view-td" colSpan="3">
-                        <span className="text-white small">
+                        <span className="table-text-main small">
                           {(record.updatedDate || '') + ' ' + (record.updatedTime || '')}
                         </span>
                       </td>

@@ -60,7 +60,7 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">Welcome Back, {user?.username}!</h3>
+          <h3 className="fw-bold page-title-text mb-1">Welcome Back, {user?.username}!</h3>
           <p className="text-muted small mb-0">Overview of portal activity and metrics</p>
         </div>
         <div className="mt-3 mt-md-0 d-flex gap-2">
@@ -159,7 +159,7 @@ export default function Dashboard() {
       {/* Recent Activity Table */}
       <div className="custom-table-card p-3 rounded-3">
         <div className="d-flex align-items-center justify-content-between mb-3">
-          <h6 className="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+          <h6 className="fw-bold card-title-text mb-0 d-flex align-items-center gap-2">
             <i className="bi bi-clock-history text-cyan"></i> Recent Activity Log
           </h6>
           <button className="btn btn-link btn-sm text-cyan text-decoration-none p-0 fw-semibold" onClick={() => navigate('/records')}>
@@ -208,12 +208,12 @@ export default function Dashboard() {
                         {rec.pid}
                       </button>
                     </td>
-                    <td className="fw-semibold text-white">{rec.name}</td>
+                    <td className="fw-semibold table-text-main">{rec.name}</td>
                     <td className="text-muted">{rec.father || '-'}</td>
                     <td><span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span></td>
-                    <td className="font-monospace small text-white">{rec.aadharNo || '#N/A'}</td>
+                    <td className="font-monospace small table-text-main">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>
-                    <td className="small text-white">{rec.createdBy || '-'}</td>
+                    <td className="small table-text-main">{rec.createdBy || '-'}</td>
                     <td className="small text-muted">{rec.createdDate} {rec.createdTime}</td>
                     <td className="text-end">
                       <div className="d-flex align-items-center justify-content-end gap-1">

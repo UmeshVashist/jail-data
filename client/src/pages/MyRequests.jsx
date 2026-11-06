@@ -74,7 +74,7 @@ export default function MyRequests() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">My Sent Requests</h3>
+          <h3 className="fw-bold page-title-text mb-1">My Sent Requests</h3>
           <p className="text-muted small mb-0">Track all deletion, edit, and dropdown list addition requests you have submitted to Admin</p>
         </div>
         <div className="mt-3 mt-md-0 d-flex gap-2">
@@ -224,8 +224,8 @@ export default function MyRequests() {
                         </span>
                       </td>
                       <td className="fw-bold text-cyan font-monospace">{req.pid || '-'}</td>
-                      <td className="fw-semibold text-white">{req.name || req.optionValue || '-'}</td>
-                      <td><span className="badge bg-secondary font-monospace">{req.utNo || '-'}</span></td>
+                      <td className="fw-semibold table-text-main">{req.name || req.optionValue || '-'}</td>
+                      <td><span className="badge badge-ut-pill font-monospace">{req.utNo || '-'}</span></td>
                       <td className="small text-muted text-truncate" style={{ maxWidth: '200px' }}>
                         {req.reason || req.remark || '-'}
                       </td>

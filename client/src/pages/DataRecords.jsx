@@ -145,7 +145,7 @@ export default function DataRecords() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">Data Records</h3>
+          <h3 className="fw-bold page-title-text mb-1">Data Records</h3>
           <p className="text-muted small mb-0">Search, filter, view, edit, and export database entries</p>
         </div>
         <div className="mt-3 mt-md-0 d-flex align-items-center gap-2">
@@ -247,7 +247,7 @@ export default function DataRecords() {
           <div className="col-6 col-sm-3 col-md-5 col-xl-2">
             <input
               type="date"
-              className="form-control text-white compact-date-input"
+              className="form-control compact-date-input"
               title="From Date"
               value={startDate}
               onChange={(e) => {
@@ -261,7 +261,7 @@ export default function DataRecords() {
           <div className="col-6 col-sm-3 col-md-5 col-xl-2">
             <input
               type="date"
-              className="form-control text-white compact-date-input"
+              className="form-control compact-date-input"
               title="To Date"
               value={endDate}
               onChange={(e) => {
@@ -344,7 +344,7 @@ export default function DataRecords() {
                         {rec.pid}
                       </button>
                     </td>
-                    <td className="fw-semibold text-white">
+                    <td className="fw-semibold table-text-main">
                       {rec.name}
                       {rec.hasPendingEditRequest && (
                         <span className="badge bg-warning text-dark ms-2 small" title="Edit request is pending approval">
@@ -361,14 +361,14 @@ export default function DataRecords() {
                     <td>
                       <span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span>
                     </td>
-                    <td className="font-monospace small text-white">{rec.aadharNo || '#N/A'}</td>
+                    <td className="font-monospace small table-text-main">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>
                     <td>
                       <span className="badge bg-primary bg-opacity-25 text-cyan border border-cyan border-opacity-25 py-1 px-2">
                         {rec.remark || 'None'}
                       </span>
                     </td>
-                    <td className="small text-white">{rec.createdBy || '-'}</td>
+                    <td className="small table-text-main">{rec.createdBy || '-'}</td>
                     <td className="small text-muted">{rec.createdDate}</td>
                     <td className="text-end">
                       <div className="d-flex align-items-center justify-content-end gap-1">

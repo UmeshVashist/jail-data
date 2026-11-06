@@ -70,7 +70,7 @@ export default function TodayRecordsModal({
       }}
     >
       <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow-lg" style={{ background: 'var(--card-bg, #0b1329)' }}>
+        <div className="modal-content border-0 shadow-lg">
           {/* Header */}
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">
@@ -81,7 +81,7 @@ export default function TodayRecordsModal({
                 <i className="bi bi-calendar-check fs-5"></i>
               </div>
               <div>
-                <h5 className="modal-title fw-bold text-white mb-0">
+                <h5 className="modal-title fw-bold card-title-text mb-0">
                   {isToday ? "Today's Uploaded Records" : `Uploaded Records (${selectedDate})`}
                 </h5>
                 <span className="text-muted small">
@@ -174,12 +174,12 @@ export default function TodayRecordsModal({
                             {rec.pid}
                           </button>
                         </td>
-                        <td className="fw-semibold text-white">{rec.name}</td>
+                        <td className="fw-semibold table-text-main">{rec.name}</td>
                         <td className="text-muted">{rec.father || '-'}</td>
                         <td>
                           <span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span>
                         </td>
-                        <td className="font-monospace small text-white">{rec.aadharNo || '#N/A'}</td>
+                        <td className="font-monospace small table-text-main">{rec.aadharNo || '#N/A'}</td>
                         <td className="small text-muted">{rec.date || '-'}</td>
                         <td>
                           <span className="badge bg-primary bg-opacity-25 text-cyan border border-cyan border-opacity-25 py-1 px-2">
@@ -223,7 +223,7 @@ export default function TodayRecordsModal({
           {/* Footer */}
           <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-2 d-flex justify-content-between align-items-center">
             <span className="small text-muted">
-              Showing <strong className="text-white">{records.length}</strong> record{records.length === 1 ? '' : 's'}
+              Showing <strong className="table-text-main">{records.length}</strong> record{records.length === 1 ? '' : 's'}
             </span>
             <button type="button" className="btn btn-secondary btn-sm px-4" onClick={onClose}>
               Close

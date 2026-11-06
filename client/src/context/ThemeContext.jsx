@@ -7,19 +7,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('informaction_theme') || 'modern';
-  });
+  // By default, Classic UI is enforced as requested
+  const [theme, setTheme] = useState('classic');
 
   useEffect(() => {
-    localStorage.setItem('informaction_theme', theme);
-    if (theme === 'modern') {
-      document.body.classList.remove('theme-classic');
-      document.body.classList.add('theme-modern-3d', 'dark-theme');
-    } else {
-      document.body.classList.remove('theme-modern-3d', 'dark-theme');
-      document.body.classList.add('theme-classic');
-    }
+    localStorage.setItem('informaction_theme', 'classic');
+    document.body.classList.remove('theme-modern-3d', 'dark-theme');
+    document.body.classList.add('theme-classic');
   }, [theme]);
 
   const toggleTheme = (newTheme) => {
