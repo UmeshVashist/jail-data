@@ -373,32 +373,32 @@ export default function DataRecords() {
 
       {/* Records Table */}
       <div className="custom-table-card p-3 rounded-3">
-        <div className="table-responsive table-scroll-container">
+        <div id="data-records-table-container" className="table-responsive table-scroll-container">
           <table className="table table-hover align-middle mb-0">
             <thead>
               <tr className="text-uppercase small user-select-none">
-                <th onClick={() => handleSort('pid')} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('pid')} style={{ cursor: 'pointer', width: '7%' }}>
                   PID {sortColumn === 'pid' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('name')} style={{ cursor: 'pointer', width: '15%' }}>
                   Name {sortColumn === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th onClick={() => handleSort('father')} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('father')} style={{ cursor: 'pointer', width: '14%' }}>
                   Father {sortColumn === 'father' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th onClick={() => handleSort('utNo')} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('utNo')} style={{ cursor: 'pointer', width: '13%' }}>
                   UT No {sortColumn === 'utNo' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th>Aadhar No</th>
-                <th onClick={() => handleSort('date')} style={{ cursor: 'pointer' }}>
+                <th style={{ width: '9%' }}>Aadhar No</th>
+                <th onClick={() => handleSort('date')} style={{ cursor: 'pointer', width: '9%' }}>
                   Record Date {sortColumn === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th>Remark</th>
-                <th>Created By</th>
-                <th onClick={() => handleSort('createdDate')} style={{ cursor: 'pointer' }}>
+                <th style={{ width: '11%' }}>Remark</th>
+                <th style={{ width: '7%' }}>Created By</th>
+                <th onClick={() => handleSort('createdDate')} style={{ cursor: 'pointer', width: '9%' }}>
                   Created Date {sortColumn === 'createdDate' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="text-end">Actions</th>
+                <th className="text-end" style={{ width: '6%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>

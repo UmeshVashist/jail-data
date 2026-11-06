@@ -21,8 +21,13 @@ export default function PSList() {
   const [loading, setLoading] = useState(true);
   const [addPSOpen, setAddPSOpen] = useState(false);
 
+  // Bulk Selection State
+  const [selectedPS, setSelectedPS] = useState(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
   const fetchStations = useCallback(async () => {
     setLoading(true);
+    setSelectedPS(new Set());
     try {
       const res = await api.get('/api/ps', {
         ps: psQuery.trim(),
@@ -75,6 +80,49 @@ export default function PSList() {
       }
     } catch (err) {
       showToast(err.message || 'Error deleting police station.', 'danger');
+    }
+  };
+
+  const isAllSelected = stations.length > 0 && stations.every(st => selectedPS.has(st.id));
+
+  const toggleSelect = (id) => {
+    setSelectedPS(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedPS(new Set());
+    } else {
+      setSelectedPS(new Set(stations.map(st => st.id)));
+    }
+  };
+
+  const handleBulkDeletePS = async () => {
+    const ids = Array.from(selectedPS);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Are you sure you want to DELETE ${ids.length} selected police station(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const res = await api.post('/api/ps/bulk-delete', { ids });
+      if (res && res.success) {
+        showToast(res.message || `Deleted ${ids.length} police stations successfully!`, 'success');
+        setSelectedPS(new Set());
+        fetchStations();
+      } else {
+        showToast(res.message || 'Failed to delete selected police stations.', 'danger');
+      }
+    } catch (err) {
+      showToast('Error deleting police stations: ' + err.message, 'danger');
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -173,12 +221,57 @@ export default function PSList() {
         </div>
       </div>
 
+      {/* Bulk Delete Banner */}
+      {selectedPS.size > 0 && isAdmin && (
+        <div className="alert alert-danger d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 mb-3 rounded-3 shadow-sm border border-danger border-opacity-50">
+          <div className="d-flex align-items-center gap-2">
+            <i className="bi bi-check2-square fs-5 text-danger"></i>
+            <span className="fw-bold">{selectedPS.size}</span> Police Station{selectedPS.size === 1 ? '' : 's'} selected
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+              onClick={handleBulkDeletePS}
+              disabled={isBulkDeleting}
+            >
+              {isBulkDeleting ? (
+                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+              ) : (
+                <i className="bi bi-trash3-fill"></i>
+              )}
+              Delete Selected ({selectedPS.size})
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm px-2.5"
+              onClick={() => setSelectedPS(new Set())}
+              disabled={isBulkDeleting}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* PS Table */}
       <div className="custom-table-card p-3 rounded-3">
         <div className="table-responsive table-scroll-container">
           <table className="table table-hover align-middle mb-0">
             <thead>
               <tr className="text-uppercase small">
+                {isAdmin && (
+                  <th style={{ width: '40px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      disabled={stations.length === 0}
+                      title="Select all on this page"
+                    />
+                  </th>
+                )}
                 <th style={{ width: '10%' }}>ID</th>
                 <th style={{ width: '30%' }}>Police Station</th>
                 <th style={{ width: '25%' }}>District</th>
@@ -189,39 +282,52 @@ export default function PSList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={isAdmin ? 5 : 4} className="text-center py-5 text-muted">
+                  <td colSpan={isAdmin ? 6 : 4} className="text-center py-5 text-muted">
                     <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
                     Loading police stations...
                   </td>
                 </tr>
               ) : !Array.isArray(stations) || stations.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 5 : 4} className="text-center py-5 text-muted">
+                  <td colSpan={isAdmin ? 6 : 4} className="text-center py-5 text-muted">
                     <i className="bi bi-shield-x fs-2 d-block mb-2 text-secondary"></i>
                     No police stations matched your search.
                   </td>
                 </tr>
               ) : (
-                (stations || []).map((st, idx) => (
-                  <tr key={st.id || idx}>
-                    <td className="text-muted font-monospace">{st.id}</td>
-                    <td className="fw-bold table-text-main">{st.psName || st.ps}</td>
-                    <td className="text-muted">{st.district || '-'}</td>
-                    <td className="text-muted">{st.state || '-'}</td>
-                    {isAdmin && (
-                      <td className="text-end">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger p-1 px-2"
-                          onClick={() => handleDeletePS(st)}
-                          title="Delete Police Station"
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))
+                (stations || []).map((st, idx) => {
+                  const isSelected = selectedPS.has(st.id);
+                  return (
+                    <tr key={st.id || idx} className={isSelected ? 'table-active' : ''}>
+                      {isAdmin && (
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(st.id)}
+                          />
+                        </td>
+                      )}
+                      <td className="text-muted font-monospace">{st.id}</td>
+                      <td className="fw-bold table-text-main">{st.psName || st.ps}</td>
+                      <td className="text-muted">{st.district || '-'}</td>
+                      <td className="text-muted">{st.state || '-'}</td>
+                      {isAdmin && (
+                        <td className="text-end">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger p-1 px-2"
+                            onClick={() => handleDeletePS(st)}
+                            title="Delete Police Station"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

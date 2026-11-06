@@ -18,6 +18,10 @@ export default function AllRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Bulk Selection State
+  const [selectedRequests, setSelectedRequests] = useState(new Map());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
   // Modals state
   const [reviewEditReq, setReviewEditReq] = useState(null);
   const [reviewDelReq, setReviewDelReq] = useState(null);
@@ -25,6 +29,7 @@ export default function AllRequests() {
 
   const fetchAllRequests = useCallback(async () => {
     setLoading(true);
+    setSelectedRequests(new Map());
     try {
       const [editRes, delRes, listRes] = await Promise.all([
         api.get('/api/edit-requests').catch(() => ({ data: [] })),
@@ -73,6 +78,94 @@ export default function AllRequests() {
     }
     return true;
   });
+
+  // Filtered Pending items for bulk selection
+  const pendingFiltered = filtered.filter(r => (r.status || 'Pending') === 'Pending');
+  const isAllSelected = pendingFiltered.length > 0 && pendingFiltered.every(r => selectedRequests.has(`${r.requestType}_${r.id}`));
+
+  const toggleSelect = (req) => {
+    const key = `${req.requestType}_${req.id}`;
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, req);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedRequests(new Map());
+    } else {
+      const next = new Map();
+      pendingFiltered.forEach(r => next.set(`${r.requestType}_${r.id}`, r));
+      setSelectedRequests(next);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const items = Array.from(selectedRequests.values());
+    if (items.length === 0) return;
+    if (!window.confirm(`Are you sure you want to APPROVE ${items.length} selected request(s)?`)) return;
+
+    setBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const item of items) {
+      try {
+        let url = '';
+        if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/approve`;
+        else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/approve`;
+        else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/approve`;
+
+        if (url) {
+          const res = await api.post(url);
+          if (res && res.success) successCount++;
+          else failCount++;
+        }
+      } catch (err) {
+        failCount++;
+      }
+    }
+
+    setBulkProcessing(false);
+    setSelectedRequests(new Map());
+    showToast(`Bulk Approval complete: ${successCount} approved${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'success' : 'danger');
+    fetchAllRequests();
+  };
+
+  const handleBulkReject = async () => {
+    const items = Array.from(selectedRequests.values());
+    if (items.length === 0) return;
+    if (!window.confirm(`Are you sure you want to REJECT ${items.length} selected request(s)?`)) return;
+
+    setBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const item of items) {
+      try {
+        let url = '';
+        if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/reject`;
+        else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/reject`;
+        else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/reject`;
+
+        if (url) {
+          const res = await api.post(url);
+          if (res && res.success) successCount++;
+          else failCount++;
+        }
+      } catch (err) {
+        failCount++;
+      }
+    }
+
+    setBulkProcessing(false);
+    setSelectedRequests(new Map());
+    showToast(`Bulk Rejection complete: ${successCount} rejected${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'warning' : 'danger');
+    fetchAllRequests();
+  };
 
   // KPI counts
   const totalPending = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
@@ -226,12 +319,68 @@ export default function AllRequests() {
         </div>
       </div>
 
+      {/* Bulk Action Banner */}
+      {selectedRequests.size > 0 && (
+        <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 mb-3 rounded-3 shadow-sm border border-info border-opacity-50">
+          <div className="d-flex align-items-center gap-2">
+            <i className="bi bi-check2-square fs-5 text-cyan"></i>
+            <span className="fw-bold">{selectedRequests.size}</span> pending request{selectedRequests.size === 1 ? '' : 's'} selected
+          </div>
+          <div className="d-flex align-items-center gap-2 flex-wrap mt-2 mt-sm-0">
+            <button
+              type="button"
+              className="btn btn-success btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+              onClick={handleBulkApprove}
+              disabled={bulkProcessing}
+            >
+              {bulkProcessing ? (
+                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+              ) : (
+                <i className="bi bi-check-circle-fill"></i>
+              )}
+              Approve Selected ({selectedRequests.size})
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+              onClick={handleBulkReject}
+              disabled={bulkProcessing}
+            >
+              {bulkProcessing ? (
+                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+              ) : (
+                <i className="bi bi-x-circle-fill"></i>
+              )}
+              Reject Selected ({selectedRequests.size})
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm px-2.5"
+              onClick={() => setSelectedRequests(new Map())}
+              disabled={bulkProcessing}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Requests Table */}
       <div className="custom-table-card p-3 rounded-3">
         <div className="table-responsive table-scroll-container">
           <table className="table table-hover align-middle mb-0">
             <thead>
               <tr className="text-uppercase small">
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    disabled={pendingFiltered.length === 0}
+                    title="Select all pending requests"
+                  />
+                </th>
                 <th>Type</th>
                 <th>PID / Target</th>
                 <th>Name / Option Value</th>
@@ -245,14 +394,14 @@ export default function AllRequests() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
                     Loading requests...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                     No requests match the current filters.
                   </td>
@@ -273,8 +422,23 @@ export default function AllRequests() {
                       ? 'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25'
                       : 'bg-success bg-opacity-25 text-success border border-success border-opacity-25';
 
+                  const isPending = (req.status || 'Pending') === 'Pending';
+                  const isSelected = selectedRequests.has(`${req.requestType}_${req.id}`);
+
                   return (
-                    <tr key={req.id || idx}>
+                    <tr key={req.id || idx} className={isSelected ? 'table-active' : ''}>
+                      <td style={{ textAlign: 'center' }}>
+                        {isPending ? (
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(req)}
+                          />
+                        ) : (
+                          <span className="text-muted opacity-50">&bull;</span>
+                        )}
+                      </td>
                       <td>
                         <span className={`badge py-1 px-2 fw-semibold ${typeBadgeClass}`}>
                           {req.requestType}
