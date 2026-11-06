@@ -67,7 +67,7 @@ export default function MainLayout() {
       />
 
       {/* Main Content Area */}
-      <div id="content" className="d-flex flex-column flex-grow-1 min-vw-0 position-relative" style={{ zIndex: 1 }}>
+      <div id="content" className="d-flex flex-column flex-grow-1 min-vw-0 position-relative">
         <Header
           toggleMobileSidebar={() => setMobileOpen(prev => !prev)}
           onOpenSelfPassword={() => setSelfPasswordOpen(true)}

@@ -170,7 +170,7 @@ export default function SystemSettings() {
       {/* Top Banner Header */}
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
         <div>
-          <h3 className="fw-bold text-white mb-1">System Settings</h3>
+          <h3 className="fw-bold page-title-text mb-1">System Settings</h3>
           <p className="text-muted small mb-0">Configure system-wide portal policies, validation rules, and dynamic dropdown options</p>
         </div>
       </div>
@@ -179,12 +179,12 @@ export default function SystemSettings() {
         {/* Global Validation Card */}
         <div className="col-12">
           <div className="custom-table-card p-4 rounded-3">
-            <h5 className="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+            <h5 className="fw-bold card-title-text mb-3 d-flex align-items-center gap-2">
               <i className="bi bi-shield-check text-cyan"></i> Data Validation Settings
             </h5>
-            <div className="d-flex align-items-center justify-content-between p-3 rounded bg-dark border border-secondary border-opacity-25">
+            <div className="validation-setting-box d-flex align-items-center justify-content-between p-3 rounded">
               <div>
-                <h6 className="text-white fw-bold mb-1">Mandatory Aadhar No. Enforcement</h6>
+                <h6 className="table-text-main fw-bold mb-1">Mandatory Aadhar No. Enforcement</h6>
                 <p className="text-muted small mb-0">
                   When enabled, all newly entered records must have a valid 12-digit Aadhar number (unless waived by specific remark).
                 </p>
@@ -206,7 +206,7 @@ export default function SystemSettings() {
         {/* Remark Options Card */}
         <div className="col-12 col-lg-6">
           <div className="custom-table-card p-4 rounded-3 h-100">
-            <h5 className="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+            <h5 className="fw-bold card-title-text mb-3 d-flex align-items-center gap-2">
               <i className="bi bi-chat-left-quote-fill text-cyan"></i> Remark Dropdown Options
             </h5>
 
@@ -264,7 +264,7 @@ export default function SystemSettings() {
                       const disable = typeof opt === 'object' ? !!opt.disableAadhar : false;
                       return (
                         <tr key={idx}>
-                          <td className="fw-semibold text-white">{val}</td>
+                          <td className="fw-semibold table-text-main">{val}</td>
                           <td>
                             <div className="form-check form-switch mb-0">
                               <input
@@ -298,7 +298,7 @@ export default function SystemSettings() {
         {/* Delete Options Card */}
         <div className="col-12 col-lg-6">
           <div className="custom-table-card p-4 rounded-3 h-100">
-            <h5 className="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+            <h5 className="fw-bold card-title-text mb-3 d-flex align-items-center gap-2">
               <i className="bi bi-trash3-fill text-danger"></i> Deletion Reason Options
             </h5>
 
@@ -342,7 +342,7 @@ export default function SystemSettings() {
                       const val = typeof opt === 'object' ? opt.optionValue : opt;
                       return (
                         <tr key={idx}>
-                          <td className="fw-semibold text-white">{val}</td>
+                          <td className="fw-semibold table-text-main">{val}</td>
                           <td className="text-end">
                             <button
                               type="button"

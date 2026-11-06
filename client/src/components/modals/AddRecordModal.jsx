@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -23,6 +24,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
   const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAadharDisabled, setIsAadharDisabled] = useState(false);
+  const [pidCheck, setPidCheck] = useState({ checking: false, exists: null, message: '', record: null });
 
   // Fetch dynamic remark options
   useEffect(() => {
@@ -35,6 +37,44 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
       })
       .catch(() => {});
   }, [isOpen]);
+
+  // Debounced PID live existence check (1-1.5 seconds)
+  useEffect(() => {
+    const trimmedPid = pid.trim();
+    if (!trimmedPid) {
+      setPidCheck({ checking: false, exists: null, message: '', record: null });
+      return;
+    }
+
+    setPidCheck(prev => ({ ...prev, checking: true }));
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/api/records/check-pid/${encodeURIComponent(trimmedPid)}`);
+        if (res && res.exists) {
+          const r = res.existingRecord || {};
+          const details = [r.name, r.utNo ? `UT: ${r.utNo}` : ''].filter(Boolean).join(' | ');
+          setPidCheck({
+            checking: false,
+            exists: true,
+            message: `PID already exists! ${details ? `(${details})` : ''}`,
+            record: r
+          });
+        } else {
+          setPidCheck({
+            checking: false,
+            exists: false,
+            message: 'PID is available',
+            record: null
+          });
+        }
+      } catch (err) {
+        setPidCheck({ checking: false, exists: null, message: '', record: null });
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [pid]);
 
   // Handle Remark selection to auto-disable Aadhar if configured
   const handleRemarkChange = (val) => {
@@ -82,12 +122,13 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     setDate(new Date().toISOString().slice(0, 10));
     setRemark('');
     setIsAadharDisabled(false);
+    setPidCheck({ checking: false, exists: null, message: '', record: null });
     submittingLockRef.current = false;
     setIsSubmitting(false);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     // Synchronous immediate lock check to prevent rapid double-clicks
     if (submittingLockRef.current || isSubmitting) return;
 
@@ -142,40 +183,69 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1055 }}>
+  return createPortal(
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header border-bottom border-secondary border-opacity-25">
-            <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
+          <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
+            <h5 className="modal-title fw-bold card-title-text d-flex align-items-center gap-2 mb-0">
               <i className="bi bi-plus-circle-fill text-cyan"></i> Add New Data Record
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose} aria-label="Close" disabled={isSubmitting}></button>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close" disabled={isSubmitting}></button>
           </div>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
             <div className="modal-body p-4">
               <div className="row g-3">
-                {/* PID */}
+                {/* PID with Debounced Realtime Availability Check */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label text-white small fw-semibold">
+                  <label className="form-label small fw-semibold">
                     PID <span className="text-danger">*</span>
                   </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="PID (e.g. 1001)"
-                    value={pid}
-                    onChange={(e) => setPid(e.target.value)}
-                    required
-                    disabled={isSubmitting}
-                  />
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className={`form-control ${pidCheck.exists === true ? 'is-invalid border-danger' : pidCheck.exists === false ? 'is-valid border-success' : ''}`}
+                      placeholder="PID (e.g. 1001)"
+                      value={pid}
+                      onChange={(e) => setPid(e.target.value)}
+                      required
+                      disabled={isSubmitting}
+                      autoFocus
+                    />
+                    {pidCheck.checking && (
+                      <span className="position-absolute end-0 top-50 translate-middle-y me-3 spinner-border spinner-border-sm text-cyan" role="status"></span>
+                    )}
+                  </div>
+                  {pidCheck.checking && (
+                    <small className="text-info d-flex align-items-center gap-1 mt-1">
+                      <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }}></span>
+                      Checking PID availability...
+                    </small>
+                  )}
+                  {!pidCheck.checking && pidCheck.exists === true && (
+                    <div className="text-danger small mt-1 fw-bold d-flex align-items-center gap-1">
+                      <i className="bi bi-exclamation-triangle-fill"></i> {pidCheck.message}
+                    </div>
+                  )}
+                  {!pidCheck.checking && pidCheck.exists === false && (
+                    <div className="text-success small mt-1 fw-semibold d-flex align-items-center gap-1">
+                      <i className="bi bi-check-circle-fill"></i> {pidCheck.message}
+                    </div>
+                  )}
                 </div>
 
                 {/* Name */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label text-white small fw-semibold">
+                  <label className="form-label small fw-semibold">
                     Name <span className="text-danger">*</span>
                   </label>
                   <input
@@ -191,7 +261,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
 
                 {/* Father's Name */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label text-white small fw-semibold">Father's Name</label>
+                  <label className="form-label small fw-semibold">Father's Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -206,7 +276,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                 <div className="col-12 col-md-6">
                   <div className="row g-2">
                     <div className="col-8">
-                      <label className="form-label text-white small fw-semibold">UT No.</label>
+                      <label className="form-label small fw-semibold">UT No.</label>
                       <input
                         type="text"
                         className="form-control"
@@ -217,7 +287,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                       />
                     </div>
                     <div className="col-4">
-                      <label className="form-label text-white small fw-semibold">Type</label>
+                      <label className="form-label small fw-semibold">Type</label>
                       <select
                         className="form-select"
                         value={recordType}
@@ -234,7 +304,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
 
                 {/* Aadhar No. */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label text-white small fw-semibold">
+                  <label className="form-label small fw-semibold">
                     Aadhar No. <span className="text-danger">*</span>
                   </label>
                   <input
@@ -250,7 +320,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
 
                 {/* Date */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label text-white small fw-semibold">Date</label>
+                  <label className="form-label small fw-semibold">Date</label>
                   <input
                     type="date"
                     className="form-control"
@@ -262,7 +332,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
 
                 {/* Remark Dropdown */}
                 <div className="col-12">
-                  <label className="form-label text-white small fw-semibold">
+                  <label className="form-label small fw-semibold">
                     Remark <span className="text-muted">(Select from List)</span>
                   </label>
                   <select
@@ -284,7 +354,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                 </div>
               </div>
             </div>
-            <div className="modal-footer border-top border-secondary border-opacity-25">
+            <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -298,6 +368,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                 id="modal-record-save-btn"
                 className="btn btn-primary btn-sm px-4 fw-semibold shadow-sm"
                 disabled={isSubmitting}
+                title="Keyboard shortcut: Ctrl + Enter"
               >
                 {isSubmitting ? (
                   <>
@@ -305,14 +376,17 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
                     Saving...
                   </>
                 ) : (
-                  'Save Record'
+                  <>
+                    <i className="bi bi-check2-circle me-1"></i> Save Record <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
+                  </>
                 )}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -60,11 +61,11 @@ export default function TodayRecordsModal({
 
   const isToday = selectedDate === todayStr;
 
-  return (
+  return createPortal(
     <div
       className="modal fade show d-block"
       tabIndex="-1"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -93,13 +94,13 @@ export default function TodayRecordsModal({
 
             {/* Date Filter & Close */}
             <div className="d-flex align-items-center gap-2 flex-wrap">
-              <div className="d-flex align-items-center bg-dark bg-opacity-50 border border-secondary border-opacity-50 rounded-2 px-2 py-1">
+              <div className="d-flex align-items-center today-date-filter-box rounded-2 px-2 py-1">
                 <label className="small fw-semibold text-cyan mb-0 me-2 d-flex align-items-center gap-1" style={{ whiteSpace: 'nowrap' }}>
                   <i className="bi bi-calendar3"></i> Date:
                 </label>
                 <input
                   type="date"
-                  className="form-control form-control-sm text-white compact-date-input border-0 bg-transparent"
+                  className="form-control form-control-sm compact-date-input border-0 bg-transparent"
                   value={selectedDate}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -123,7 +124,7 @@ export default function TodayRecordsModal({
 
               <button
                 type="button"
-                className="btn-close btn-close-white ms-2"
+                className="btn-close ms-2"
                 onClick={onClose}
                 aria-label="Close"
               ></button>
@@ -134,7 +135,7 @@ export default function TodayRecordsModal({
           <div className="modal-body p-0">
             <div className="table-responsive" style={{ maxHeight: '480px', overflowY: 'auto' }}>
               <table className="table table-hover align-middle mb-0">
-                <thead className="sticky-top shadow-sm" style={{ zIndex: 10, background: 'rgba(10, 16, 36, 0.95)' }}>
+                <thead className="modal-table-thead sticky-top shadow-sm" style={{ zIndex: 10 }}>
                   <tr className="text-uppercase small text-muted">
                     <th className="ps-4">PID</th>
                     <th>Name</th>
@@ -231,7 +232,8 @@ export default function TodayRecordsModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

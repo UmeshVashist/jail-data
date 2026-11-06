@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -38,21 +39,21 @@ export default function DeleteRecordModal({ isOpen, onClose, record, onRecordDel
     }
   };
 
-  return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1055 }}>
+  return createPortal(
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header border-bottom border-secondary border-opacity-25">
-            <h5 className="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+          <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
+            <h5 className="modal-title fw-bold text-danger d-flex align-items-center gap-2 mb-0">
               <i className="bi bi-trash3-fill"></i> Delete Record
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose} aria-label="Close" disabled={loading}></button>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close" disabled={loading}></button>
           </div>
           <div className="modal-body p-4 text-center">
             <div className="text-danger mb-3" style={{ fontSize: '3rem' }}>
               <i className="bi bi-exclamation-circle"></i>
             </div>
-            <h5 className="text-white fw-bold mb-2">Are you sure?</h5>
+            <h5 className="table-text-main fw-bold mb-2">Are you sure?</h5>
             <p className="text-muted small mb-0">
               You are about to permanently delete record for PID: <strong>{record.pid}</strong> ({record.name}). This action cannot be undone.
             </p>
@@ -73,7 +74,8 @@ export default function DeleteRecordModal({ isOpen, onClose, record, onRecordDel
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -176,11 +176,21 @@ router.get('/check-pid/:pid', requireAuth, async (req, res) => {
     }
     const excludeId = req.query.excludeId ? parseInt(req.query.excludeId, 10) : null;
     const records = await getRecords();
-    const exists = records.some(r => {
+    const matched = records.find(r => {
       if (excludeId && (r.id === excludeId || r.rowIndex === excludeId)) return false;
       return String(r.pid).toLowerCase() === searchPid.toLowerCase();
     });
-    res.json({ success: true, exists, pid: searchPid });
+    res.json({
+      success: true,
+      exists: !!matched,
+      pid: searchPid,
+      existingRecord: matched ? {
+        name: matched.name || '',
+        father: matched.father || '',
+        utNo: matched.utNo || '',
+        date: matched.date || ''
+      } : null
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

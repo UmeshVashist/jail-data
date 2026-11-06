@@ -127,7 +127,7 @@ export default function DataRecords() {
     setSearchParams({});
   };
 
-  // Export to Excel / CSV
+  // Export to Excel / CSV (Direct file download)
   const handleExport = (format = 'xlsx') => {
     const q = new URLSearchParams({
       format,
@@ -137,7 +137,13 @@ export default function DataRecords() {
       startDate,
       endDate
     });
-    window.open(`/api/export?${q.toString()}`, '_blank');
+    const downloadUrl = `/api/export?${q.toString()}`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `records.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (

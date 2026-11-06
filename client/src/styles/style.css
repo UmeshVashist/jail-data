@@ -3070,6 +3070,103 @@ body.theme-classic .modal-footer {
   border-color: #cbd5e1 !important;
 }
 
+/* System Settings Data Validation Setting Box */
+body:not(.theme-modern-3d) .validation-setting-box,
+body.theme-classic .validation-setting-box {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.theme-modern-3d .validation-setting-box {
+  background: rgba(13, 22, 45, 0.65) !important;
+  border: 1px solid rgba(0, 240, 255, 0.25) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Today's Records Date Filter Box */
+body:not(.theme-modern-3d) .today-date-filter-box,
+body.theme-classic .today-date-filter-box {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+body:not(.theme-modern-3d) .today-date-filter-box label,
+body.theme-classic .today-date-filter-box label {
+  color: #0284c7 !important;
+}
+body:not(.theme-modern-3d) .today-date-filter-box input,
+body.theme-classic .today-date-filter-box input {
+  color: #0f172a !important;
+}
+
+body.theme-modern-3d .today-date-filter-box {
+  background: rgba(10, 16, 36, 0.8) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(8px) !important;
+}
+body.theme-modern-3d .today-date-filter-box label {
+  color: #00f0ff !important;
+}
+body.theme-modern-3d .today-date-filter-box input {
+  color: #ffffff !important;
+}
+
+/* Modal Table Thead */
+body:not(.theme-modern-3d) .modal-table-thead,
+body.theme-classic .modal-table-thead {
+  background: #f8fafc !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+body.theme-modern-3d .modal-table-thead {
+  background: rgba(10, 16, 36, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2) !important;
+  color: #94a3b8 !important;
+}
+
+/* Close button theme adjustments */
+body:not(.theme-modern-3d) .btn-close,
+body.theme-classic .btn-close {
+  filter: none !important;
+  opacity: 0.65 !important;
+}
+body:not(.theme-modern-3d) .btn-close:hover,
+body.theme-classic .btn-close:hover {
+  opacity: 1 !important;
+}
+body.theme-modern-3d .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+  opacity: 0.8 !important;
+}
+body.theme-modern-3d .btn-close:hover {
+  opacity: 1 !important;
+}
+
+/* Modal Form Inputs in Classic Mode */
+body:not(.theme-modern-3d) .modal-content .form-control,
+body:not(.theme-modern-3d) .modal-content .form-select,
+body.theme-classic .modal-content .form-control,
+body.theme-classic .modal-content .form-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+body:not(.theme-modern-3d) .modal-content .form-control:focus,
+body:not(.theme-modern-3d) .modal-content .form-select:focus,
+body.theme-classic .modal-content .form-control:focus,
+body.theme-classic .modal-content .form-select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+body:not(.theme-modern-3d) .modal-content .form-control::placeholder,
+body.theme-classic .modal-content .form-control::placeholder {
+  color: #94a3b8 !important;
+}
+
 
 /* ==========================================================================
    2. MODERN 3D UI THEME SYSTEM

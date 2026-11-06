@@ -4,15 +4,16 @@
  */
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 export default function ViewRecordModal({ isOpen, onClose, record }) {
   if (!isOpen || !record) return null;
 
-  return (
+  return createPortal(
     <div
       className="modal fade show d-block"
       tabIndex="-1"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1055 }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -133,6 +134,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

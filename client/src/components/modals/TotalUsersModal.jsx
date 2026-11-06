@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -50,11 +51,11 @@ export default function TotalUsersModal({ isOpen, onClose }) {
     return true;
   });
 
-  return (
+  return createPortal(
     <div
       className="modal fade show d-block"
       tabIndex="-1"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -83,7 +84,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
               <div className="position-relative" style={{ width: '180px' }}>
                 <input
                   type="text"
-                  className="form-control form-control-sm text-white"
+                  className="form-control form-control-sm"
                   placeholder="Search user..."
                   value={searchUsername}
                   onChange={(e) => setSearchUsername(e.target.value)}
@@ -102,7 +103,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
               <div className="d-flex align-items-center gap-1">
                 <label className="small text-muted mb-0">Status:</label>
                 <select
-                  className="form-select form-select-sm text-white"
+                  className="form-select form-select-sm"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   style={{ width: '100px' }}
@@ -115,7 +116,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
 
               <button
                 type="button"
-                className="btn-close btn-close-white ms-1"
+                className="btn-close ms-1"
                 onClick={onClose}
                 aria-label="Close"
               ></button>
@@ -126,7 +127,7 @@ export default function TotalUsersModal({ isOpen, onClose }) {
           <div className="modal-body p-0">
             <div className="table-responsive" style={{ maxHeight: '420px', overflowY: 'auto' }}>
               <table className="table table-hover align-middle mb-0">
-                <thead className="sticky-top shadow-sm" style={{ zIndex: 10, background: 'rgba(10, 16, 36, 0.95)' }}>
+                <thead className="modal-table-thead sticky-top shadow-sm" style={{ zIndex: 10 }}>
                   <tr className="text-uppercase small text-muted">
                     <th className="ps-4">User</th>
                     <th>Role</th>
@@ -259,7 +260,8 @@ export default function TotalUsersModal({ isOpen, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

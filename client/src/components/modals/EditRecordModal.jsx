@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -115,15 +116,15 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
 
   if (!isOpen || !record) return null;
 
-  return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1055 }}>
+  return createPortal(
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header border-bottom border-secondary border-opacity-25">
-            <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
+          <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
+            <h5 className="modal-title fw-bold card-title-text d-flex align-items-center gap-2 mb-0">
               <i className="bi bi-pencil-square text-cyan"></i> Edit Record - PID: {record.pid}
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose} aria-label="Close" disabled={isSubmitting}></button>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close" disabled={isSubmitting}></button>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body p-4">
@@ -253,7 +254,8 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
