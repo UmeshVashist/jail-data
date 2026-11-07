@@ -13,8 +13,8 @@ export default function ToastContainer() {
 
   return (
     <div
-      className="toast-container position-fixed top-0 end-0 p-3"
-      style={{ zIndex: 9999 }}
+      className="toast-container position-fixed top-0 start-50 translate-middle-x p-3 d-flex flex-column align-items-center"
+      style={{ zIndex: 9999, pointerEvents: 'none', width: 'auto', maxWidth: '90vw' }}
     >
       {toasts.map(toast => {
         const bgClass =
@@ -29,10 +29,11 @@ export default function ToastContainer() {
         return (
           <div
             key={toast.id}
-            className={`toast show align-items-center ${bgClass} border-0 mb-2 shadow`}
+            className={`toast show align-items-center ${bgClass} border-0 mb-2 shadow-lg`}
             role="alert"
             aria-live="assertive"
             aria-atomic="true"
+            style={{ pointerEvents: 'auto', minWidth: '320px', maxWidth: '550px' }}
           >
             <div className="d-flex">
               <div className="toast-body d-flex align-items-center gap-2">

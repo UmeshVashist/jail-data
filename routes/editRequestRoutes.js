@@ -350,8 +350,8 @@ const handleRejectEdit = async (req, res) => {
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
 router.put('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
 
-// DELETE /api/edit-requests/:id/cancel - Cancel pending edit request by the user who sent it
-router.delete('/:id/cancel', async (req, res) => {
+// Cancel / Withdraw pending edit request by the user who sent it
+const handleWithdrawEdit = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getEditRequests();
@@ -363,7 +363,7 @@ router.delete('/:id/cancel', async (req, res) => {
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'You can only cancel your own edit requests.' });
+      return res.status(403).json({ success: false, message: 'You can only withdraw your own edit requests.' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
@@ -372,10 +372,13 @@ router.delete('/:id/cancel', async (req, res) => {
 
     await deleteEditRequest(requestId);
 
-    res.json({ success: true, message: `Edit request for PID ${targetReq.pid} canceled.` });
+    res.json({ success: true, message: `Edit request for PID ${targetReq.pid} withdrawn successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Cancel edit request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'Withdraw edit request error: ' + err.message });
   }
-});
+};
+router.delete('/:id/cancel', handleWithdrawEdit);
+router.post('/:id/cancel', handleWithdrawEdit);
+router.delete('/:id', handleWithdrawEdit);
 
 module.exports = router;

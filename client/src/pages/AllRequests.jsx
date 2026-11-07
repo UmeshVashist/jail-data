@@ -226,7 +226,7 @@ export default function AllRequests() {
 
   // Restore single Approved Delete Request back to active records (Admin Only)
   const handleRestoreSingle = async (req) => {
-    if (!window.confirm(`Are you sure you want to RESTORE record PID: ${req.pid} (${req.name}) back to active Data Records?`)) return;
+    if (!window.confirm(`Are you sure you want to RESTORE record PID: ${req.pid} (${req.name}) back to main active Data Records?`)) return;
 
     const key = `${req.requestType}_${req.id}`;
     setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
@@ -238,7 +238,7 @@ export default function AllRequests() {
 
     try {
       const res = await api.post(`/api/delete-requests/${req.id}/restore`);
-      showToast(res.message || `Record PID ${req.pid} restored back to active records.`, 'success');
+      showToast(res.message || `Record PID ${req.pid} restored back to main active data successfully.`, 'success');
     } catch (err) {
       showToast('Error restoring record: ' + err.message, 'danger');
       fetchAllRequests(true);
@@ -579,7 +579,7 @@ export default function AllRequests() {
                     ) : (
                       <i className="bi bi-arrow-counterclockwise"></i>
                     )}
-                    Restore Selected ({approvedDelItems.length})
+                    Restore to Main Data ({approvedDelItems.length})
                   </button>
                 </>
               )}
@@ -714,11 +714,11 @@ export default function AllRequests() {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-success px-2 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
+                              className="btn btn-sm btn-outline-success px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
                               onClick={() => handleRestoreSingle(req)}
-                              title="Restore Record back to Active Data"
+                              title="Restore Record back to Main Active Data Records"
                             >
-                              <i className="bi bi-arrow-counterclockwise"></i> Restore
+                              <i className="bi bi-arrow-counterclockwise"></i> Restore to Main Data
                             </button>
                           </div>
                         ) : (

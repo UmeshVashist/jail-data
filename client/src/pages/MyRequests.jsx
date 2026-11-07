@@ -53,6 +53,35 @@ export default function MyRequests() {
     fetchMyRequests();
   }, [fetchMyRequests]);
 
+  // Withdraw pending request by user
+  const handleWithdrawRequest = async (req) => {
+    const targetLabel = req.pid ? `PID ${req.pid}${req.name ? ` (${req.name})` : ''}` : `Option "${req.optionValue || ''}"`;
+    if (!window.confirm(`Are you sure you want to WITHDRAW your ${req.requestType} request for ${targetLabel}?`)) {
+      return;
+    }
+
+    // Optimistic UI removal
+    setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
+
+    try {
+      let url = '';
+      if (req.requestType === 'Edit') url = `/api/edit-requests/${req.id}/cancel`;
+      else if (req.requestType === 'Delete') url = `/api/delete-requests/${req.id}/cancel`;
+      else if (req.requestType === 'List Add') url = `/api/list-add-requests/${req.id}/cancel`;
+
+      const res = await api.delete(url);
+      if (res && res.success) {
+        showToast(res.message || `${req.requestType} request withdrawn successfully.`, 'info');
+      } else {
+        showToast(res?.message || 'Failed to withdraw request.', 'danger');
+        fetchMyRequests();
+      }
+    } catch (err) {
+      showToast('Error withdrawing request: ' + err.message, 'danger');
+      fetchMyRequests();
+    }
+  };
+
   // Filter
   const filtered = (Array.isArray(requests) ? requests : []).filter(req => {
     if (!req) return false;
@@ -182,20 +211,21 @@ export default function MyRequests() {
                 <th>Reason / Remark</th>
                 <th>Request Date/Time</th>
                 <th>Status</th>
-                <th className="text-end">Action By</th>
+                <th>Action By</th>
+                <th className="text-end">Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
                     Loading your requests...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                     You have not submitted any requests matching the selected filters.
                   </td>
@@ -216,6 +246,8 @@ export default function MyRequests() {
                       ? 'bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25'
                       : 'bg-success bg-opacity-25 text-success border border-success border-opacity-25';
 
+                  const isPending = (req.status || 'Pending') === 'Pending';
+
                   return (
                     <tr key={req.id || idx}>
                       <td>
@@ -235,8 +267,24 @@ export default function MyRequests() {
                           {req.status || 'Pending'}
                         </span>
                       </td>
-                      <td className="text-end small text-muted">
+                      <td className="small text-muted">
                         {req.actionBy ? `Reviewed by ${req.actionBy}` : 'Pending Admin Review'}
+                      </td>
+                      <td className="text-end">
+                        {isPending ? (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
+                            onClick={() => handleWithdrawRequest(req)}
+                            title="Withdraw this pending request if sent by mistake"
+                          >
+                            <i className="bi bi-x-circle"></i> Withdraw
+                          </button>
+                        ) : (
+                          <span className="small text-muted fst-italic">
+                            {req.status === 'Approved' ? 'Approved (Locked)' : 'Processed'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const { 
   getRecords, 
+  addRecord,
   deleteRecord, 
   softDeleteRecord,
   restoreRecord,
@@ -281,12 +282,26 @@ router.post('/:id/restore', requireAdmin, async (req, res) => {
 
     if (targetRecord) {
       await restoreRecord(targetRecord.id || targetRecord.rowIndex);
+    } else {
+      // Re-add to main data records if it was previously hard deleted
+      await addRecord({
+        pid: targetReq.pid,
+        name: targetReq.name,
+        father: targetReq.father || '',
+        utNo: targetReq.utNo || '',
+        aadharNo: targetReq.aadharNo || '#N/A',
+        date: targetReq.date || getFormattedDate(),
+        remark: targetReq.remark || 'Restored',
+        createdBy: targetReq.requestedBy || req.user.username,
+        createdDate: getFormattedDate(),
+        createdTime: getFormattedTime()
+      });
     }
 
     // Remove the delete request since record is restored back to active state
     await deleteDeleteRequest(requestId);
 
-    res.json({ success: true, message: `Record PID ${targetReq.pid} restored back to active records successfully.` });
+    res.json({ success: true, message: `Record PID ${targetReq.pid} restored back to main active data records successfully.` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Restore record error: ' + err.message });
   }
@@ -315,6 +330,19 @@ router.post('/bulk-restore', requireAdmin, async (req, res) => {
         );
         if (targetRecord) {
           await restoreRecord(targetRecord.id || targetRecord.rowIndex);
+        } else {
+          await addRecord({
+            pid: targetReq.pid,
+            name: targetReq.name,
+            father: targetReq.father || '',
+            utNo: targetReq.utNo || '',
+            aadharNo: targetReq.aadharNo || '#N/A',
+            date: targetReq.date || getFormattedDate(),
+            remark: targetReq.remark || 'Restored',
+            createdBy: targetReq.requestedBy || req.user.username,
+            createdDate: getFormattedDate(),
+            createdTime: getFormattedTime()
+          });
         }
         await deleteDeleteRequest(requestId);
         restoredCount++;
@@ -352,8 +380,8 @@ const handleRejectDelete = async (req, res) => {
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
 router.put('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
 
-// DELETE /api/delete-requests/:id/cancel - Cancel pending delete request by the user who sent it
-router.delete('/:id/cancel', async (req, res) => {
+// Cancel / Withdraw pending delete request by the user who sent it
+const handleWithdrawDelete = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getDeleteRequests();
@@ -365,7 +393,7 @@ router.delete('/:id/cancel', async (req, res) => {
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'You can only cancel your own delete requests.' });
+      return res.status(403).json({ success: false, message: 'You can only withdraw your own delete requests.' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
@@ -374,10 +402,13 @@ router.delete('/:id/cancel', async (req, res) => {
 
     await deleteDeleteRequest(requestId);
 
-    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} canceled.` });
+    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} withdrawn successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Cancel delete request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'Withdraw delete request error: ' + err.message });
   }
-});
+};
+router.delete('/:id/cancel', handleWithdrawDelete);
+router.post('/:id/cancel', handleWithdrawDelete);
+router.delete('/:id', handleWithdrawDelete);
 
 module.exports = router;

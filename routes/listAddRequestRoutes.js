@@ -298,8 +298,8 @@ const handleRejectListAdd = async (req, res) => {
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
 router.put('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
 
-// DELETE /api/list-add-requests/:id/cancel - Cancel pending list add request by the user who sent it
-router.delete('/:id/cancel', async (req, res) => {
+// Cancel / Withdraw pending list add request by the user who sent it
+const handleWithdrawListAdd = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const allRequests = await getListAddRequests();
@@ -320,10 +320,13 @@ router.delete('/:id/cancel', async (req, res) => {
 
     await deleteListAddRequest(requestId);
 
-    res.json({ success: true, message: `List add request for option "${targetReq.optionValue}" canceled.` });
+    res.json({ success: true, message: `List add request for option "${targetReq.optionValue}" withdrawn successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Cancel list add request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'Withdraw list add request error: ' + err.message });
   }
-});
+};
+router.delete('/:id/cancel', handleWithdrawListAdd);
+router.post('/:id/cancel', handleWithdrawListAdd);
+router.delete('/:id', handleWithdrawListAdd);
 
 module.exports = router;
