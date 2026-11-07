@@ -225,7 +225,7 @@ export default function MyRequests() {
                       </td>
                       <td className="fw-bold text-cyan font-monospace">{req.pid || '-'}</td>
                       <td className="fw-semibold table-text-main">{req.name || req.optionValue || '-'}</td>
-                      <td><span className="badge badge-ut-pill font-monospace">{req.utNo || '-'}</span></td>
+                      <td className="font-monospace small table-text-main">{req.utNo || '-'}</td>
                       <td className="small text-muted text-truncate" style={{ maxWidth: '200px' }}>
                         {req.reason || req.remark || '-'}
                       </td>

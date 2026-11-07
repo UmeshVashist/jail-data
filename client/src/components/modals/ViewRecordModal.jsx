@@ -58,7 +58,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-card-text text-cyan me-1.5"></i> UT No.
                     </th>
                     <td className="view-td">
-                      <span className="badge badge-ut-pill font-monospace">{record.utNo || '-'}</span>
+                      <span className="font-monospace table-text-main fw-semibold">{record.utNo || '-'}</span>
                     </td>
                   </tr>
                   <tr>
@@ -88,9 +88,7 @@ export default function ViewRecordModal({ isOpen, onClose, record }) {
                       <i className="bi bi-chat-left-dots text-cyan me-1.5"></i> Remark
                     </th>
                     <td className="view-td">
-                      <span className="badge bg-primary bg-opacity-25 text-cyan border border-cyan border-opacity-25 py-1 px-2">
-                        {record.remark || 'None'}
-                      </span>
+                      <span className="table-text-main">{record.remark || 'Not Available'}</span>
                     </td>
                   </tr>
                   <tr>

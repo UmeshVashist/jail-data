@@ -2428,18 +2428,22 @@ body.theme-classic .table .text-muted:not(.btn):not(.badge) {
 
 /* FIX: Table row hover must NEVER make text white in Classic Mode! */
 body:not(.theme-modern-3d) .table tbody tr:hover,
-body:not(.theme-modern-3d) .table tbody tr:hover td,
-body:not(.theme-modern-3d) .table tbody tr:hover th,
-body:not(.theme-modern-3d) .table tbody tr:hover td *,
+body:not(.theme-modern-3d) .table tbody tr:hover > td,
+body:not(.theme-modern-3d) .table tbody tr:hover > th,
 body:not(.theme-modern-3d) .table-hover tbody tr:hover,
-body:not(.theme-modern-3d) .table-hover tbody tr:hover td,
+body:not(.theme-modern-3d) .table-hover tbody tr:hover > td,
 body.theme-classic .table tbody tr:hover,
-body.theme-classic .table tbody tr:hover td,
-body.theme-classic .table tbody tr:hover th,
-body.theme-classic .table tbody tr:hover td *,
+body.theme-classic .table tbody tr:hover > td,
+body.theme-classic .table tbody tr:hover > th,
 body.theme-classic .table-hover tbody tr:hover,
-body.theme-classic .table-hover tbody tr:hover td {
+body.theme-classic .table-hover tbody tr:hover > td {
   background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-modern-3d) .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a),
+body.theme-classic .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a) {
+  background-color: transparent !important;
   color: #0f172a !important;
 }
 
@@ -2455,27 +2459,56 @@ body.theme-classic .table tbody tr:hover td .text-secondary {
   color: #475569 !important;
 }
 
-/* --- Badges in Classic UI Tables --- */
-
-/* UT No Badge Pill in Classic */
-body:not(.theme-modern-3d) .badge-ut-pill,
-body.theme-classic .badge-ut-pill {
-  background: #e0f2fe !important;
-  color: #0369a1 !important;
-  border: 1px solid #7dd3fc !important;
-  font-weight: 600 !important;
-  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.12) !important;
+/* Global button icon isolation: Never inherit table cell background */
+.btn i,
+.btn svg,
+button i,
+button svg,
+.table .btn i,
+.table button i,
+.modal .btn i,
+.modal button i {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-/* Remark Badge in Classic */
-body:not(.theme-modern-3d) .badge.bg-primary.bg-opacity-25,
+.btn:hover i,
+.btn:focus i,
+.btn:active i,
+button:hover i,
+button:focus i,
+button:active i {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* --- Badges in Classic UI Tables --- */
+
+/* UT No and Remark in Classic Data Tables: normal readable text */
+body:not(.theme-modern-3d) .badge-ut-pill,
+body.theme-classic .badge-ut-pill {
+  background: transparent !important;
+  color: #0f172a !important;
+  border: none !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remark Badge in Classic: normal readable text */
 body:not(.theme-modern-3d) .table td .badge.bg-primary.bg-opacity-25,
-body.theme-classic .badge.bg-primary.bg-opacity-25,
 body.theme-classic .table td .badge.bg-primary.bg-opacity-25 {
-  background: #ede9fe !important;
-  color: #5b21b6 !important;
-  border: 1px solid #c4b5fd !important;
-  font-weight: 600 !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  border: none !important;
+  font-weight: 400 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Request Type Badges in Classic */
@@ -2917,64 +2950,91 @@ body.theme-classic .btn-clear-filters:active {
 body:not(.theme-modern-3d) .btn-outline-primary,
 body.theme-classic .btn-outline-primary {
   background: rgba(37, 99, 235, 0.08) !important;
-  border: 1.5px solid #3b82f6 !important;
-  color: #1d4ed8 !important;
+  border: 1px solid #93c5fd !important;
+  color: #2563eb !important;
   font-weight: 600 !important;
-  border-radius: 9px !important;
-  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-primary:hover,
 body:not(.theme-modern-3d) .btn-outline-primary:focus,
 body.theme-classic .btn-outline-primary:hover,
 body.theme-classic .btn-outline-primary:focus {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  background: #2563eb !important;
   border-color: #1d4ed8 !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
-  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35) !important;
+  transform: translateY(-1px) !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-danger,
 body.theme-classic .btn-outline-danger {
   background: rgba(239, 68, 68, 0.08) !important;
-  border: 1.5px solid #ef4444 !important;
-  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+  color: #ef4444 !important;
   font-weight: 600 !important;
-  border-radius: 9px !important;
-  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-danger:hover,
 body:not(.theme-modern-3d) .btn-outline-danger:focus,
 body.theme-classic .btn-outline-danger:hover,
 body.theme-classic .btn-outline-danger:focus {
-  background: linear-gradient(135deg, #f43f5e 0%, #ef4444 50%, #dc2626 100%) !important;
+  background: #ef4444 !important;
   border-color: #dc2626 !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
-  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35) !important;
+  transform: translateY(-1px) !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-cyan,
 body.theme-classic .btn-outline-cyan {
   background: rgba(2, 132, 199, 0.08) !important;
-  border: 1.5px solid #0284c7 !important;
+  border: 1px solid #7dd3fc !important;
   color: #0284c7 !important;
   font-weight: 600 !important;
-  border-radius: 9px !important;
-  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-cyan:hover,
 body:not(.theme-modern-3d) .btn-outline-cyan:focus,
 body.theme-classic .btn-outline-cyan:hover,
 body.theme-classic .btn-outline-cyan:focus {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  background: #0284c7 !important;
   border-color: #0369a1 !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
-  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Ensure icons inside all outline buttons stay cleanly transparent with proper color */
+body:not(.theme-modern-3d) .btn-outline-primary i,
+body:not(.theme-modern-3d) .btn-outline-danger i,
+body:not(.theme-modern-3d) .btn-outline-cyan i,
+body.theme-classic .btn-outline-primary i,
+body.theme-classic .btn-outline-danger i,
+body.theme-classic .btn-outline-cyan i {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+body:not(.theme-modern-3d) .btn-outline-primary:hover i,
+body:not(.theme-modern-3d) .btn-outline-danger:hover i,
+body:not(.theme-modern-3d) .btn-outline-cyan:hover i,
+body.theme-classic .btn-outline-primary:hover i,
+body.theme-classic .btn-outline-danger:hover i,
+body.theme-classic .btn-outline-cyan:hover i {
+  color: #ffffff !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 body:not(.theme-modern-3d) .btn-outline-success,

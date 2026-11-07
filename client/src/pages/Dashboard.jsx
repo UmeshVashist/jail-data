@@ -255,7 +255,7 @@ export default function Dashboard() {
                     </td>
                     <td className="fw-semibold table-text-main">{rec.name}</td>
                     <td className="text-muted">{rec.father || '-'}</td>
-                    <td><span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span></td>
+                    <td className="font-monospace small table-text-main">{rec.utNo || '-'}</td>
                     <td className="font-monospace small table-text-main">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>
                     <td className="small table-text-main">{rec.createdBy || '-'}</td>

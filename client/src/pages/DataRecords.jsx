@@ -14,6 +14,7 @@ import RequestEditModal from '../components/modals/RequestEditModal';
 import DeleteRecordModal from '../components/modals/DeleteRecordModal';
 import RequestDeleteModal from '../components/modals/RequestDeleteModal';
 import PrintRecordsModal from '../components/modals/PrintRecordsModal';
+import ExportExcelModal from '../components/modals/ExportExcelModal';
 
 export default function DataRecords() {
   const { user, isAdmin, showToast } = useAuth();
@@ -48,6 +49,7 @@ export default function DataRecords() {
   const [delRecord, setDelRecord] = useState(null);
   const [reqDelRecord, setReqDelRecord] = useState(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   // Fetch Remark options for dropdown
   useEffect(() => {
@@ -341,24 +343,14 @@ export default function DataRecords() {
           >
             <i className="bi bi-printer"></i> Print
           </button>
-          {/* Single Direct Excel Download Button */}
+          {/* Excel Download Button with Column & Scope Selection Modal */}
           <button
             type="button"
             className="btn btn-outline-success btn-sm rounded-2 d-flex align-items-center gap-1.5 px-3 py-2 fw-semibold"
-            onClick={() => handleExport('xlsx')}
-            disabled={isExporting}
-            title="Download records as Excel (.xlsx)"
+            onClick={() => setIsExcelModalOpen(true)}
+            title="Download records as Excel (.xlsx) with Column Selection"
           >
-            {isExporting ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
-                Downloading...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-file-earmark-excel"></i> Download Excel
-              </>
-            )}
+            <i className="bi bi-file-earmark-excel"></i> Download Excel
           </button>
         </div>
       </div>
@@ -542,16 +534,10 @@ export default function DataRecords() {
                       )}
                     </td>
                     <td className="text-muted">{rec.father || '-'}</td>
-                    <td>
-                      <span className="badge badge-ut-pill font-monospace">{rec.utNo || '-'}</span>
-                    </td>
+                    <td className="font-monospace small table-text-main">{rec.utNo || '-'}</td>
                     <td className="font-monospace small table-text-main">{rec.aadharNo || '#N/A'}</td>
                     <td className="small text-muted">{rec.date || '-'}</td>
-                    <td>
-                      <span className="badge bg-primary bg-opacity-25 text-cyan border border-cyan border-opacity-25 py-1 px-2">
-                        {rec.remark || 'None'}
-                      </span>
-                    </td>
+                    <td className="small table-text-main">{rec.remark || '-'}</td>
                     <td className="small table-text-main">{rec.createdBy || '-'}</td>
                     <td className="small text-muted">{rec.createdDate}</td>
                     <td className="text-end">
@@ -676,6 +662,18 @@ export default function DataRecords() {
         remarkFilter={remarkFilter}
         startDate={startDate}
         endDate={endDate}
+      />
+      <ExportExcelModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        records={records}
+        totalCount={totalCount}
+        query={query}
+        recordType={recordType}
+        remarkFilter={remarkFilter}
+        startDate={startDate}
+        endDate={endDate}
+        onSuccess={(msg) => showToast(msg, 'success')}
       />
     </div>
   );

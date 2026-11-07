@@ -78,7 +78,7 @@ router.get('/', requireAuth, async (req, res) => {
         views: [{ state: 'frozen', ySplit: 1 }]
       });
 
-      worksheet.columns = [
+      const allCols = [
         { header: 'PID', key: 'pid', width: 14 },
         { header: 'Name', key: 'name', width: 26 },
         { header: 'Father', key: 'father', width: 26 },
@@ -89,6 +89,11 @@ router.get('/', requireAuth, async (req, res) => {
         { header: 'Created By', key: 'createdBy', width: 16 },
         { header: 'Created Date', key: 'createdDate', width: 16 }
       ];
+
+      const requestedCols = req.query.cols ? req.query.cols.split(',').map(c => c.trim()) : null;
+      worksheet.columns = requestedCols && requestedCols.length > 0
+        ? allCols.filter(col => requestedCols.includes(col.key))
+        : allCols;
 
       // Styled Header Row: Royal Navy Blue with Bold White Text
       const headerRow = worksheet.getRow(1);
