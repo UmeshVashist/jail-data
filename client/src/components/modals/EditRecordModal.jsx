@@ -269,13 +269,20 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
               <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary btn-sm px-4 fw-semibold" disabled={isSubmitting}>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm px-4 fw-semibold"
+                disabled={isSubmitting}
+                title="Keyboard shortcut: Ctrl + Enter"
+              >
                 {isSubmitting ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status"></span> Updating...
                   </>
                 ) : (
-                  'Update Record'
+                  <>
+                    <i className="bi bi-check2-circle me-1"></i> Update Record <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
+                  </>
                 )}
               </button>
             </div>

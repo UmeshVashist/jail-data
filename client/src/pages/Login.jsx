@@ -107,6 +107,7 @@ export default function Login() {
             type="submit"
             className="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-lg fs-6 d-flex align-items-center justify-content-center"
             disabled={loading}
+            title="Keyboard shortcut: Ctrl + Enter"
           >
             {loading ? (
               <>
@@ -115,7 +116,7 @@ export default function Login() {
               </>
             ) : (
               <>
-                <i className="bi bi-box-arrow-in-right me-2"></i> Sign In
+                <i className="bi bi-box-arrow-in-right me-2"></i> Sign In <small className="opacity-75 ms-1 fw-normal fs-6">(Ctrl+Enter)</small>
               </>
             )}
           </button>

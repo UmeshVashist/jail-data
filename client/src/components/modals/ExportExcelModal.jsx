@@ -318,6 +318,7 @@ export default function ExportExcelModal({
               className="btn btn-success btn-sm px-4 fw-semibold shadow-sm d-flex align-items-center gap-1.5"
               onClick={handleDownload}
               disabled={isExporting || selectedCount === 0}
+              title="Keyboard shortcut: Ctrl + Enter"
             >
               {isExporting ? (
                 <>
@@ -325,7 +326,7 @@ export default function ExportExcelModal({
                 </>
               ) : (
                 <>
-                  <i className="bi bi-download"></i> Download Excel
+                  <i className="bi bi-download"></i> Download Excel <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
                 </>
               )}
             </button>

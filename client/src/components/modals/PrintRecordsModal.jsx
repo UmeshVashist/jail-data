@@ -343,6 +343,7 @@ export default function PrintRecordsModal({
               className="btn btn-primary btn-sm px-4 fw-semibold shadow-sm d-flex align-items-center gap-1.5"
               onClick={handlePrint}
               disabled={isFetchingAll || selectedCount === 0}
+              title="Keyboard shortcut: Ctrl + Enter"
             >
               {isFetchingAll ? (
                 <>
@@ -350,7 +351,7 @@ export default function PrintRecordsModal({
                 </>
               ) : (
                 <>
-                  <i className="bi bi-printer"></i> Print Report
+                  <i className="bi bi-printer"></i> Print Report <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
                 </>
               )}
             </button>

@@ -129,13 +129,20 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
               <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={loading}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-danger btn-sm px-4 fw-semibold shadow-sm" disabled={loading}>
+              <button
+                type="submit"
+                className="btn btn-danger btn-sm px-4 fw-semibold shadow-sm"
+                disabled={loading}
+                title="Keyboard shortcut: Ctrl + Enter"
+              >
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status"></span> Submitting...
                   </>
                 ) : (
-                  'Submit Delete Request'
+                  <>
+                    <i className="bi bi-trash3 me-1"></i> Submit Delete Request <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
+                  </>
                 )}
               </button>
             </div>

@@ -2,7 +2,7 @@
  * client/src/App.jsx - Application Router & Providers
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -18,6 +18,84 @@ import PSList from './pages/PSList';
 import SystemSettings from './pages/SystemSettings';
 
 export default function App() {
+  // Global Ctrl + Enter / Cmd + Enter Keyboard Shortcut for Submit Buttons across entire website
+  useEffect(() => {
+    const handleGlobalCtrlEnter = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        // 1. If an active modal is open on the screen (highest priority)
+        const openModals = Array.from(document.querySelectorAll('.modal.show, .modal.d-block'));
+        if (openModals.length > 0) {
+          const topModal = openModals[openModals.length - 1];
+
+          // Form submit button inside modal
+          const modalFormSubmit = topModal.querySelector('form button[type="submit"]:not([disabled]), form input[type="submit"]:not([disabled])');
+          if (modalFormSubmit) {
+            e.preventDefault();
+            e.stopPropagation();
+            modalFormSubmit.click();
+            return;
+          }
+
+          // Any submit button inside modal
+          const anyModalSubmit = topModal.querySelector('button[type="submit"]:not([disabled])');
+          if (anyModalSubmit) {
+            e.preventDefault();
+            e.stopPropagation();
+            anyModalSubmit.click();
+            return;
+          }
+
+          // Primary action buttons in modal footer (for review / export / print / confirm modals without a <form>)
+          const modalActionBtn = topModal.querySelector(
+            '.modal-footer .btn-primary:not([disabled]), .modal-footer .btn-success:not([disabled]), .modal-footer .btn-danger:not([disabled])'
+          );
+          if (modalActionBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            modalActionBtn.click();
+            return;
+          }
+        }
+
+        // 2. If focus is inside an active element belonging to a form on the current page
+        const activeEl = document.activeElement;
+        if (activeEl) {
+          const form = activeEl.closest('form');
+          if (form) {
+            const formSubmitBtn = form.querySelector('button[type="submit"]:not([disabled]), input[type="submit"]:not([disabled])');
+            if (formSubmitBtn) {
+              e.preventDefault();
+              e.stopPropagation();
+              formSubmitBtn.click();
+              return;
+            }
+            if (typeof form.requestSubmit === 'function') {
+              e.preventDefault();
+              e.stopPropagation();
+              form.requestSubmit();
+              return;
+            }
+          }
+        }
+
+        // 3. Fallback: Any visible form with an enabled submit button on the page
+        const visibleForm = document.querySelector('form');
+        if (visibleForm && !visibleForm.closest('.modal:not(.show):not(.d-block)')) {
+          const anySubmitBtn = visibleForm.querySelector('button[type="submit"]:not([disabled])');
+          if (anySubmitBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            anySubmitBtn.click();
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalCtrlEnter, true);
+    return () => window.removeEventListener('keydown', handleGlobalCtrlEnter, true);
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>

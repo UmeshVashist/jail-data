@@ -180,13 +180,20 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
               <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" disabled={isSubmitting}>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm px-4 fw-semibold shadow-sm"
+                disabled={isSubmitting}
+                title="Keyboard shortcut: Ctrl + Enter"
+              >
                 {isSubmitting ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status"></span> Submitting...
                   </>
                 ) : (
-                  'Submit Edit Request'
+                  <>
+                    <i className="bi bi-send-check me-1"></i> Submit Edit Request <small className="opacity-75 ms-1 fw-normal">(Ctrl+Enter)</small>
+                  </>
                 )}
               </button>
             </div>
