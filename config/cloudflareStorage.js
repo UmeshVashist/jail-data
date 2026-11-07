@@ -799,7 +799,8 @@ async function syncAllCollections() {
             createdDate: r.created_date,
             createdTime: r.created_time,
             updatedDate: r.updated_date,
-            updatedTime: r.updated_time
+            updatedTime: r.updated_time,
+            isDeleted: !!r.is_deleted
           }));
           await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
         }
@@ -1026,9 +1027,13 @@ async function deleteUser(rowIndex) {
    Records Data Access Methods
    ========================================================================== */
 
-async function getRecords() {
+async function getRecords(includeDeleted = false) {
   await ensureRecordsSynced();
-  return memoryStore.records.map(r => ({
+  let list = memoryStore.records;
+  if (!includeDeleted) {
+    list = list.filter(r => !r.isDeleted && !r.is_deleted);
+  }
+  return list.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
     pid: (r.pid || '').toString().trim(),
@@ -1044,7 +1049,8 @@ async function getRecords() {
     createdDate: formatDateValue(r.createdDate),
     createdTime: (r.createdTime || '').toString().trim(),
     updatedDate: formatDateValue(r.updatedDate),
-    updatedTime: (r.updatedTime || '').toString().trim()
+    updatedTime: (r.updatedTime || '').toString().trim(),
+    isDeleted: !!(r.isDeleted || r.is_deleted)
   }));
 }
 
@@ -1161,6 +1167,62 @@ async function deleteRecord(rowIndex) {
   } catch (e) {}
 
   // Sync to Cloudflare R2
+  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
+  return true;
+}
+
+async function softDeleteRecord(rowIndex, deletedBy = 'Admin') {
+  if (!memoryStore.records || memoryStore.records.length === 0) {
+    await ensureRecordsSynced(true);
+  }
+  const idNum = parseInt(rowIndex, 10);
+  const target = memoryStore.records.find(r => (r.id === idNum || r.rowIndex === idNum));
+  if (!target) return false;
+
+  target.isDeleted = true;
+  target.deletedBy = deletedBy;
+  target.deletedDate = getFormattedDateTime().slice(0, 10);
+  target.deletedTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: true });
+
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
+
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(`UPDATE records SET is_deleted = 1 WHERE id = ?`, [idNum]);
+  } catch (e) {}
+
+  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
+  return true;
+}
+
+async function restoreRecord(rowIndex) {
+  if (!memoryStore.records || memoryStore.records.length === 0) {
+    await ensureRecordsSynced(true);
+  }
+  const idNum = parseInt(rowIndex, 10);
+  const target = memoryStore.records.find(r => (r.id === idNum || r.rowIndex === idNum));
+  if (!target) return false;
+
+  target.isDeleted = false;
+  delete target.deletedBy;
+  delete target.deletedDate;
+  delete target.deletedTime;
+
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
+
+  try {
+    const { dbRun } = require('./database');
+    await dbRun(`UPDATE records SET is_deleted = 0 WHERE id = ?`, [idNum]);
+  } catch (e) {}
+
   saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
     console.error('[Cloudflare R2 Write Warning]:', err.message);
   });
@@ -1967,6 +2029,8 @@ module.exports = {
   addRecord,
   updateRecord,
   deleteRecord,
+  softDeleteRecord,
+  restoreRecord,
   batchAddRecords,
   getDeleteRequests,
   createDeleteRequest,

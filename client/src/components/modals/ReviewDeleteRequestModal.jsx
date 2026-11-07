@@ -18,7 +18,7 @@ export default function ReviewDeleteRequestModal({ isOpen, onClose, request, onA
     try {
       const res = await api.put(`/api/delete-requests/${request.id}/approve`);
       if (res && res.success) {
-        showToast(res.message || 'Delete request approved and record permanently deleted!', 'success');
+        showToast(res.message || 'Delete request approved and record moved to Approved Delete list!', 'success');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'Delete', status: 'Approved' });
       } else {
@@ -67,8 +67,8 @@ export default function ReviewDeleteRequestModal({ isOpen, onClose, request, onA
               <div className="mb-2"><strong>Request Time:</strong> <span className="text-muted ms-1">{request.requestedDate} {request.requestedTime}</span></div>
               <div><strong>Reason:</strong> <span className="text-primary fw-semibold fst-italic ms-1">"{request.reason || request.remark || '-'}"</span></div>
             </div>
-            <p className="text-danger small mb-0 d-flex align-items-center gap-1.5">
-              <i className="bi bi-exclamation-triangle-fill flex-shrink-0"></i> Approving this request will immediately and permanently delete this record from the database.
+            <p className="text-info small mb-0 d-flex align-items-center gap-1.5">
+              <i className="bi bi-info-circle-fill flex-shrink-0"></i> Approving this request will hide the record from active data. It will remain in the Approved Delete list where Admin can permanently delete it at any time.
             </p>
           </div>
           <div className="modal-footer border-top border-secondary border-opacity-25 justify-content-between px-4 py-3">
@@ -79,14 +79,14 @@ export default function ReviewDeleteRequestModal({ isOpen, onClose, request, onA
               <button type="button" className="btn btn-outline-secondary btn-sm px-3" onClick={handleReject} disabled={loading}>
                 <i className="bi bi-x-circle me-1"></i> Reject
               </button>
-              <button type="button" className="btn btn-danger btn-sm px-4 fw-semibold" onClick={handleApprove} disabled={loading}>
+              <button type="button" className="btn btn-primary btn-sm px-4 fw-semibold" onClick={handleApprove} disabled={loading}>
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status"></span> Processing...
                   </>
                 ) : (
                   <>
-                    <i className="bi bi-trash3 me-1"></i> Approve & Delete Record
+                    <i className="bi bi-check-circle me-1"></i> Approve Delete Request
                   </>
                 )}
               </button>

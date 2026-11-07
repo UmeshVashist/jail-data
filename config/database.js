@@ -241,9 +241,14 @@ async function initDatabase() {
         created_date TEXT NOT NULL,
         created_time TEXT NOT NULL,
         updated_date TEXT,
-        updated_time TEXT
+        updated_time TEXT,
+        is_deleted INTEGER DEFAULT 0
       )
     `);
+
+    try {
+      await dbRun(`ALTER TABLE records ADD COLUMN is_deleted INTEGER DEFAULT 0`);
+    } catch (e) {}
 
     // Create Police Stations table
     await dbRun(`

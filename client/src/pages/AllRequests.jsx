@@ -91,9 +91,17 @@ export default function AllRequests() {
     return true;
   });
 
-  // Filtered Pending items for bulk selection
-  const pendingFiltered = filtered.filter(r => (r.status || 'Pending') === 'Pending');
-  const isAllSelected = pendingFiltered.length > 0 && pendingFiltered.every(r => selectedRequests.has(`${r.requestType}_${r.id}`));
+  // Check if an item can be selected for batch operations
+  const isSelectable = (r) => {
+    if (!r) return false;
+    if ((r.status || 'Pending') === 'Pending') return true;
+    if (r.requestType === 'Delete' && r.status === 'Approved') return true;
+    return false;
+  };
+
+  // Filtered items that can be selected
+  const selectableFiltered = filtered.filter(isSelectable);
+  const isAllSelected = selectableFiltered.length > 0 && selectableFiltered.every(r => selectedRequests.has(`${r.requestType}_${r.id}`));
 
   const toggleSelect = (req) => {
     const key = `${req.requestType}_${req.id}`;
@@ -109,16 +117,16 @@ export default function AllRequests() {
     if (isAllSelected) {
       setSelectedRequests(new Map());
     } else {
-      const next = new Map();
-      pendingFiltered.forEach(r => next.set(`${r.requestType}_${r.id}`, r));
+      const next = new Map(selectedRequests);
+      selectableFiltered.forEach(r => next.set(`${r.requestType}_${r.id}`, r));
       setSelectedRequests(next);
     }
   };
 
   const handleBulkApprove = async () => {
-    const items = Array.from(selectedRequests.values());
+    const items = Array.from(selectedRequests.values()).filter(r => (r.status || 'Pending') === 'Pending');
     if (items.length === 0) return;
-    if (!window.confirm(`Are you sure you want to APPROVE ${items.length} selected request(s)?`)) return;
+    if (!window.confirm(`Are you sure you want to APPROVE ${items.length} selected pending request(s)?`)) return;
 
     // Real-time optimistic update
     const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
@@ -127,7 +135,11 @@ export default function AllRequests() {
         ? { ...r, status: 'Approved', actionBy: 'Admin' }
         : r
     ));
-    setSelectedRequests(new Map());
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      selectedKeys.forEach(k => next.delete(k));
+      return next;
+    });
 
     setBulkProcessing(true);
     let successCount = 0;
@@ -152,7 +164,7 @@ export default function AllRequests() {
   };
 
   const handleBulkReject = async () => {
-    const items = Array.from(selectedRequests.values());
+    const items = Array.from(selectedRequests.values()).filter(r => (r.status || 'Pending') === 'Pending');
     if (items.length === 0) return;
     if (!window.confirm(`Are you sure you want to REJECT ${items.length} selected request(s)?`)) return;
 
@@ -163,7 +175,11 @@ export default function AllRequests() {
         ? { ...r, status: 'Rejected', actionBy: 'Admin' }
         : r
     ));
-    setSelectedRequests(new Map());
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      selectedKeys.forEach(k => next.delete(k));
+      return next;
+    });
 
     setBulkProcessing(true);
     let successCount = 0;
@@ -187,10 +203,105 @@ export default function AllRequests() {
     fetchAllRequests(true);
   };
 
+  // Permanent Delete for single Approved Delete Request (Admin Only)
+  const handlePermanentDeleteSingle = async (req) => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete record PID: ${req.pid} (${req.name}) from the database? This action cannot be undone.`)) return;
+
+    const key = `${req.requestType}_${req.id}`;
+    setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+
+    try {
+      const res = await api.delete(`/api/delete-requests/${req.id}/permanent`);
+      showToast(res.message || `Record PID ${req.pid} permanently deleted from database.`, 'success');
+    } catch (err) {
+      showToast('Error permanently deleting record: ' + err.message, 'danger');
+      fetchAllRequests(true);
+    }
+  };
+
+  // Restore single Approved Delete Request back to active records (Admin Only)
+  const handleRestoreSingle = async (req) => {
+    if (!window.confirm(`Are you sure you want to RESTORE record PID: ${req.pid} (${req.name}) back to active Data Records?`)) return;
+
+    const key = `${req.requestType}_${req.id}`;
+    setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+
+    try {
+      const res = await api.post(`/api/delete-requests/${req.id}/restore`);
+      showToast(res.message || `Record PID ${req.pid} restored back to active records.`, 'success');
+    } catch (err) {
+      showToast('Error restoring record: ' + err.message, 'danger');
+      fetchAllRequests(true);
+    }
+  };
+
+  // Bulk Permanent Delete for selected Approved Delete Requests (Admin Only)
+  const handleBulkPermanentDelete = async () => {
+    const items = Array.from(selectedRequests.values()).filter(r => r.requestType === 'Delete' && r.status === 'Approved');
+    if (items.length === 0) return;
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete ${items.length} approved record(s) from the database? This cannot be undone.`)) return;
+
+    const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
+    setRequests(prev => prev.filter(r => !selectedKeys.has(`${r.requestType}_${r.id}`)));
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      selectedKeys.forEach(k => next.delete(k));
+      return next;
+    });
+
+    setBulkProcessing(true);
+    try {
+      const res = await api.post('/api/delete-requests/bulk-permanent', { ids: items.map(i => i.id) });
+      showToast(res.message || `${items.length} record(s) permanently deleted.`, 'success');
+    } catch (err) {
+      showToast('Error permanently deleting records: ' + err.message, 'danger');
+      fetchAllRequests(true);
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  // Bulk Restore for selected Approved Delete Requests (Admin Only)
+  const handleBulkRestore = async () => {
+    const items = Array.from(selectedRequests.values()).filter(r => r.requestType === 'Delete' && r.status === 'Approved');
+    if (items.length === 0) return;
+    if (!window.confirm(`Are you sure you want to RESTORE ${items.length} approved record(s) back to active Data Records?`)) return;
+
+    const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
+    setRequests(prev => prev.filter(r => !selectedKeys.has(`${r.requestType}_${r.id}`)));
+    setSelectedRequests(prev => {
+      const next = new Map(prev);
+      selectedKeys.forEach(k => next.delete(k));
+      return next;
+    });
+
+    setBulkProcessing(true);
+    try {
+      const res = await api.post('/api/delete-requests/bulk-restore', { ids: items.map(i => i.id) });
+      showToast(res.message || `${items.length} record(s) restored successfully.`, 'success');
+    } catch (err) {
+      showToast('Error restoring records: ' + err.message, 'danger');
+      fetchAllRequests(true);
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   // KPI counts
   const totalPending = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
   const editPending = requests.filter(r => r.requestType === 'Edit' && (r.status || 'Pending') === 'Pending').length;
   const delPending = requests.filter(r => r.requestType === 'Delete' && (r.status || 'Pending') === 'Pending').length;
+  const delApproved = requests.filter(r => r.requestType === 'Delete' && r.status === 'Approved').length;
   const listPending = requests.filter(r => r.requestType === 'List Add' && (r.status || 'Pending') === 'Pending').length;
 
   return (
@@ -269,7 +380,26 @@ export default function AllRequests() {
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Delete Requests</span>
-                <h2 className="fw-bold text-danger mb-0 mt-1">{delPending}</h2>
+                <div className="d-flex align-items-baseline gap-2 mt-1">
+                  <h2 className="fw-bold text-danger mb-0">{delPending}</h2>
+                  <span className="small text-muted">Pending</span>
+                </div>
+                {delApproved > 0 && (
+                  <div className="mt-1">
+                    <span 
+                      className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-1.5 py-0.5"
+                      style={{ cursor: 'pointer', fontSize: '0.72rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTypeFilter('Delete');
+                        setStatusFilter('Approved');
+                      }}
+                      title="Click to view Approved Delete requests"
+                    >
+                      {delApproved} Approved for Delete
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="stat-icon bg-danger-subtle-custom">
                 <i className="bi bi-trash3"></i>
@@ -372,50 +502,100 @@ export default function AllRequests() {
       </div>
 
       {/* Bulk Action Banner */}
-      {selectedRequests.size > 0 && (
-        <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 mb-3 rounded-3 shadow-sm border border-info border-opacity-50">
-          <div className="d-flex align-items-center gap-2">
-            <i className="bi bi-check2-square fs-5 text-cyan"></i>
-            <span className="fw-bold">{selectedRequests.size}</span> pending request{selectedRequests.size === 1 ? '' : 's'} selected
-          </div>
-          <div className="d-flex align-items-center gap-2 flex-wrap mt-2 mt-sm-0">
-            <button
-              type="button"
-              className="btn btn-success btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
-              onClick={handleBulkApprove}
-              disabled={bulkProcessing}
-            >
-              {bulkProcessing ? (
-                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
-              ) : (
-                <i className="bi bi-check-circle-fill"></i>
+      {selectedRequests.size > 0 && (() => {
+        const selectedItems = Array.from(selectedRequests.values());
+        const pendingItems = selectedItems.filter(r => (r.status || 'Pending') === 'Pending');
+        const approvedDelItems = selectedItems.filter(r => r.requestType === 'Delete' && r.status === 'Approved');
+
+        return (
+          <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 mb-3 rounded-3 shadow-sm border border-info border-opacity-50">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <i className="bi bi-check2-square fs-5 text-cyan"></i>
+              <span className="fw-bold">{selectedRequests.size}</span> item{selectedRequests.size === 1 ? '' : 's'} selected
+              {pendingItems.length > 0 && (
+                <span className="badge bg-warning text-dark">{pendingItems.length} Pending</span>
               )}
-              Approve Selected ({selectedRequests.size})
-            </button>
-            <button
-              type="button"
-              className="btn btn-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
-              onClick={handleBulkReject}
-              disabled={bulkProcessing}
-            >
-              {bulkProcessing ? (
-                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
-              ) : (
-                <i className="bi bi-x-circle-fill"></i>
+              {approvedDelItems.length > 0 && (
+                <span className="badge bg-danger text-white">{approvedDelItems.length} Approved for Deletion</span>
               )}
-              Reject Selected ({selectedRequests.size})
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline-secondary btn-sm px-2.5"
-              onClick={() => setSelectedRequests(new Map())}
-              disabled={bulkProcessing}
-            >
-              Cancel
-            </button>
+            </div>
+            <div className="d-flex align-items-center gap-2 flex-wrap mt-2 mt-sm-0">
+              {pendingItems.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-success btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+                    onClick={handleBulkApprove}
+                    disabled={bulkProcessing}
+                  >
+                    {bulkProcessing ? (
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                    ) : (
+                      <i className="bi bi-check-circle-fill"></i>
+                    )}
+                    Approve Selected ({pendingItems.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+                    onClick={handleBulkReject}
+                    disabled={bulkProcessing}
+                  >
+                    {bulkProcessing ? (
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                    ) : (
+                      <i className="bi bi-x-circle-fill"></i>
+                    )}
+                    Reject Selected ({pendingItems.length})
+                  </button>
+                </>
+              )}
+
+              {approvedDelItems.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+                    onClick={handleBulkPermanentDelete}
+                    disabled={bulkProcessing}
+                    title="Permanently remove selected records from database"
+                  >
+                    {bulkProcessing ? (
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                    ) : (
+                      <i className="bi bi-trash3-fill"></i>
+                    )}
+                    Permanently Delete Selected ({approvedDelItems.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-success btn-sm px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+                    onClick={handleBulkRestore}
+                    disabled={bulkProcessing}
+                    title="Restore selected records back to active records"
+                  >
+                    {bulkProcessing ? (
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                    ) : (
+                      <i className="bi bi-arrow-counterclockwise"></i>
+                    )}
+                    Restore Selected ({approvedDelItems.length})
+                  </button>
+                </>
+              )}
+
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm px-2.5"
+                onClick={() => setSelectedRequests(new Map())}
+                disabled={bulkProcessing}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Requests Table */}
       <div className="custom-table-card p-3 rounded-3">
@@ -429,8 +609,8 @@ export default function AllRequests() {
                     className="form-check-input"
                     checked={isAllSelected}
                     onChange={toggleSelectAll}
-                    disabled={pendingFiltered.length === 0}
-                    title="Select all pending requests"
+                    disabled={selectableFiltered.length === 0}
+                    title="Select all selectable requests (Pending or Approved Delete)"
                   />
                 </th>
                 <th>Type</th>
@@ -475,12 +655,13 @@ export default function AllRequests() {
                       : 'bg-success bg-opacity-25 text-success border border-success border-opacity-25';
 
                   const isPending = (req.status || 'Pending') === 'Pending';
+                  const isApprovedDelete = req.requestType === 'Delete' && req.status === 'Approved';
                   const isSelected = selectedRequests.has(`${req.requestType}_${req.id}`);
 
                   return (
                     <tr key={req.id || idx} className={isSelected ? 'table-active' : ''}>
                       <td style={{ textAlign: 'center' }}>
-                        {isPending ? (
+                        {isSelectable(req) ? (
                           <input
                             type="checkbox"
                             className="form-check-input"
@@ -509,7 +690,7 @@ export default function AllRequests() {
                         </span>
                       </td>
                       <td className="text-end">
-                        {req.status === 'Pending' ? (
+                        {isPending ? (
                           <button
                             type="button"
                             className="btn btn-sm btn-primary px-3 py-1 fw-semibold"
@@ -521,6 +702,25 @@ export default function AllRequests() {
                           >
                             Review &rarr;
                           </button>
+                        ) : isApprovedDelete ? (
+                          <div className="d-flex align-items-center justify-content-end gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
+                              onClick={() => handlePermanentDeleteSingle(req)}
+                              title="Permanently Delete this record from Database"
+                            >
+                              <i className="bi bi-trash3-fill"></i> Permanently Delete
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success px-2 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
+                              onClick={() => handleRestoreSingle(req)}
+                              title="Restore Record back to Active Data"
+                            >
+                              <i className="bi bi-arrow-counterclockwise"></i> Restore
+                            </button>
+                          </div>
                         ) : (
                           <span className="small text-muted">
                             Action by {req.actionBy || 'Admin'}

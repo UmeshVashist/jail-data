@@ -7,13 +7,15 @@ const router = express.Router();
 const { 
   getRecords, 
   deleteRecord, 
+  softDeleteRecord,
+  restoreRecord,
   getDeleteRequests, 
   getEditRequests,
   createDeleteRequest, 
   updateDeleteRequestStatus, 
   deleteDeleteRequest 
 } = require('../config/cloudflareStorage');
-const { requireAuth, requireDeleteRequestPermission } = require('../middleware/auth');
+const { requireAuth, requireDeleteRequestPermission, requireAdmin } = require('../middleware/auth');
 
 router.use(requireAuth);
 
@@ -151,6 +153,7 @@ router.get('/my-requests', async (req, res) => {
 });
 
 // Approve delete request (Supports both POST and PUT)
+// Soft-deletes record from active view and sets status to Approved (keeps record for admin permanent deletion later)
 const handleApproveDelete = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
@@ -165,28 +168,164 @@ const handleApproveDelete = async (req, res) => {
       return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
     }
 
-    // Find and delete the record
-    const records = await getRecords();
+    // Soft delete the record so it is hidden from active Data Records/Dashboard, but retained in database
+    const records = await getRecords(true);
     const targetRecord = records.find(r => 
       r.id === parseInt(targetReq.recordId, 10) || 
       r.rowIndex === parseInt(targetReq.recordId, 10) || 
-      (r.pid && r.pid === targetReq.pid)
+      (r.pid && String(r.pid) === String(targetReq.pid))
     );
 
     if (targetRecord) {
-      await deleteRecord(targetRecord.id || targetRecord.rowIndex);
+      await softDeleteRecord(targetRecord.id || targetRecord.rowIndex, req.user.username);
     }
 
     // Update request status to Approved
     await updateDeleteRequestStatus(requestId, 'Approved', req.user.username);
 
-    res.json({ success: true, message: `Delete request approved. Record PID ${targetReq.pid} deleted successfully.` });
+    res.json({ 
+      success: true, 
+      message: `Delete request approved for PID ${targetReq.pid}. Record moved to Approved Delete list (Admin can permanently delete it later).` 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Approve delete request error: ' + err.message });
   }
 };
 router.post('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
 router.put('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
+
+// DELETE /api/delete-requests/:id/permanent - Permanently purge record from database (Admin Only)
+router.delete('/:id/permanent', requireAdmin, async (req, res) => {
+  try {
+    const requestId = parseInt(req.params.id, 10);
+    const allRequests = await getDeleteRequests();
+    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+
+    if (!targetReq) {
+      return res.status(404).json({ success: false, message: 'Delete request not found.' });
+    }
+
+    // Find and permanently purge the record from database
+    const records = await getRecords(true);
+    const targetRecord = records.find(r => 
+      r.id === parseInt(targetReq.recordId, 10) || 
+      r.rowIndex === parseInt(targetReq.recordId, 10) || 
+      (r.pid && String(r.pid) === String(targetReq.pid))
+    );
+
+    if (targetRecord) {
+      await deleteRecord(targetRecord.id || targetRecord.rowIndex);
+    }
+
+    // Delete the delete request itself
+    await deleteDeleteRequest(requestId);
+
+    res.json({ success: true, message: `Record PID ${targetReq.pid} permanently deleted from database.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Permanent delete error: ' + err.message });
+  }
+});
+
+// POST /api/delete-requests/bulk-permanent - Bulk permanently delete selected records from database (Admin Only)
+router.post('/bulk-permanent', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'No request IDs provided.' });
+    }
+
+    const allRequests = await getDeleteRequests();
+    const records = await getRecords(true);
+    let deletedCount = 0;
+
+    for (const idStr of ids) {
+      const requestId = parseInt(idStr, 10);
+      const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+      if (targetReq) {
+        const targetRecord = records.find(r => 
+          r.id === parseInt(targetReq.recordId, 10) || 
+          r.rowIndex === parseInt(targetReq.recordId, 10) || 
+          (r.pid && String(r.pid) === String(targetReq.pid))
+        );
+        if (targetRecord) {
+          await deleteRecord(targetRecord.id || targetRecord.rowIndex);
+        }
+        await deleteDeleteRequest(requestId);
+        deletedCount++;
+      }
+    }
+
+    res.json({ success: true, message: `${deletedCount} record(s) permanently deleted from database.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Bulk permanent delete error: ' + err.message });
+  }
+});
+
+// POST /api/delete-requests/:id/restore - Restore soft-deleted record back to active records (Admin Only)
+router.post('/:id/restore', requireAdmin, async (req, res) => {
+  try {
+    const requestId = parseInt(req.params.id, 10);
+    const allRequests = await getDeleteRequests();
+    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+
+    if (!targetReq) {
+      return res.status(404).json({ success: false, message: 'Delete request not found.' });
+    }
+
+    const records = await getRecords(true);
+    const targetRecord = records.find(r => 
+      r.id === parseInt(targetReq.recordId, 10) || 
+      r.rowIndex === parseInt(targetReq.recordId, 10) || 
+      (r.pid && String(r.pid) === String(targetReq.pid))
+    );
+
+    if (targetRecord) {
+      await restoreRecord(targetRecord.id || targetRecord.rowIndex);
+    }
+
+    // Remove the delete request since record is restored back to active state
+    await deleteDeleteRequest(requestId);
+
+    res.json({ success: true, message: `Record PID ${targetReq.pid} restored back to active records successfully.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Restore record error: ' + err.message });
+  }
+});
+
+// POST /api/delete-requests/bulk-restore - Bulk restore records back to active records (Admin Only)
+router.post('/bulk-restore', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'No request IDs provided.' });
+    }
+
+    const allRequests = await getDeleteRequests();
+    const records = await getRecords(true);
+    let restoredCount = 0;
+
+    for (const idStr of ids) {
+      const requestId = parseInt(idStr, 10);
+      const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+      if (targetReq) {
+        const targetRecord = records.find(r => 
+          r.id === parseInt(targetReq.recordId, 10) || 
+          r.rowIndex === parseInt(targetReq.recordId, 10) || 
+          (r.pid && String(r.pid) === String(targetReq.pid))
+        );
+        if (targetRecord) {
+          await restoreRecord(targetRecord.id || targetRecord.rowIndex);
+        }
+        await deleteDeleteRequest(requestId);
+        restoredCount++;
+      }
+    }
+
+    res.json({ success: true, message: `${restoredCount} record(s) restored back to active records.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Bulk restore error: ' + err.message });
+  }
+});
 
 // Reject / Cancel delete request by admin/permitted user (Supports both POST and PUT)
 const handleRejectDelete = async (req, res) => {
