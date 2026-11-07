@@ -27,8 +27,8 @@ export default function AllRequests() {
   const [reviewDelReq, setReviewDelReq] = useState(null);
   const [reviewListReq, setReviewListReq] = useState(null);
 
-  const fetchAllRequests = useCallback(async () => {
-    setLoading(true);
+  const fetchAllRequests = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setSelectedRequests(new Map());
     try {
       const [editRes, delRes, listRes] = await Promise.all([
@@ -45,13 +45,25 @@ export default function AllRequests() {
     } catch (err) {
       showToast('Error loading requests: ' + err.message, 'danger');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
     fetchAllRequests();
   }, [fetchAllRequests]);
+
+  // Instant real-time update when an individual request is reviewed
+  const handleActionCompleted = (actionResult) => {
+    if (actionResult && actionResult.id && actionResult.requestType) {
+      setRequests(prev => prev.map(r => 
+        (r.id === actionResult.id && r.requestType === actionResult.requestType)
+          ? { ...r, status: actionResult.status, actionBy: 'Admin' }
+          : r
+      ));
+    }
+    fetchAllRequests(true);
+  };
 
   if (!isAdmin) {
     return (
@@ -108,31 +120,35 @@ export default function AllRequests() {
     if (items.length === 0) return;
     if (!window.confirm(`Are you sure you want to APPROVE ${items.length} selected request(s)?`)) return;
 
+    // Real-time optimistic update
+    const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
+    setRequests(prev => prev.map(r => 
+      selectedKeys.has(`${r.requestType}_${r.id}`)
+        ? { ...r, status: 'Approved', actionBy: 'Admin' }
+        : r
+    ));
+    setSelectedRequests(new Map());
+
     setBulkProcessing(true);
     let successCount = 0;
     let failCount = 0;
 
-    for (const item of items) {
-      try {
-        let url = '';
-        if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/approve`;
-        else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/approve`;
-        else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/approve`;
+    const results = await Promise.allSettled(items.map(item => {
+      let url = '';
+      if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/approve`;
+      else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/approve`;
+      else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/approve`;
+      return url ? api.post(url) : Promise.reject(new Error('Invalid request type'));
+    }));
 
-        if (url) {
-          const res = await api.post(url);
-          if (res && res.success) successCount++;
-          else failCount++;
-        }
-      } catch (err) {
-        failCount++;
-      }
-    }
+    results.forEach(res => {
+      if (res.status === 'fulfilled' && res.value && res.value.success) successCount++;
+      else failCount++;
+    });
 
     setBulkProcessing(false);
-    setSelectedRequests(new Map());
     showToast(`Bulk Approval complete: ${successCount} approved${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'success' : 'danger');
-    fetchAllRequests();
+    fetchAllRequests(true);
   };
 
   const handleBulkReject = async () => {
@@ -140,31 +156,35 @@ export default function AllRequests() {
     if (items.length === 0) return;
     if (!window.confirm(`Are you sure you want to REJECT ${items.length} selected request(s)?`)) return;
 
+    // Real-time optimistic update
+    const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
+    setRequests(prev => prev.map(r => 
+      selectedKeys.has(`${r.requestType}_${r.id}`)
+        ? { ...r, status: 'Rejected', actionBy: 'Admin' }
+        : r
+    ));
+    setSelectedRequests(new Map());
+
     setBulkProcessing(true);
     let successCount = 0;
     let failCount = 0;
 
-    for (const item of items) {
-      try {
-        let url = '';
-        if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/reject`;
-        else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/reject`;
-        else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/reject`;
+    const results = await Promise.allSettled(items.map(item => {
+      let url = '';
+      if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/reject`;
+      else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/reject`;
+      else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/reject`;
+      return url ? api.post(url) : Promise.reject(new Error('Invalid request type'));
+    }));
 
-        if (url) {
-          const res = await api.post(url);
-          if (res && res.success) successCount++;
-          else failCount++;
-        }
-      } catch (err) {
-        failCount++;
-      }
-    }
+    results.forEach(res => {
+      if (res.status === 'fulfilled' && res.value && res.value.success) successCount++;
+      else failCount++;
+    });
 
     setBulkProcessing(false);
-    setSelectedRequests(new Map());
     showToast(`Bulk Rejection complete: ${successCount} rejected${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'warning' : 'danger');
-    fetchAllRequests();
+    fetchAllRequests(true);
   };
 
   // KPI counts
@@ -521,19 +541,19 @@ export default function AllRequests() {
         isOpen={!!reviewEditReq}
         request={reviewEditReq}
         onClose={() => setReviewEditReq(null)}
-        onActionCompleted={() => fetchAllRequests()}
+        onActionCompleted={handleActionCompleted}
       />
       <ReviewDeleteRequestModal
         isOpen={!!reviewDelReq}
         request={reviewDelReq}
         onClose={() => setReviewDelReq(null)}
-        onActionCompleted={() => fetchAllRequests()}
+        onActionCompleted={handleActionCompleted}
       />
       <ReviewListAddRequestModal
         isOpen={!!reviewListReq}
         request={reviewListReq}
         onClose={() => setReviewListReq(null)}
-        onActionCompleted={() => fetchAllRequests()}
+        onActionCompleted={handleActionCompleted}
       />
     </div>
   );

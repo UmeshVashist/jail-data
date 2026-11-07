@@ -8,6 +8,7 @@ const {
   getRecords, 
   deleteRecord, 
   getDeleteRequests, 
+  getEditRequests,
   createDeleteRequest, 
   updateDeleteRequestStatus, 
   deleteDeleteRequest 
@@ -52,15 +53,32 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Target record not found.' });
     }
 
-    // Check if a pending delete request already exists for this record
-    const allRequests = await getDeleteRequests();
-    const existingPending = allRequests.find(r => 
-      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && r.pid === targetRecord.pid)) && 
+    // Check if ANY pending request (Delete OR Edit) already exists for this record/PID
+    const [allDeleteRequests, allEditRequests] = await Promise.all([
+      getDeleteRequests(),
+      getEditRequests()
+    ]);
+
+    const existingPendingDelete = allDeleteRequests.find(r => 
+      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && String(r.pid) === String(targetRecord.pid))) && 
       r.status === 'Pending'
     );
+    if (existingPendingDelete) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Is PID (${targetRecord.pid}) ki Delete Request pehle se pending hai. Approval ka wait karein.` 
+      });
+    }
 
-    if (existingPending) {
-      return res.status(400).json({ success: false, message: 'A delete request is already pending for this record.' });
+    const existingPendingEdit = allEditRequests.find(r => 
+      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && String(r.pid) === String(targetRecord.pid))) && 
+      r.status === 'Pending'
+    );
+    if (existingPendingEdit) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Is PID (${targetRecord.pid}) ki Edit Request pehle se pending hai. Ek PID ke liye ek waqt me sirf 1 request bheji ja sakti hai.` 
+      });
     }
 
     const now = new Date();

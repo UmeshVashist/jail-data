@@ -1292,8 +1292,12 @@ async function updateDeleteRequestStatus(requestId, status, actionBy) {
     );
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
+  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1307,8 +1311,12 @@ async function deleteDeleteRequest(requestId) {
     await dbRun(`DELETE FROM delete_requests WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
+  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1422,8 +1430,12 @@ async function updateEditRequestStatus(requestId, status, actionBy) {
     );
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
+  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1437,8 +1449,12 @@ async function deleteEditRequest(requestId) {
     await dbRun(`DELETE FROM edit_requests WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
+  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1524,8 +1540,12 @@ async function updateListAddRequestStatus(requestId, status, actionBy) {
     );
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
+  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1539,8 +1559,12 @@ async function deleteListAddRequest(requestId) {
     await dbRun(`DELETE FROM list_add_requests WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
+  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 

@@ -8,6 +8,7 @@ const {
   getRecords, 
   updateRecord, 
   getEditRequests, 
+  getDeleteRequests,
   createEditRequest, 
   updateEditRequestStatus, 
   deleteEditRequest,
@@ -100,15 +101,32 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Target record not found.' });
     }
 
-    // Check if a pending edit request already exists for this record
-    const allRequests = await getEditRequests();
-    const existingPending = allRequests.find(r => 
-      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && r.pid === targetRecord.pid)) && 
+    // Check if ANY pending request (Edit OR Delete) already exists for this record/PID
+    const [allEditRequests, allDeleteRequests] = await Promise.all([
+      getEditRequests(),
+      getDeleteRequests()
+    ]);
+
+    const existingPendingEdit = allEditRequests.find(r => 
+      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && String(r.pid) === String(targetRecord.pid))) && 
       r.status === 'Pending'
     );
+    if (existingPendingEdit) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Is PID (${targetRecord.pid}) ki Edit Request pehle se pending hai. Approval ka wait karein.` 
+      });
+    }
 
-    if (existingPending) {
-      return res.status(400).json({ success: false, message: 'An edit request is already pending for this record.' });
+    const existingPendingDelete = allDeleteRequests.find(r => 
+      (parseInt(r.recordId, 10) === targetRecordId || (r.pid && String(r.pid) === String(targetRecord.pid))) && 
+      r.status === 'Pending'
+    );
+    if (existingPendingDelete) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Is PID (${targetRecord.pid}) ki Delete Request pehle se pending hai. Ek PID ke liye ek waqt me sirf 1 request bheji ja sakti hai.` 
+      });
     }
 
     const now = new Date();
@@ -141,6 +159,15 @@ router.post('/', async (req, res) => {
       propAadhar = '#N/A';
     }
 
+    // Auto-detect proposed recordType / prison type from proposed UT No
+    const propUtNo = (proposedData.utNo !== undefined ? proposedData.utNo : targetRecord.utNo || '').trim().toUpperCase();
+    let propType = targetRecord.type || targetRecord.recordType || 'UT';
+    if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(propUtNo)) {
+      propType = 'CT';
+    } else if (/\bUT\b|UT/i.test(propUtNo)) {
+      propType = 'UT';
+    }
+
     await createEditRequest({
       recordId: targetRecord.id || targetRecord.rowIndex,
       pid: targetRecord.pid,
@@ -154,7 +181,9 @@ router.post('/', async (req, res) => {
         pid: targetRecord.pid,
         name: (proposedData.name || targetRecord.name).trim(),
         father: (proposedData.father !== undefined ? proposedData.father : targetRecord.father || '').trim(),
-        utNo: (proposedData.utNo !== undefined ? proposedData.utNo : targetRecord.utNo || '').trim(),
+        utNo: propUtNo,
+        type: propType,
+        recordType: propType,
         aadharNo: propAadhar,
         date: (proposedData.date !== undefined && proposedData.date !== null && proposedData.date !== '') ? proposedData.date.trim() : (targetRecord.date || ''),
         remark: propRemark || targetRecord.remark || '',
@@ -252,12 +281,27 @@ const handleApproveEdit = async (req, res) => {
     const updatedTime = getFormattedTime(now);
 
     const proposed = targetReq.proposedData || {};
+    const updatedUtNo = (proposed.utNo !== undefined ? proposed.utNo : targetRecord.utNo || '').trim();
+
+    // Determine type/prison type automatically based on proposed UT No
+    let finalType = proposed.type || proposed.recordType;
+    if (!finalType || /\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(updatedUtNo) || /\bUT\b|UT/i.test(updatedUtNo)) {
+      if (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(updatedUtNo)) {
+        finalType = 'CT';
+      } else if (/\bUT\b|UT/i.test(updatedUtNo)) {
+        finalType = 'UT';
+      } else {
+        finalType = targetRecord.type || targetRecord.recordType || 'UT';
+      }
+    }
 
     const updatedObj = {
       pid: targetRecord.pid,
       name: proposed.name || targetRecord.name,
       father: proposed.father !== undefined ? proposed.father : targetRecord.father,
-      utNo: proposed.utNo !== undefined ? proposed.utNo : targetRecord.utNo,
+      utNo: updatedUtNo,
+      type: finalType,
+      recordType: finalType,
       aadharNo: proposed.aadharNo !== undefined ? proposed.aadharNo : targetRecord.aadharNo,
       date: proposed.date || targetRecord.date,
       remark: proposed.remark !== undefined ? proposed.remark : targetRecord.remark,

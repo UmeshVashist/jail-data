@@ -546,8 +546,19 @@ export default function DataRecords() {
                           type="button"
                           className="btn btn-sm btn-outline-primary p-1 px-2"
                           onClick={() => {
-                            if (isAdmin || rec.canEdit) setEditRecord(rec);
-                            else setReqEditRecord(rec);
+                            if (isAdmin || rec.canEdit) {
+                              setEditRecord(rec);
+                            } else {
+                              if (rec.hasPendingEditRequest) {
+                                showToast(`PID ${rec.pid} ki Edit Request pehle se pending hai.`, 'warning');
+                                return;
+                              }
+                              if (rec.hasPendingDeleteRequest) {
+                                showToast(`PID ${rec.pid} ki Delete Request pehle se pending hai. Ek PID par 1 request allow hai.`, 'warning');
+                                return;
+                              }
+                              setReqEditRecord(rec);
+                            }
                           }}
                           title={isAdmin || rec.canEdit ? 'Edit Record' : 'Request Record Edit'}
                         >
@@ -557,8 +568,19 @@ export default function DataRecords() {
                           type="button"
                           className="btn btn-sm btn-outline-danger p-1 px-2"
                           onClick={() => {
-                            if (isAdmin || rec.canDelete) setDelRecord(rec);
-                            else setReqDelRecord(rec);
+                            if (isAdmin || rec.canDelete) {
+                              setDelRecord(rec);
+                            } else {
+                              if (rec.hasPendingDeleteRequest) {
+                                showToast(`PID ${rec.pid} ki Delete Request pehle se pending hai.`, 'warning');
+                                return;
+                              }
+                              if (rec.hasPendingEditRequest) {
+                                showToast(`PID ${rec.pid} ki Edit Request pehle se pending hai. Ek PID par 1 request allow hai.`, 'warning');
+                                return;
+                              }
+                              setReqDelRecord(rec);
+                            }
                           }}
                           title={isAdmin || rec.canDelete ? 'Delete Record' : 'Request Record Deletion'}
                         >
