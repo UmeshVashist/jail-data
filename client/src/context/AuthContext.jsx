@@ -4,6 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
+import { translateToHindi } from '../utils/hindiTranslator';
 
 const AuthContext = createContext();
 
@@ -15,7 +16,8 @@ export function AuthProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const lastActivityRef = useRef(Date.now());
 
-  const showToast = useCallback((message, type = 'info') => {
+  const showToast = useCallback((rawMessage, type = 'info') => {
+    const message = translateToHindi(rawMessage);
     const id = Date.now() + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -73,7 +75,7 @@ export function AuthProvider({ children }) {
 
     const checkInterval = setInterval(async () => {
       if (Date.now() - lastActivityRef.current > INACTIVITY_TIMEOUT_MS) {
-        showToast('You have been logged out due to 15 minutes of inactivity.', 'warning');
+        showToast('15 मिनट तक कोई गतिविधि न होने के कारण आप स्वतः लॉग आउट हो गए हैं।', 'warning');
         try {
           await api.post('/api/auth/logout');
         } catch (e) {}
@@ -96,10 +98,10 @@ export function AuthProvider({ children }) {
     if (res && (res.success || userData)) {
       setUser(userData);
       lastActivityRef.current = Date.now();
-      showToast(res.message || `Welcome back, ${userData?.username || username}!`, 'success');
+      showToast(res.message || `वापसी पर स्वागत है, ${userData?.username || username}!`, 'success');
       return userData;
     }
-    throw new Error((res && res.message) || 'Invalid Username or Password.');
+    throw new Error((res && res.message) || 'अमान्य यूज़रनेम या पासवर्ड।');
   };
 
   const logout = async () => {
@@ -107,7 +109,7 @@ export function AuthProvider({ children }) {
       await api.post('/api/auth/logout');
     } catch (e) {}
     setUser(null);
-    showToast('Signed out successfully.', 'info');
+    showToast('सफलतापूर्वक साइन आउट हो गए।', 'info');
   };
 
   return (

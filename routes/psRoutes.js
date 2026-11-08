@@ -80,7 +80,7 @@ router.post('/', requireAdmin, async (req, res) => {
     const state = (req.body.state || '').trim().toUpperCase();
 
     if (!psName) {
-      return res.status(400).json({ success: false, message: 'Police Station (PS Name) is required.' });
+      return res.status(400).json({ success: false, message: 'थाने (PS) का नाम दर्ज करना आवश्यक है।' });
     }
 
     const newEntry = await addPSEntry({
@@ -93,11 +93,11 @@ router.post('/', requireAdmin, async (req, res) => {
 
     res.json({
       success: true,
-      message: `Police Station "${psName}" added successfully.`,
+      message: `थाना "${psName}" सफलतापूर्वक जोड़ा गया!`,
       data: newEntry
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error adding PS: ' + err.message });
+    res.status(500).json({ success: false, message: 'थाना जोड़ने में त्रुटि: ' + err.message });
   }
 });
 
@@ -110,7 +110,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const state = (req.body.state || '').trim().toUpperCase();
 
     if (!psName) {
-      return res.status(400).json({ success: false, message: 'Police Station (PS Name) is required.' });
+      return res.status(400).json({ success: false, message: 'थाने (PS) का नाम दर्ज करना आवश्यक है।' });
     }
 
     const updated = await updatePSEntry(id, {
@@ -121,16 +121,16 @@ router.put('/:id', requireAdmin, async (req, res) => {
     });
 
     if (!updated) {
-      return res.status(404).json({ success: false, message: 'Police Station entry not found.' });
+      return res.status(404).json({ success: false, message: 'थाना रिकॉर्ड नहीं मिला।' });
     }
 
     res.json({
       success: true,
-      message: `Police Station "${psName}" updated successfully.`,
+      message: `थाना "${psName}" सफलतापूर्वक अपडेट हो गया!`,
       data: updated
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error updating PS: ' + err.message });
+    res.status(500).json({ success: false, message: 'थाना अपडेट करने में त्रुटि: ' + err.message });
   }
 });
 
@@ -140,12 +140,12 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const deleted = await deletePSEntry(id);
     if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Police Station entry not found.' });
+      return res.status(404).json({ success: false, message: 'थाना रिकॉर्ड नहीं मिला।' });
     }
 
-    res.json({ success: true, message: 'Police Station deleted successfully.' });
+    res.json({ success: true, message: 'थाना सफलतापूर्वक डिलीट किया गया।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error deleting PS: ' + err.message });
+    res.status(500).json({ success: false, message: 'थाना डिलीट करने में त्रुटि: ' + err.message });
   }
 });
 
@@ -154,13 +154,13 @@ router.post('/bulk-delete', requireAdmin, async (req, res) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'No police station IDs provided for deletion.' });
+      return res.status(400).json({ success: false, message: 'डिलीट करने के लिए कोई थाना आईडी नहीं मिली।' });
     }
 
     const count = await batchDeletePSEntries(ids);
     res.json({
       success: true,
-      message: `Successfully deleted ${count} police station${count === 1 ? '' : 's'}.`,
+      message: `चयनित ${count} थाने सफलतापूर्वक डिलीट कर दिए गए!`,
       deletedCount: count
     });
   } catch (err) {

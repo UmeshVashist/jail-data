@@ -20,15 +20,15 @@ export default function SelfChangePasswordModal({ isOpen, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentPassword) {
-      showToast('Please enter your current password.', 'warning');
+      showToast('कृपया अपना वर्तमान पासवर्ड दर्ज करें।', 'warning');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      showToast('New password must be at least 6 characters long.', 'warning');
+      showToast('नया पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।', 'warning');
       return;
     }
     if (newPassword !== confirmPassword) {
-      showToast('New password and confirm password do not match.', 'danger');
+      showToast('नया पासवर्ड और कन्फर्म पासवर्ड मेल नहीं खाते।', 'danger');
       return;
     }
 
@@ -39,16 +39,16 @@ export default function SelfChangePasswordModal({ isOpen, onClose }) {
         newPassword
       });
       if (res && res.success) {
-        showToast(res.message || 'Password changed successfully!', 'success');
+        showToast(res.message || 'पासवर्ड सफलतापूर्वक बदल दिया गया!', 'success');
         onClose();
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        showToast(res.message || 'Could not change password.', 'danger');
+        showToast(res.message || 'पासवर्ड नहीं बदला जा सका।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Failed to change password.', 'danger');
+      showToast(err.message || 'पासवर्ड बदलने में विफलता।', 'danger');
     } finally {
       setLoading(false);
     }

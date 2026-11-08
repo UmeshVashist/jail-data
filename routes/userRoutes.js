@@ -37,12 +37,12 @@ router.post('/', async (req, res) => {
     const { username, password, role, importPermission, fullAccess, deleteRequestPermission, psListPermission, status } = req.body;
     const cleanUsername = (username || req.body.newUsername || '').trim();
 
-    if (!cleanUsername) return res.status(400).json({ success: false, message: 'Username is required.' });
-    if (!password) return res.status(400).json({ success: false, message: 'Password is required.' });
+    if (!cleanUsername) return res.status(400).json({ success: false, message: 'यूज़रनेम आवश्यक है।' });
+    if (!password) return res.status(400).json({ success: false, message: 'पासवर्ड आवश्यक है।' });
 
     const existingUser = await getUserByUsername(cleanUsername);
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Username already exists.' });
+      return res.status(400).json({ success: false, message: 'यह यूज़रनेम पहले से मौजूद है।' });
     }
 
     await createUser({
@@ -56,9 +56,9 @@ router.post('/', async (req, res) => {
       status: status || 'Active'
     });
 
-    res.json({ success: true, message: `User "${cleanUsername}" created successfully in Cloudflare!` });
+    res.json({ success: true, message: `यूज़र "${cleanUsername}" सफलतापूर्वक बनाया गया!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Create user error: ' + err.message });
+    res.status(500).json({ success: false, message: 'यूज़र बनाने में त्रुटि: ' + err.message });
   }
 });
 
@@ -69,7 +69,7 @@ router.put('/:id', async (req, res) => {
     const users = await getUsers();
     const targetUser = users.find(u => u.rowIndex === rowIndex);
 
-    if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!targetUser) return res.status(404).json({ success: false, message: 'यूज़र नहीं मिला।' });
 
     const { role, importPermission, fullAccess, deleteRequestPermission, psListPermission, status } = req.body;
 
@@ -82,9 +82,9 @@ router.put('/:id', async (req, res) => {
       status: status || targetUser.status
     });
 
-    res.json({ success: true, message: `User "${targetUser.username}" updated successfully!` });
+    res.json({ success: true, message: `यूज़र "${targetUser.username}" की अनुमतियाँ सफलतापूर्वक अपडेट हो गईं!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Update user error: ' + err.message });
+    res.status(500).json({ success: false, message: 'यूज़र अपडेट करने में त्रुटि: ' + err.message });
   }
 });
 
@@ -95,14 +95,14 @@ router.put('/:id/password', async (req, res) => {
     const { newPassword } = req.body;
 
     if (!newPassword || newPassword.trim() === '') {
-      return res.status(400).json({ success: false, message: 'New password cannot be empty.' });
+      return res.status(400).json({ success: false, message: 'नया पासवर्ड खाली नहीं हो सकता।' });
     }
 
     await updateUser(rowIndex, { password: newPassword });
 
-    res.json({ success: true, message: 'User password reset successfully in Cloudflare.' });
+    res.json({ success: true, message: 'यूज़र पासवर्ड सफलतापूर्वक रीसेट हो गया।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Reset password error: ' + err.message });
+    res.status(500).json({ success: false, message: 'पासवर्ड रीसेट करने में त्रुटि: ' + err.message });
   }
 });
 
@@ -113,9 +113,9 @@ router.patch('/:id/import-permission', async (req, res) => {
     const { enabled } = req.body;
 
     await updateUser(rowIndex, { importPermission: !!enabled });
-    res.json({ success: true, message: 'Import permission updated.' });
+    res.json({ success: true, message: 'इम्पोर्ट अनुमति अपडेट हो गई।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Toggle import permission error: ' + err.message });
+    res.status(500).json({ success: false, message: 'इम्पोर्ट अनुमति अपडेट त्रुटि: ' + err.message });
   }
 });
 
@@ -126,9 +126,9 @@ router.patch('/:id/full-access', async (req, res) => {
     const { enabled } = req.body;
 
     await updateUser(rowIndex, { fullAccess: !!enabled });
-    res.json({ success: true, message: 'Full access updated.' });
+    res.json({ success: true, message: 'पूर्ण अनुमति (Full Access) अपडेट हो गई।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Toggle full access error: ' + err.message });
+    res.status(500).json({ success: false, message: 'पूर्ण अनुमति अपडेट त्रुटि: ' + err.message });
   }
 });
 
@@ -139,9 +139,9 @@ router.patch('/:id/delete-request-permission', async (req, res) => {
     const { enabled } = req.body;
 
     await updateUser(rowIndex, { deleteRequestPermission: !!enabled });
-    res.json({ success: true, message: 'Delete request permission updated.' });
+    res.json({ success: true, message: 'डिलीट रिक्वेस्ट अनुमति अपडेट हो गई।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Toggle delete request permission error: ' + err.message });
+    res.status(500).json({ success: false, message: 'डिलीट रिक्वेस्ट अनुमति अपडेट त्रुटि: ' + err.message });
   }
 });
 
@@ -152,9 +152,9 @@ router.patch('/:id/ps-permission', async (req, res) => {
     const isEnabled = req.body.enabled !== undefined ? req.body.enabled : (req.body.psListPermission !== undefined ? req.body.psListPermission : false);
 
     await updateUser(rowIndex, { psListPermission: !!isEnabled });
-    res.json({ success: true, message: 'PS List permission updated.' });
+    res.json({ success: true, message: 'थाना सूची अनुमति अपडेट हो गई।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Toggle PS List permission error: ' + err.message });
+    res.status(500).json({ success: false, message: 'थाना अनुमति अपडेट त्रुटि: ' + err.message });
   }
 });
 
@@ -165,9 +165,9 @@ router.patch('/:id/status', async (req, res) => {
     const { status } = req.body;
 
     await updateUser(rowIndex, { status: status || 'Active' });
-    res.json({ success: true, message: 'User status updated.' });
+    res.json({ success: true, message: 'यूज़र स्थिति अपडेट हो गई।' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Toggle status error: ' + err.message });
+    res.status(500).json({ success: false, message: 'यूज़र स्थिति अपडेट त्रुटि: ' + err.message });
   }
 });
 
@@ -178,16 +178,16 @@ router.delete('/:id', async (req, res) => {
     const users = await getUsers();
     const targetUser = users.find(u => u.rowIndex === rowIndex);
 
-    if (!targetUser) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!targetUser) return res.status(404).json({ success: false, message: 'यूज़र नहीं मिला।' });
 
     if (targetUser.username.toLowerCase() === req.user.username.toLowerCase()) {
-      return res.status(400).json({ success: false, message: 'You cannot delete your own account while logged in.' });
+      return res.status(400).json({ success: false, message: 'आप लॉग इन रहते हुए अपना खाता डिलीट नहीं कर सकते।' });
     }
 
     await deleteUser(rowIndex, targetUser.username);
-    res.json({ success: true, message: `User "${targetUser.username}" deleted.` });
+    res.json({ success: true, message: `यूज़र "${targetUser.username}" सफलतापूर्वक डिलीट कर दिया गया।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Delete user error: ' + err.message });
+    res.status(500).json({ success: false, message: 'यूज़र डिलीट करने में त्रुटि: ' + err.message });
   }
 });
 

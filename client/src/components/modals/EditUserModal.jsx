@@ -44,14 +44,14 @@ export default function EditUserModal({ isOpen, onClose, targetUser, onUserUpdat
       });
 
       if (res && res.success) {
-        showToast(res.message || 'User permissions updated successfully!', 'success');
+        showToast(res.message || 'यूज़र अनुमतियाँ सफलतापूर्वक अपडेट की गईं!', 'success');
         onClose();
         if (onUserUpdated) onUserUpdated(res.data);
       } else {
-        showToast(res.message || 'Failed to update user.', 'danger');
+        showToast(res.message || 'यूज़र अपडेट करने में विफलता।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Error updating user.', 'danger');
+      showToast(err.message || 'यूज़र अपडेट करने में त्रुटि आई।', 'danger');
     } finally {
       setLoading(false);
     }

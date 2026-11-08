@@ -30,7 +30,7 @@ export default function UserManagement() {
         setUsers(res.data || []);
       }
     } catch (err) {
-      showToast('Error loading users: ' + err.message, 'danger');
+      showToast('यूज़र्स लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     } finally {
       setLoading(false);
     }
@@ -44,27 +44,27 @@ export default function UserManagement() {
     return (
       <div className="alert alert-danger p-4 rounded-3 text-center">
         <i className="bi bi-shield-lock-fill fs-2 d-block mb-2"></i>
-        <h5>Admin Access Required</h5>
-        <p className="small mb-0">Only administrators have permission to manage portal user accounts.</p>
+        <h5>एडमिन अनुमति आवश्यक है</h5>
+        <p className="small mb-0">केवल एडमिनिस्ट्रेटर को ही यूज़र खाते प्रबंधित करने की अनुमति है।</p>
       </div>
     );
   }
 
   const handleDeleteUser = async (u) => {
-    if (!window.confirm(`Are you sure you want to permanently delete user "${u.username}"?`)) {
+    if (!window.confirm(`क्या आप वाकई यूज़र "${u.username}" को हमेशा के लिए डिलीट करना चाहते हैं?`)) {
       return;
     }
 
     try {
       const res = await api.delete(`/api/users/${u.id}`);
       if (res && res.success) {
-        showToast(res.message || `User "${u.username}" deleted.`, 'success');
+        showToast(res.message || `यूज़र "${u.username}" सफलतापूर्वक डिलीट कर दिया गया।`, 'success');
         fetchUsers();
       } else {
-        showToast(res.message || 'Failed to delete user.', 'danger');
+        showToast(res.message || 'यूज़र डिलीट करने में विफलता।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Error deleting user.', 'danger');
+      showToast(err.message || 'यूज़र डिलीट करने में त्रुटि आई।', 'danger');
     }
   };
 

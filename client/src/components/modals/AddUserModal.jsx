@@ -24,7 +24,7 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      showToast('Username and password are required.', 'warning');
+      showToast('यूज़रनेम और पासवर्ड दोनों आवश्यक हैं।', 'warning');
       return;
     }
 
@@ -42,7 +42,7 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }) {
       });
 
       if (res && res.success) {
-        showToast(res.message || 'User created successfully!', 'success');
+        showToast(res.message || 'नया यूज़र सफलतापूर्वक बनाया गया!', 'success');
         setUsername('');
         setPassword('');
         setRole('Add');
@@ -54,10 +54,10 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }) {
         onClose();
         if (onUserAdded) onUserAdded(res.data);
       } else {
-        showToast(res.message || 'Failed to create user.', 'danger');
+        showToast(res.message || 'यूज़र बनाने में विफलता।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Error creating user.', 'danger');
+      showToast(err.message || 'यूज़र बनाने में त्रुटि आई।', 'danger');
     } finally {
       setLoading(false);
     }

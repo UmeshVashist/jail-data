@@ -26,14 +26,14 @@ export default function DeleteRecordModal({ isOpen, onClose, record, onRecordDel
     try {
       const res = await api.delete(`/api/records/${record.id || record.rowIndex}`);
       if (res && res.success) {
-        showToast(res.message || 'Record deleted successfully!', 'success');
+        showToast(res.message || 'रिकॉर्ड सफलतापूर्वक डिलीट कर दिया गया!', 'success');
         onClose();
         if (onRecordDeleted) onRecordDeleted(record);
       } else {
-        showToast(res.message || 'Failed to delete record.', 'danger');
+        showToast(res.message || 'रिकॉर्ड डिलीट करने में विफलता।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Error deleting record.', 'danger');
+      showToast(err.message || 'रिकॉर्ड डिलीट करने में त्रुटि आई।', 'danger');
     } finally {
       setLoading(false);
     }

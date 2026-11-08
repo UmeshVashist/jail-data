@@ -9,7 +9,7 @@ const { getUserByUsername } = require('../config/cloudflareStorage');
  */
 async function requireAuth(req, res, next) {
   if (!req.session || !req.session.user) {
-    return res.status(401).json({ success: false, message: 'Unauthorized session. Please log in.' });
+    return res.status(401).json({ success: false, message: 'सत्र समाप्त हो गया है। कृपया पुनः लॉगिन करें।' });
   }
 
   try {
@@ -17,13 +17,13 @@ async function requireAuth(req, res, next) {
     const freshUser = await getUserByUsername(req.session.user.username);
     if (!freshUser || freshUser.status !== 'Active') {
       req.session = null;
-      return res.status(401).json({ success: false, message: 'Account is deactivated or invalid.' });
+      return res.status(401).json({ success: false, message: 'खाता निष्क्रिय या अमान्य है। कृपया एडमिन से संपर्क करें।' });
     }
 
     req.user = freshUser;
     next();
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Auth middleware error: ' + err.message });
+    return res.status(500).json({ success: false, message: 'प्रमाणीकरण त्रुटि: ' + err.message });
   }
 }
 
@@ -32,7 +32,7 @@ async function requireAuth(req, res, next) {
  */
 function requireAdmin(req, res, next) {
   if (!req.user || String(req.user.role || '').trim().toLowerCase() !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied. Admin privileges required.' });
+    return res.status(403).json({ success: false, message: 'पहुँच अस्वीकृत। इसके लिए एडमिन अनुमति आवश्यक है।' });
   }
   next();
 }
@@ -42,7 +42,7 @@ function requireAdmin(req, res, next) {
  */
 function requireImportPermission(req, res, next) {
   if (!req.user || req.user.status !== 'Active') {
-    return res.status(403).json({ success: false, message: 'Access denied.' });
+    return res.status(403).json({ success: false, message: 'पहुँच अस्वीकृत।' });
   }
 
   if (req.user.role === 'Admin') return next();
@@ -50,7 +50,7 @@ function requireImportPermission(req, res, next) {
     return next();
   }
 
-  return res.status(403).json({ success: false, message: 'Import permission denied. Contact your Admin.' });
+  return res.status(403).json({ success: false, message: 'इम्पोर्ट की अनुमति अस्वीकृत। कृपया अपने एडमिन से संपर्क करें।' });
 }
 
 /**
@@ -103,14 +103,14 @@ function canModifyRecord(user, record) {
  */
 function requireDeleteRequestPermission(req, res, next) {
   if (!req.user || req.user.status !== 'Active') {
-    return res.status(403).json({ success: false, message: 'Access denied.' });
+    return res.status(403).json({ success: false, message: 'पहुँच अस्वीकृत।' });
   }
 
   if (req.user.role === 'Admin' || req.user.deleteRequestPermission) {
     return next();
   }
 
-  return res.status(403).json({ success: false, message: 'Delete request management permission denied.' });
+  return res.status(403).json({ success: false, message: 'डिलीट रिक्वेस्ट प्रबंधन की अनुमति अस्वीकृत।' });
 }
 
 /**
@@ -118,7 +118,7 @@ function requireDeleteRequestPermission(req, res, next) {
  */
 function requirePSListPermission(req, res, next) {
   if (!req.user || req.user.status !== 'Active') {
-    return res.status(403).json({ success: false, message: 'Access denied.' });
+    return res.status(403).json({ success: false, message: 'पहुँच अस्वीकृत।' });
   }
 
   const role = String(req.user.role || '').trim().toLowerCase();
@@ -126,7 +126,7 @@ function requirePSListPermission(req, res, next) {
     return next();
   }
 
-  return res.status(403).json({ success: false, message: 'PS List permission denied. Contact your Admin.' });
+  return res.status(403).json({ success: false, message: 'थाना सूची (PS List) की अनुमति अस्वीकृत। कृपया अपने एडमिन से संपर्क करें।' });
 }
 
 module.exports = {

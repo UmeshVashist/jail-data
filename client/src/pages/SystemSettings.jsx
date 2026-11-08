@@ -36,7 +36,7 @@ export default function SystemSettings() {
         setDeleteOptions(delRes.data);
       }
     } catch (err) {
-      showToast('Error loading system settings: ' + err.message, 'danger');
+      showToast('सिस्टम सेटिंग्स लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,8 @@ export default function SystemSettings() {
     return (
       <div className="alert alert-danger p-4 rounded-3 text-center">
         <i className="bi bi-shield-lock-fill fs-2 d-block mb-2"></i>
-        <h5>Admin Access Required</h5>
-        <p className="small mb-0">Only administrators have permission to access portal system settings.</p>
+        <h5>एडमिन अनुमति आवश्यक है</h5>
+        <p className="small mb-0">केवल एडमिनिस्ट्रेटर को ही सिस्टम सेटिंग्स में बदलाव करने की अनुमति है।</p>
       </div>
     );
   }
@@ -65,10 +65,10 @@ export default function SystemSettings() {
       });
       if (res && res.success) {
         setAadharMandatory(newVal);
-        showToast(`Mandatory Aadhar enforcement ${newVal ? 'Enabled' : 'Disabled'}.`, 'success');
+        showToast(`अनिवार्य आधार सत्यापन ${newVal ? 'सक्षम (Enabled)' : 'अक्षम (Disabled)'} कर दिया गया।`, 'success');
       }
     } catch (err) {
-      showToast('Error updating Aadhar setting: ' + err.message, 'danger');
+      showToast('आधार सेटिंग अपडेट करने में त्रुटि: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
@@ -83,13 +83,13 @@ export default function SystemSettings() {
         disableAadhar: newRemarkDisableAadhar
       });
       if (res && res.success) {
-        showToast(`Remark option "${newRemark}" added!`, 'success');
+        showToast(`रिमार्क विकल्प "${newRemark}" जोड़ दिया गया!`, 'success');
         setNewRemark('');
         setNewRemarkDisableAadhar(false);
         fetchSettings();
       }
     } catch (err) {
-      showToast('Error adding remark option: ' + err.message, 'danger');
+      showToast('रिमार्क विकल्प जोड़ने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
@@ -102,29 +102,29 @@ export default function SystemSettings() {
         disableAadhar: newVal
       });
       if (res && res.success) {
-        showToast(`Aadhar requirement updated for "${val}".`, 'success');
+        showToast(`"${val}" के लिए आधार अनिवार्यता सेटिंग अपडेट हो गई।`, 'success');
         fetchSettings();
       }
     } catch (err) {
-      showToast('Error updating remark option: ' + err.message, 'danger');
+      showToast('रिमार्क विकल्प अपडेट करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
   // Delete Remark Option
   const handleDeleteRemark = async (opt) => {
     const val = typeof opt === 'object' ? opt.optionValue : opt;
-    if (!window.confirm(`Delete remark option "${val}"?`)) return;
+    if (!window.confirm(`क्या आप वाकई रिमार्क विकल्प "${val}" को हटाना चाहते हैं?`)) return;
 
     try {
       const res = await api.delete('/api/records/remark-options', {
         optionValue: val
       });
       if (res && res.success) {
-        showToast(`Remark option "${val}" deleted.`, 'info');
+        showToast(`रिमार्क विकल्प "${val}" हटा दिया गया।`, 'info');
         fetchSettings();
       }
     } catch (err) {
-      showToast('Error deleting remark option: ' + err.message, 'danger');
+      showToast('रिमार्क विकल्प हटाने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
@@ -138,30 +138,30 @@ export default function SystemSettings() {
         optionValue: newDeleteOption.trim()
       });
       if (res && res.success) {
-        showToast(`Delete reason "${newDeleteOption}" added!`, 'success');
+        showToast(`डिलीट कारण "${newDeleteOption}" जोड़ दिया गया!`, 'success');
         setNewDeleteOption('');
         fetchSettings();
       }
     } catch (err) {
-      showToast('Error adding delete option: ' + err.message, 'danger');
+      showToast('डिलीट कारण जोड़ने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
   // Delete Delete Option
   const handleDeleteDeleteOption = async (opt) => {
     const val = typeof opt === 'object' ? opt.optionValue : opt;
-    if (!window.confirm(`Delete reason option "${val}"?`)) return;
+    if (!window.confirm(`क्या आप वाकई डिलीट कारण विकल्प "${val}" को हटाना चाहते हैं?`)) return;
 
     try {
       const res = await api.delete('/api/records/delete-options', {
         optionValue: val
       });
       if (res && res.success) {
-        showToast(`Delete reason "${val}" deleted.`, 'info');
+        showToast(`डिलीट कारण "${val}" हटा दिया गया।`, 'info');
         fetchSettings();
       }
     } catch (err) {
-      showToast('Error deleting delete reason: ' + err.message, 'danger');
+      showToast('डिलीट कारण हटाने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     }
   };
 
