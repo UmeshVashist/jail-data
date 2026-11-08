@@ -43,7 +43,7 @@ function getFormattedTime(d = new Date()) {
 router.post('/', async (req, res) => {
   try {
     if (req.user.role === 'View') {
-      return res.status(403).json({ success: false, message: 'View users cannot send delete requests.' });
+      return res.status(403).json({ success: false, message: 'View उपयोगकर्ता डिलीट अनुरोध नहीं भेज सकते हैं।' });
     }
 
     const { recordId, reason } = req.body;
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
     const targetRecord = records.find(r => r.id === targetRecordId || r.rowIndex === targetRecordId);
 
     if (!targetRecord) {
-      return res.status(404).json({ success: false, message: 'Target record not found.' });
+      return res.status(404).json({ success: false, message: 'लक्षित रिकॉर्ड नहीं मिला।' });
     }
 
     // Check if ANY pending request (Delete OR Edit) already exists for this record/PID
@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
     if (existingPendingDelete) {
       return res.status(400).json({ 
         success: false, 
-        message: `Is PID (${targetRecord.pid}) ki Delete Request pehle se pending hai. Approval ka wait karein.` 
+        message: `इस PID (${targetRecord.pid}) का डिलीट अनुरोध पहले से पेंडिंग है। कृपया एडमिन अप्रूवल का इंतजार करें।` 
       });
     }
 
@@ -80,7 +80,7 @@ router.post('/', async (req, res) => {
     if (existingPendingEdit) {
       return res.status(400).json({ 
         success: false, 
-        message: `Is PID (${targetRecord.pid}) ki Edit Request pehle se pending hai. Ek PID ke liye ek waqt me sirf 1 request bheji ja sakti hai.` 
+        message: `इस PID (${targetRecord.pid}) का एडिट अनुरोध पहले से पेंडिंग है। एक PID के लिए एक समय में सिर्फ 1 अनुरोध भेजा जा सकता है।` 
       });
     }
 
@@ -101,9 +101,9 @@ router.post('/', async (req, res) => {
       reason: (reason || '').toString().trim()
     });
 
-    res.json({ success: true, message: `Delete request sent successfully for PID ${targetRecord.pid}!` });
+    res.json({ success: true, message: `PID ${targetRecord.pid} के लिए डिलीट अनुरोध सफलतापूर्वक भेज दिया गया!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Send delete request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'डिलीट अनुरोध भेजने में त्रुटि: ' + err.message });
   }
 });
 
@@ -155,18 +155,26 @@ router.get('/my-requests', async (req, res) => {
 
 // Approve delete request (Supports both POST and PUT)
 // Soft-deletes record from active view and sets status to Approved (keeps record for admin permanent deletion later)
+// Approve delete request (Supports both POST and PUT)
+// Soft-deletes record from active view and sets status to Approved (keeps record for admin permanent deletion later)
 const handleApproveDelete = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getDeleteRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Delete request not found.' });
+      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
     // Soft delete the record so it is hidden from active Data Records/Dashboard, but retained in database
@@ -182,57 +190,74 @@ const handleApproveDelete = async (req, res) => {
     }
 
     // Update request status to Approved
-    await updateDeleteRequestStatus(requestId, 'Approved', req.user.username);
+    await updateDeleteRequestStatus(targetReq.id || requestId, 'Approved', req.user.username);
 
     res.json({ 
       success: true, 
-      message: `Delete request approved for PID ${targetReq.pid}. Record moved to Approved Delete list (Admin can permanently delete it later).` 
+      message: `PID ${targetReq.pid} के लिए डिलीट अनुरोध स्वीकृत किया गया। रिकॉर्ड अप्रूव्ड लिस्ट में सुरक्षित है (एडमिन इसे बाद में स्थायी डिलीट या रीस्टोर कर सकते हैं)।` 
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Approve delete request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'डिलीट अनुरोध स्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
 router.put('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
 
-// DELETE /api/delete-requests/:id/permanent - Permanently purge record from database (Admin Only)
-router.delete('/:id/permanent', requireAdmin, async (req, res) => {
+// Single Permanent Delete (Admin Only) - Supports DELETE, POST, PUT
+const handlePermanentDeleteSingle = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getDeleteRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.id) === String(rawId) || 
+      String(r.pid) === String(rawId) ||
+      String(r.recordId) === String(rawId)
+    );
 
-    if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Delete request not found.' });
-    }
-
-    // Find and permanently purge the record from database
     const records = await getRecords(true);
     const targetRecord = records.find(r => 
-      r.id === parseInt(targetReq.recordId, 10) || 
-      r.rowIndex === parseInt(targetReq.recordId, 10) || 
-      (r.pid && String(r.pid) === String(targetReq.pid))
+      (targetReq && (
+        r.id === parseInt(targetReq.recordId, 10) || 
+        r.rowIndex === parseInt(targetReq.recordId, 10) || 
+        (r.pid && String(r.pid) === String(targetReq.pid))
+      )) ||
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.pid) === String(rawId)
     );
 
     if (targetRecord) {
       await deleteRecord(targetRecord.id || targetRecord.rowIndex);
     }
 
-    // Delete the delete request itself
-    await deleteDeleteRequest(requestId);
+    if (targetReq) {
+      await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+    } else if (!isNaN(requestId)) {
+      await deleteDeleteRequest(requestId).catch(() => {});
+    }
 
-    res.json({ success: true, message: `Record PID ${targetReq.pid} permanently deleted from database.` });
+    const displayPid = targetReq ? targetReq.pid : (targetRecord ? targetRecord.pid : rawId);
+    res.json({ success: true, message: `रिकॉर्ड PID ${displayPid} डेटाबेस से हमेशा के लिए सफलतापूर्वक डिलीट कर दिया गया है।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Permanent delete error: ' + err.message });
+    res.status(500).json({ success: false, message: 'रिकॉर्ड स्थायी रूप से डिलीट करने में त्रुटि: ' + err.message });
   }
-});
+};
+router.delete('/:id/permanent', requireAdmin, handlePermanentDeleteSingle);
+router.post('/:id/permanent', requireAdmin, handlePermanentDeleteSingle);
+router.put('/:id/permanent', requireAdmin, handlePermanentDeleteSingle);
 
-// POST /api/delete-requests/bulk-permanent - Bulk permanently delete selected records from database (Admin Only)
-router.post('/bulk-permanent', requireAdmin, async (req, res) => {
+// Bulk Permanent Delete (Admin Only) - Supports POST, DELETE, PUT
+const handleBulkPermanentDelete = async (req, res) => {
   try {
-    const { ids } = req.body;
+    let ids = req.body.ids || req.body.requestIds || req.query.ids;
+    if (typeof ids === 'string') {
+      try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(',').map(s => s.trim()); }
+    }
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'No request IDs provided.' });
+      return res.status(400).json({ success: false, message: 'कोई रिकॉर्ड आईडी प्रदान नहीं की गई।' });
     }
 
     const allRequests = await getDeleteRequests();
@@ -241,48 +266,74 @@ router.post('/bulk-permanent', requireAdmin, async (req, res) => {
 
     for (const idStr of ids) {
       const requestId = parseInt(idStr, 10);
-      const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
-      if (targetReq) {
-        const targetRecord = records.find(r => 
+      const targetReq = allRequests.find(r => 
+        r.id === requestId || 
+        r.rowIndex === requestId || 
+        String(r.id) === String(idStr) ||
+        String(r.pid) === String(idStr) ||
+        String(r.recordId) === String(idStr)
+      );
+
+      const targetRecord = records.find(r => 
+        (targetReq && (
           r.id === parseInt(targetReq.recordId, 10) || 
           r.rowIndex === parseInt(targetReq.recordId, 10) || 
           (r.pid && String(r.pid) === String(targetReq.pid))
-        );
-        if (targetRecord) {
-          await deleteRecord(targetRecord.id || targetRecord.rowIndex);
-        }
-        await deleteDeleteRequest(requestId);
-        deletedCount++;
+        )) ||
+        r.id === requestId || 
+        r.rowIndex === requestId || 
+        String(r.pid) === String(idStr)
+      );
+
+      if (targetRecord) {
+        await deleteRecord(targetRecord.id || targetRecord.rowIndex);
       }
+      if (targetReq) {
+        await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+      } else if (!isNaN(requestId)) {
+        await deleteDeleteRequest(requestId).catch(() => {});
+      }
+      deletedCount++;
     }
 
-    res.json({ success: true, message: `${deletedCount} record(s) permanently deleted from database.` });
+    res.json({ success: true, message: `चयनित ${deletedCount} रिकॉर्ड डेटाबेस से हमेशा के लिए सफलतापूर्वक डिलीट कर दिए गए हैं।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Bulk permanent delete error: ' + err.message });
+    res.status(500).json({ success: false, message: 'बल्क डिलीट में त्रुटि: ' + err.message });
   }
-});
+};
+router.post('/bulk-permanent', requireAdmin, handleBulkPermanentDelete);
+router.delete('/bulk-permanent', requireAdmin, handleBulkPermanentDelete);
+router.put('/bulk-permanent', requireAdmin, handleBulkPermanentDelete);
 
-// POST /api/delete-requests/:id/restore - Restore soft-deleted record back to active records (Admin Only)
-router.post('/:id/restore', requireAdmin, async (req, res) => {
+// Single Restore back to active records (Admin Only) - Supports POST, PUT, GET
+const handleRestoreSingle = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getDeleteRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
-
-    if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Delete request not found.' });
-    }
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId) ||
+      String(r.recordId) === String(rawId)
+    );
 
     const records = await getRecords(true);
     const targetRecord = records.find(r => 
-      r.id === parseInt(targetReq.recordId, 10) || 
-      r.rowIndex === parseInt(targetReq.recordId, 10) || 
-      (r.pid && String(r.pid) === String(targetReq.pid))
+      (targetReq && (
+        r.id === parseInt(targetReq.recordId, 10) || 
+        r.rowIndex === parseInt(targetReq.recordId, 10) || 
+        (r.pid && String(r.pid) === String(targetReq.pid))
+      )) ||
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.pid) === String(rawId)
     );
 
     if (targetRecord) {
       await restoreRecord(targetRecord.id || targetRecord.rowIndex);
-    } else {
+    } else if (targetReq) {
       // Re-add to main data records if it was previously hard deleted
       await addRecord({
         pid: targetReq.pid,
@@ -298,21 +349,31 @@ router.post('/:id/restore', requireAdmin, async (req, res) => {
       });
     }
 
-    // Remove the delete request since record is restored back to active state
-    await deleteDeleteRequest(requestId);
+    if (targetReq) {
+      await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+    } else if (!isNaN(requestId)) {
+      await deleteDeleteRequest(requestId).catch(() => {});
+    }
 
-    res.json({ success: true, message: `Record PID ${targetReq.pid} restored back to main active data records successfully.` });
+    const displayPid = targetReq ? targetReq.pid : (targetRecord ? targetRecord.pid : rawId);
+    res.json({ success: true, message: `रिकॉर्ड PID ${displayPid} मुख्य सक्रिय डेटा में सफलतापूर्वक रीस्टोर कर दिया गया है।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Restore record error: ' + err.message });
+    res.status(500).json({ success: false, message: 'रिकॉर्ड रीस्टोर करने में त्रुटि: ' + err.message });
   }
-});
+};
+router.post('/:id/restore', requireAdmin, handleRestoreSingle);
+router.put('/:id/restore', requireAdmin, handleRestoreSingle);
+router.get('/:id/restore', requireAdmin, handleRestoreSingle);
 
-// POST /api/delete-requests/bulk-restore - Bulk restore records back to active records (Admin Only)
-router.post('/bulk-restore', requireAdmin, async (req, res) => {
+// Bulk Restore back to active records (Admin Only) - Supports POST, PUT
+const handleBulkRestore = async (req, res) => {
   try {
-    const { ids } = req.body;
+    let ids = req.body.ids || req.body.requestIds || req.query.ids;
+    if (typeof ids === 'string') {
+      try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(',').map(s => s.trim()); }
+    }
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'No request IDs provided.' });
+      return res.status(400).json({ success: false, message: 'कोई रिकॉर्ड आईडी प्रदान नहीं की गई।' });
     }
 
     const allRequests = await getDeleteRequests();
@@ -321,60 +382,84 @@ router.post('/bulk-restore', requireAdmin, async (req, res) => {
 
     for (const idStr of ids) {
       const requestId = parseInt(idStr, 10);
-      const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
-      if (targetReq) {
-        const targetRecord = records.find(r => 
+      const targetReq = allRequests.find(r => 
+        r.id === requestId || 
+        r.rowIndex === requestId || 
+        String(r.id) === String(idStr) ||
+        String(r.pid) === String(idStr) ||
+        String(r.recordId) === String(idStr)
+      );
+
+      const targetRecord = records.find(r => 
+        (targetReq && (
           r.id === parseInt(targetReq.recordId, 10) || 
           r.rowIndex === parseInt(targetReq.recordId, 10) || 
           (r.pid && String(r.pid) === String(targetReq.pid))
-        );
-        if (targetRecord) {
-          await restoreRecord(targetRecord.id || targetRecord.rowIndex);
-        } else {
-          await addRecord({
-            pid: targetReq.pid,
-            name: targetReq.name,
-            father: targetReq.father || '',
-            utNo: targetReq.utNo || '',
-            aadharNo: targetReq.aadharNo || '#N/A',
-            date: targetReq.date || getFormattedDate(),
-            remark: targetReq.remark || 'Restored',
-            createdBy: targetReq.requestedBy || req.user.username,
-            createdDate: getFormattedDate(),
-            createdTime: getFormattedTime()
-          });
-        }
-        await deleteDeleteRequest(requestId);
-        restoredCount++;
+        )) ||
+        r.id === requestId || 
+        r.rowIndex === requestId || 
+        String(r.pid) === String(idStr)
+      );
+
+      if (targetRecord) {
+        await restoreRecord(targetRecord.id || targetRecord.rowIndex);
+      } else if (targetReq) {
+        await addRecord({
+          pid: targetReq.pid,
+          name: targetReq.name,
+          father: targetReq.father || '',
+          utNo: targetReq.utNo || '',
+          aadharNo: targetReq.aadharNo || '#N/A',
+          date: targetReq.date || getFormattedDate(),
+          remark: targetReq.remark || 'Restored',
+          createdBy: targetReq.requestedBy || req.user.username,
+          createdDate: getFormattedDate(),
+          createdTime: getFormattedTime()
+        });
       }
+
+      if (targetReq) {
+        await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+      } else if (!isNaN(requestId)) {
+        await deleteDeleteRequest(requestId).catch(() => {});
+      }
+      restoredCount++;
     }
 
-    res.json({ success: true, message: `${restoredCount} record(s) restored back to active records.` });
+    res.json({ success: true, message: `चयनित ${restoredCount} रिकॉर्ड मुख्य सक्रिय डेटा में सफलतापूर्वक रीस्टोर कर दिए गए हैं।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Bulk restore error: ' + err.message });
+    res.status(500).json({ success: false, message: 'बल्क रीस्टोर में त्रुटि: ' + err.message });
   }
-});
+};
+router.post('/bulk-restore', requireAdmin, handleBulkRestore);
+router.put('/bulk-restore', requireAdmin, handleBulkRestore);
 
-// Reject / Cancel delete request by admin/permitted user (Supports both POST and PUT)
+// Reject delete request by admin/permitted user (Supports both POST and PUT)
 const handleRejectDelete = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getDeleteRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Delete request not found.' });
+      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
-    await updateDeleteRequestStatus(requestId, 'Rejected', req.user.username);
+    await updateDeleteRequestStatus(targetReq.id || requestId, 'Rejected', req.user.username);
 
-    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} rejected.` });
+    res.json({ success: true, message: `PID ${targetReq.pid} के लिए डिलीट अनुरोध अस्वीकृत (Reject) कर दिया गया।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Reject delete request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'डिलीट अनुरोध अस्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
@@ -383,28 +468,34 @@ router.put('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
 // Cancel / Withdraw pending delete request by the user who sent it
 const handleWithdrawDelete = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getDeleteRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId || 
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Delete request not found.' });
+      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
     }
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'You can only withdraw your own delete requests.' });
+      return res.status(403).json({ success: false, message: 'आप केवल अपने द्वारा भेजे गए डिलीट अनुरोध को ही वापस (Withdraw) ले सकते हैं।' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `Cannot withdraw request that has already been ${targetReq.status.toLowerCase()}.` });
+      return res.status(400).json({ success: false, message: `जो अनुरोध पहले से ${targetReq.status} हो चुका है, उसे वापस नहीं लिया जा सकता।` });
     }
 
-    await deleteDeleteRequest(requestId);
+    await deleteDeleteRequest(targetReq.id || requestId);
 
-    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} withdrawn successfully.` });
+    res.json({ success: true, message: `PID ${targetReq.pid} के लिए भेजा गया डिलीट अनुरोध सफलतापूर्वक वापस (Withdraw) ले लिया गया है।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Withdraw delete request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'अनुरोध वापस लेने में त्रुटि: ' + err.message });
   }
 };
 router.delete('/:id/cancel', handleWithdrawDelete);

@@ -17,8 +17,8 @@ export default function MyRequests() {
   const [loading, setLoading] = useState(true);
   const [requestOptionOpen, setRequestOptionOpen] = useState(false);
 
-  const fetchMyRequests = useCallback(async () => {
-    setLoading(true);
+  const fetchMyRequests = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [editRes, delRes, listRes] = await Promise.all([
         api.get('/api/edit-requests').catch(() => ({ data: [] })),
@@ -43,9 +43,9 @@ export default function MyRequests() {
 
       setRequests([...editItems, ...delItems, ...listItems]);
     } catch (err) {
-      showToast('Error loading your requests: ' + err.message, 'danger');
+      showToast('आपके अनुरोध लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [user, showToast]);
 
@@ -55,8 +55,8 @@ export default function MyRequests() {
 
   // Withdraw pending request by user
   const handleWithdrawRequest = async (req) => {
-    const targetLabel = req.pid ? `PID ${req.pid}${req.name ? ` (${req.name})` : ''}` : `Option "${req.optionValue || ''}"`;
-    if (!window.confirm(`Are you sure you want to WITHDRAW your ${req.requestType} request for ${targetLabel}?`)) {
+    const targetLabel = req.pid ? `PID ${req.pid}${req.name ? ` (${req.name})` : ''}` : `विकल्प "${req.optionValue || ''}"`;
+    if (!window.confirm(`क्या आप वाकई ${targetLabel} के लिए भेजा गया अपना ${req.requestType} अनुरोध वापस (Withdraw) लेना चाहते हैं?`)) {
       return;
     }
 
@@ -71,14 +71,14 @@ export default function MyRequests() {
 
       const res = await api.delete(url);
       if (res && res.success) {
-        showToast(res.message || `${req.requestType} request withdrawn successfully.`, 'info');
+        showToast(res.message || `${req.requestType} अनुरोध सफलतापूर्वक वापस (Withdraw) ले लिया गया है।`, 'info');
       } else {
-        showToast(res?.message || 'Failed to withdraw request.', 'danger');
-        fetchMyRequests();
+        showToast(res?.message || 'अनुरोध वापस लेने में विफलता।', 'danger');
+        fetchMyRequests(true);
       }
     } catch (err) {
-      showToast('Error withdrawing request: ' + err.message, 'danger');
-      fetchMyRequests();
+      showToast('अनुरोध वापस लेने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
+      fetchMyRequests(true);
     }
   };
 

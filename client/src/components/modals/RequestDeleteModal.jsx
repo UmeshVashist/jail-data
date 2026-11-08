@@ -36,7 +36,7 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
 
     const finalReason = selectedReason === 'Other' ? customReason.trim() : (selectedReason || customReason.trim());
     if (!finalReason) {
-      showToast('Please select or specify a reason for deletion.', 'warning');
+      showToast('कृपया डिलीट करने का कारण चुनें या दर्ज करें।', 'warning');
       return;
     }
 
@@ -48,14 +48,14 @@ export default function RequestDeleteModal({ isOpen, onClose, record, onRequestS
       });
 
       if (res && res.success) {
-        showToast(res.message || 'Delete request submitted to Admin for approval!', 'success');
+        showToast(res.message || 'डिलीट अनुरोध सफलतापूर्वक एडमिन को भेज दिया गया!', 'success');
         onClose();
         if (onRequestSubmitted) onRequestSubmitted(res.data);
       } else {
-        showToast(res.message || 'Failed to submit delete request.', 'danger');
+        showToast(res.message || 'डिलीट अनुरोध भेजने में विफलता।', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'Error submitting delete request.', 'danger');
+      showToast(err.message || 'डिलीट अनुरोध भेजने में त्रुटि आई।', 'danger');
     } finally {
       setLoading(false);
     }

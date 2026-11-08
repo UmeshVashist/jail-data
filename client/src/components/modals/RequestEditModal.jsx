@@ -64,7 +64,7 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
     if (isSubmitting || !record) return;
 
     if (!reason.trim()) {
-      showToast('Please provide a reason for editing this record.', 'warning');
+      showToast('कृपया रिकॉर्ड में बदलाव का कारण दर्ज करें।', 'warning');
       return;
     }
 
@@ -97,15 +97,15 @@ export default function RequestEditModal({ isOpen, onClose, record, onRequestSub
       });
 
       if (res && res.success) {
-        showToast(res.message || 'Edit request submitted to Admin for review!', 'success');
+        showToast(res.message || 'एडिट अनुरोध सफलतापूर्वक एडमिन को भेज दिया गया!', 'success');
         onClose();
         if (onRequestSubmitted) onRequestSubmitted(res.data);
       } else {
-        showToast(res.message || 'Failed to submit edit request.', 'danger');
+        showToast(res.message || 'एडिट अनुरोध भेजने में विफलता।', 'danger');
         setIsSubmitting(false);
       }
     } catch (err) {
-      showToast(err.message || 'Error submitting edit request.', 'danger');
+      showToast(err.message || 'एडिट अनुरोध भेजने में त्रुटि आई।', 'danger');
       setIsSubmitting(false);
     }
   };

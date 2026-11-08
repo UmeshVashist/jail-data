@@ -26,7 +26,18 @@ async function request(url, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok && response.status !== 304) {
-    const errorMsg = data.message || `Request failed with status ${response.status}`;
+    let errorMsg = data.message;
+    if (!errorMsg) {
+      if (response.status === 404) {
+        errorMsg = 'अनुरोधित डेटा या सेवा नहीं मिली (404)।';
+      } else if (response.status === 403) {
+        errorMsg = 'इस कार्य को करने के लिए अनुमति (Permission) नहीं है।';
+      } else if (response.status === 401) {
+        errorMsg = 'सत्र समाप्त हो गया है, कृपया पुनः लॉगिन करें।';
+      } else {
+        errorMsg = `अनुरोध पूरा नहीं हो सका (Status: ${response.status})।`;
+      }
+    }
     const err = new Error(errorMsg);
     err.status = response.status;
     err.data = data;

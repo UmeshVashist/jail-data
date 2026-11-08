@@ -41,14 +41,14 @@ function getFormattedTime(d = new Date()) {
 router.post('/', async (req, res) => {
   try {
     if (req.user.role === 'View') {
-      return res.status(403).json({ success: false, message: 'View users cannot send list add requests.' });
+      return res.status(403).json({ success: false, message: 'View उपयोगकर्ता लिस्ट ऐड अनुरोध नहीं भेज सकते हैं।' });
     }
 
     const { optionValue, reason, disableAadhar } = req.body;
     const cleanOption = (optionValue || '').toString().trim();
 
     if (!cleanOption) {
-      return res.status(400).json({ success: false, message: 'Dropdown option name is required.' });
+      return res.status(400).json({ success: false, message: 'ड्रॉपडाउन विकल्प का नाम आवश्यक है।' });
     }
 
     // Check if option already exists in current options
@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
     });
 
     if (alreadyExists) {
-      return res.status(400).json({ success: false, message: `Option "${cleanOption}" already exists in dropdown list.` });
+      return res.status(400).json({ success: false, message: `विकल्प "${cleanOption}" पहले से ही ड्रॉपडाउन सूची में मौजूद है।` });
     }
 
     // Check if a pending request already exists for this option name
@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
     );
 
     if (existingPending) {
-      return res.status(400).json({ success: false, message: `A list add request is already pending for option "${cleanOption}".` });
+      return res.status(400).json({ success: false, message: `विकल्प "${cleanOption}" के लिए अनुरोध पहले से पेंडिंग है।` });
     }
 
     const now = new Date();
@@ -87,9 +87,9 @@ router.post('/', async (req, res) => {
       disableAadhar: !!disableAadhar
     });
 
-    res.json({ success: true, message: `Request to add "${cleanOption}" to dropdown list sent successfully!` });
+    res.json({ success: true, message: `विकल्प "${cleanOption}" को ड्रॉपडाउन में जोड़ने का अनुरोध सफलतापूर्वक भेज दिया गया!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Send list add request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'अनुरोध भेजने में त्रुटि: ' + err.message });
   }
 });
 
@@ -239,17 +239,22 @@ router.get('/my-requests', async (req, res) => {
 // Approve list add request (Supports both POST and PUT)
 const handleApproveListAdd = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const { disableAadhar } = req.body;
     const allRequests = await getListAddRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'List add request not found.' });
+      return res.status(404).json({ success: false, message: 'लिस्ट ऐड अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
     const shouldDisableAadhar = disableAadhar !== undefined ? !!disableAadhar : !!targetReq.disableAadhar;
@@ -260,14 +265,14 @@ const handleApproveListAdd = async (req, res) => {
     }
 
     // Update request status to Approved
-    await updateListAddRequestStatus(requestId, 'Approved', req.user.username);
+    await updateListAddRequestStatus(targetReq.id || requestId, 'Approved', req.user.username);
 
     res.json({
       success: true,
-      message: `List add request approved. Option "${targetReq.optionValue}" added to dropdown list (${shouldDisableAadhar ? 'Aadhar Not Editable' : 'Aadhar Editable'}).`
+      message: `लिस्ट ऐड अनुरोध स्वीकृत किया गया। विकल्प "${targetReq.optionValue}" सफलतापूर्वक जोड़ दिया गया!`
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Approve list add request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'लिस्ट ऐड अनुरोध स्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/approve', requireDeleteRequestPermission, handleApproveListAdd);
@@ -276,23 +281,28 @@ router.put('/:id/approve', requireDeleteRequestPermission, handleApproveListAdd)
 // Reject list add request (Supports both POST and PUT)
 const handleRejectListAdd = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getListAddRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'List add request not found.' });
+      return res.status(404).json({ success: false, message: 'लिस्ट ऐड अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
-    await updateListAddRequestStatus(requestId, 'Rejected', req.user.username);
+    await updateListAddRequestStatus(targetReq.id || requestId, 'Rejected', req.user.username);
 
-    res.json({ success: true, message: `List add request for option "${targetReq.optionValue}" rejected.` });
+    res.json({ success: true, message: `विकल्प "${targetReq.optionValue}" के लिए अनुरोध अस्वीकृत (Reject) कर दिया गया।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Reject list add request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'अनुरोध अस्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
@@ -301,28 +311,33 @@ router.put('/:id/reject', requireDeleteRequestPermission, handleRejectListAdd);
 // Cancel / Withdraw pending list add request by the user who sent it
 const handleWithdrawListAdd = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getListAddRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'List add request not found.' });
+      return res.status(404).json({ success: false, message: 'लिस्ट ऐड अनुरोध नहीं मिला।' });
     }
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'You can only cancel your own list add requests.' });
+      return res.status(403).json({ success: false, message: 'आप केवल अपने द्वारा भेजे गए अनुरोध को ही वापस ले सकते हैं।' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `Cannot withdraw request that has already been ${targetReq.status.toLowerCase()}.` });
+      return res.status(400).json({ success: false, message: `जो अनुरोध पहले से ${targetReq.status} हो चुका है, उसे वापस नहीं लिया जा सकता।` });
     }
 
-    await deleteListAddRequest(requestId);
+    await deleteListAddRequest(targetReq.id || requestId);
 
-    res.json({ success: true, message: `List add request for option "${targetReq.optionValue}" withdrawn successfully.` });
+    res.json({ success: true, message: `विकल्प "${targetReq.optionValue}" का अनुरोध सफलतापूर्वक वापस (Withdraw) ले लिया गया है।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Withdraw list add request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'अनुरोध वापस लेने में त्रुटि: ' + err.message });
   }
 };
 router.delete('/:id/cancel', handleWithdrawListAdd);

@@ -13,7 +13,7 @@ import ReviewListAddRequestModal from '../components/modals/ReviewListAddRequest
 export default function AllRequests() {
   const { isAdmin, showToast } = useAuth();
   const [typeFilter, setTypeFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('Pending');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export default function AllRequests() {
 
       setRequests([...editItems, ...delItems, ...listItems]);
     } catch (err) {
-      showToast('Error loading requests: ' + err.message, 'danger');
+      showToast('अनुरोध सूची लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -69,8 +69,8 @@ export default function AllRequests() {
     return (
       <div className="alert alert-danger p-4 rounded-3 text-center">
         <i className="bi bi-shield-lock-fill fs-2 d-block mb-2"></i>
-        <h5>Admin Access Required</h5>
-        <p className="small mb-0">Only administrators have permission to review and process requests.</p>
+        <h5>एडमिन अनुमति आवश्यक है</h5>
+        <p className="small mb-0">केवल एडमिनिस्ट्रेटर को ही अनुरोधों की समीक्षा करने और स्वीकृत/अस्वीकृत करने की अनुमति है।</p>
       </div>
     );
   }
@@ -78,16 +78,32 @@ export default function AllRequests() {
   // Filter logic
   const filtered = (Array.isArray(requests) ? requests : []).filter(req => {
     if (!req) return false;
-    if (typeFilter !== 'All' && req.requestType !== typeFilter) return false;
-    if (statusFilter !== 'All' && String(req.status || 'Pending').toLowerCase() !== statusFilter.toLowerCase()) return false;
+    
+    // Type Filter
+    if (typeFilter !== 'All') {
+      const cleanType = String(typeFilter).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const reqType = String(req.requestType || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanType !== reqType) return false;
+    }
+
+    // Status Filter
+    if (statusFilter !== 'All') {
+      const cleanStatus = String(statusFilter).toLowerCase().trim();
+      const reqStatus = String(req.status || 'Pending').toLowerCase().trim();
+      if (cleanStatus !== reqStatus) return false;
+    }
+
+    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const pidMatch = String(req.pid || '').toLowerCase().includes(q);
       const nameMatch = String(req.name || '').toLowerCase().includes(q);
       const userMatch = String(req.requestedBy || '').toLowerCase().includes(q);
       const optionMatch = String(req.optionValue || '').toLowerCase().includes(q);
-      if (!pidMatch && !nameMatch && !userMatch && !optionMatch) return false;
+      const reasonMatch = String(req.reason || req.remark || '').toLowerCase().includes(q);
+      if (!pidMatch && !nameMatch && !userMatch && !optionMatch && !reasonMatch) return false;
     }
+
     return true;
   });
 
@@ -126,7 +142,7 @@ export default function AllRequests() {
   const handleBulkApprove = async () => {
     const items = Array.from(selectedRequests.values()).filter(r => (r.status || 'Pending') === 'Pending');
     if (items.length === 0) return;
-    if (!window.confirm(`Are you sure you want to APPROVE ${items.length} selected pending request(s)?`)) return;
+    if (!window.confirm(`क्या आप वाकई चुने गए ${items.length} पेंडिंग अनुरोधों को स्वीकृत (Approve) करना चाहते हैं?`)) return;
 
     // Real-time optimistic update
     const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
@@ -150,7 +166,7 @@ export default function AllRequests() {
       if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/approve`;
       else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/approve`;
       else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/approve`;
-      return url ? api.post(url) : Promise.reject(new Error('Invalid request type'));
+      return url ? api.post(url) : Promise.reject(new Error('अमान्य अनुरोध प्रकार'));
     }));
 
     results.forEach(res => {
@@ -159,14 +175,14 @@ export default function AllRequests() {
     });
 
     setBulkProcessing(false);
-    showToast(`Bulk Approval complete: ${successCount} approved${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'success' : 'danger');
+    showToast(`बल्क अप्रूवल संपन्न: ${successCount} अनुरोध स्वीकृत किए गए${failCount > 0 ? `, ${failCount} विफल रहे` : ''}।`, successCount > 0 ? 'success' : 'danger');
     fetchAllRequests(true);
   };
 
   const handleBulkReject = async () => {
     const items = Array.from(selectedRequests.values()).filter(r => (r.status || 'Pending') === 'Pending');
     if (items.length === 0) return;
-    if (!window.confirm(`Are you sure you want to REJECT ${items.length} selected request(s)?`)) return;
+    if (!window.confirm(`क्या आप वाकई चुने गए ${items.length} पेंडिंग अनुरोधों को अस्वीकृत (Reject) करना चाहते हैं?`)) return;
 
     // Real-time optimistic update
     const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
@@ -190,7 +206,7 @@ export default function AllRequests() {
       if (item.requestType === 'Edit') url = `/api/edit-requests/${item.id}/reject`;
       else if (item.requestType === 'Delete') url = `/api/delete-requests/${item.id}/reject`;
       else if (item.requestType === 'List Add') url = `/api/list-add-requests/${item.id}/reject`;
-      return url ? api.post(url) : Promise.reject(new Error('Invalid request type'));
+      return url ? api.post(url) : Promise.reject(new Error('अमान्य अनुरोध प्रकार'));
     }));
 
     results.forEach(res => {
@@ -199,13 +215,13 @@ export default function AllRequests() {
     });
 
     setBulkProcessing(false);
-    showToast(`Bulk Rejection complete: ${successCount} rejected${failCount > 0 ? `, ${failCount} failed` : ''}.`, successCount > 0 ? 'warning' : 'danger');
+    showToast(`बल्क रिजेक्शन संपन्न: ${successCount} अनुरोध अस्वीकृत किए गए${failCount > 0 ? `, ${failCount} विफल रहे` : ''}।`, successCount > 0 ? 'warning' : 'danger');
     fetchAllRequests(true);
   };
 
   // Permanent Delete for single Approved Delete Request (Admin Only)
   const handlePermanentDeleteSingle = async (req) => {
-    if (!window.confirm(`Are you sure you want to PERMANENTLY delete record PID: ${req.pid} (${req.name}) from the database? This action cannot be undone.`)) return;
+    if (!window.confirm(`क्या आप वाकई रिकॉर्ड PID: ${req.pid} (${req.name}) को डेटाबेस से हमेशा के लिए डिलीट करना चाहते हैं? इसे वापस नहीं लाया जा सकेगा।`)) return;
 
     const key = `${req.requestType}_${req.id}`;
     setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
@@ -217,16 +233,16 @@ export default function AllRequests() {
 
     try {
       const res = await api.delete(`/api/delete-requests/${req.id}/permanent`);
-      showToast(res.message || `Record PID ${req.pid} permanently deleted from database.`, 'success');
+      showToast(res.message || `रिकॉर्ड PID ${req.pid} डेटाबेस से हमेशा के लिए सफलतापूर्वक डिलीट कर दिया गया है।`, 'success');
     } catch (err) {
-      showToast('Error permanently deleting record: ' + err.message, 'danger');
+      showToast('रिकॉर्ड डिलीट करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
       fetchAllRequests(true);
     }
   };
 
   // Restore single Approved Delete Request back to active records (Admin Only)
   const handleRestoreSingle = async (req) => {
-    if (!window.confirm(`Are you sure you want to RESTORE record PID: ${req.pid} (${req.name}) back to main active Data Records?`)) return;
+    if (!window.confirm(`क्या आप वाकई रिकॉर्ड PID: ${req.pid} (${req.name}) को मुख्य सक्रिय डेटा में रीस्टोर करना चाहते हैं?`)) return;
 
     const key = `${req.requestType}_${req.id}`;
     setRequests(prev => prev.filter(r => !(r.id === req.id && r.requestType === req.requestType)));
@@ -238,9 +254,9 @@ export default function AllRequests() {
 
     try {
       const res = await api.post(`/api/delete-requests/${req.id}/restore`);
-      showToast(res.message || `Record PID ${req.pid} restored back to main active data successfully.`, 'success');
+      showToast(res.message || `रिकॉर्ड PID ${req.pid} मुख्य डेटा में सफलतापूर्वक रीस्टोर हो गया है।`, 'success');
     } catch (err) {
-      showToast('Error restoring record: ' + err.message, 'danger');
+      showToast('रिकॉर्ड रीस्टोर करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
       fetchAllRequests(true);
     }
   };
@@ -249,7 +265,7 @@ export default function AllRequests() {
   const handleBulkPermanentDelete = async () => {
     const items = Array.from(selectedRequests.values()).filter(r => r.requestType === 'Delete' && r.status === 'Approved');
     if (items.length === 0) return;
-    if (!window.confirm(`Are you sure you want to PERMANENTLY delete ${items.length} approved record(s) from the database? This cannot be undone.`)) return;
+    if (!window.confirm(`क्या आप वाकई चुने गए ${items.length} रिकॉर्ड्स को डेटाबेस से हमेशा के लिए डिलीट करना चाहते हैं? इसे पूर्ववत नहीं किया जा सकता।`)) return;
 
     const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
     setRequests(prev => prev.filter(r => !selectedKeys.has(`${r.requestType}_${r.id}`)));
@@ -262,9 +278,9 @@ export default function AllRequests() {
     setBulkProcessing(true);
     try {
       const res = await api.post('/api/delete-requests/bulk-permanent', { ids: items.map(i => i.id) });
-      showToast(res.message || `${items.length} record(s) permanently deleted.`, 'success');
+      showToast(res.message || `चुने गए ${items.length} रिकॉर्ड डेटाबेस से हमेशा के लिए डिलीट कर दिए गए हैं।`, 'success');
     } catch (err) {
-      showToast('Error permanently deleting records: ' + err.message, 'danger');
+      showToast('रिकॉर्ड्स को हमेशा के लिए डिलीट करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
       fetchAllRequests(true);
     } finally {
       setBulkProcessing(false);
@@ -275,7 +291,7 @@ export default function AllRequests() {
   const handleBulkRestore = async () => {
     const items = Array.from(selectedRequests.values()).filter(r => r.requestType === 'Delete' && r.status === 'Approved');
     if (items.length === 0) return;
-    if (!window.confirm(`Are you sure you want to RESTORE ${items.length} approved record(s) back to active Data Records?`)) return;
+    if (!window.confirm(`क्या आप वाकई चुने गए ${items.length} रिकॉर्ड्स को वापस मुख्य सक्रिय डेटा में रीस्टोर करना चाहते हैं?`)) return;
 
     const selectedKeys = new Set(items.map(item => `${item.requestType}_${item.id}`));
     setRequests(prev => prev.filter(r => !selectedKeys.has(`${r.requestType}_${r.id}`)));
@@ -288,9 +304,9 @@ export default function AllRequests() {
     setBulkProcessing(true);
     try {
       const res = await api.post('/api/delete-requests/bulk-restore', { ids: items.map(i => i.id) });
-      showToast(res.message || `${items.length} record(s) restored successfully.`, 'success');
+      showToast(res.message || `चुने गए ${items.length} रिकॉर्ड मुख्य डेटा में सफलतापूर्वक रीस्टोर हो गए हैं।`, 'success');
     } catch (err) {
-      showToast('Error restoring records: ' + err.message, 'danger');
+      showToast('रिकॉर्ड्स को रीस्टोर करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
       fetchAllRequests(true);
     } finally {
       setBulkProcessing(false);
@@ -457,7 +473,14 @@ export default function AllRequests() {
                 id="filter-all-requests-type"
                 className="form-select custom-modern-dropdown"
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  setTypeFilter(newType);
+                  if (newType !== 'All' && statusFilter === 'Pending') {
+                    const hasPending = requests.some(r => r.requestType === newType && (r.status || 'Pending') === 'Pending');
+                    if (!hasPending) setStatusFilter('All');
+                  }
+                }}
               >
                 <option value="All">All Request Types</option>
                 <option value="Edit">Edit Requests</option>
@@ -476,10 +499,10 @@ export default function AllRequests() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
+                <option value="All">All Statuses</option>
                 <option value="Pending">Pending Only</option>
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
-                <option value="All">All Statuses</option>
               </select>
             </div>
           </div>
@@ -491,7 +514,7 @@ export default function AllRequests() {
               onClick={() => {
                 setSearchQuery('');
                 setTypeFilter('All');
-                setStatusFilter('Pending');
+                setStatusFilter('All');
               }}
               title="Reset filters"
             >

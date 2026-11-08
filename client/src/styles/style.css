@@ -2441,10 +2441,27 @@ body.theme-classic .table-hover tbody tr:hover > td {
   color: #0f172a !important;
 }
 
-body:not(.theme-modern-3d) .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a),
-body.theme-classic .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a) {
+body:not(.theme-modern-3d) .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a):not(.form-check-input):not(.form-check-input *),
+body.theme-classic .table tbody tr:hover td *:not(.btn):not(.btn *):not(.badge):not(.badge *):not(a):not(.form-check-input):not(.form-check-input *) {
   background-color: transparent !important;
   color: #0f172a !important;
+}
+
+/* Explicitly preserve checkbox checked styling on table row hover */
+body:not(.theme-modern-3d) .table tbody tr:hover td .form-check-input:checked,
+body.theme-classic .table tbody tr:hover td .form-check-input:checked,
+.table tbody tr:hover td .form-check-input:checked {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
+  opacity: 1 !important;
+}
+
+body:not(.theme-modern-3d) .table tbody tr:hover td .form-check-input:not(:checked),
+body.theme-classic .table tbody tr:hover td .form-check-input:not(:checked),
+.table tbody tr:hover td .form-check-input:not(:checked) {
+  background-color: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
 }
 
 body:not(.theme-modern-3d) .table tbody tr:hover td .pid-link,

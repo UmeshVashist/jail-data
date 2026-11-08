@@ -1298,7 +1298,7 @@ async function getDeleteRequests() {
 }
 
 async function createDeleteRequest(reqObj) {
-  await ensureDeleteRequestsSynced(true);
+  await ensureDeleteRequestsSynced();
   const remarkVal = (reqObj.remark || reqObj.reason || '').toString().trim();
   const newId = memoryStore.deleteRequests.length > 0 ? Math.max(...memoryStore.deleteRequests.map(r => r.id || 0)) + 1 : 1;
 
@@ -1331,8 +1331,12 @@ async function createDeleteRequest(reqObj) {
     );
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
+  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1433,7 +1437,7 @@ async function getEditRequests() {
 }
 
 async function createEditRequest(reqObj) {
-  await ensureEditRequestsSynced(true);
+  await ensureEditRequestsSynced();
   const reasonVal = (reqObj.reason || '').toString().trim();
   const newId = memoryStore.editRequests.length > 0 ? Math.max(...memoryStore.editRequests.map(r => r.id || 0)) + 1 : 1;
 
@@ -1469,8 +1473,12 @@ async function createEditRequest(reqObj) {
     );
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
+  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
+  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 
@@ -1543,7 +1551,7 @@ async function getListAddRequests() {
 }
 
 async function createListAddRequest(reqObj) {
-  await ensureListAddRequestsSynced(true);
+  await ensureListAddRequestsSynced();
   const newId = memoryStore.listAddRequests.length > 0 ? Math.max(...memoryStore.listAddRequests.map(r => r.id || 0)) + 1 : 1;
   const nowMs = Date.now();
 
@@ -1579,8 +1587,12 @@ async function createListAddRequest(reqObj) {
     }
   } catch (e) {}
 
-  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
+  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
+  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
+    console.error('[Cloudflare R2 Write Warning]:', err.message);
+  });
   return true;
 }
 

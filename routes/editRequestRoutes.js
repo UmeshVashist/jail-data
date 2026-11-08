@@ -84,21 +84,21 @@ function getFormattedTime(d = new Date()) {
 router.post('/', async (req, res) => {
   try {
     if (req.user.role === 'View') {
-      return res.status(403).json({ success: false, message: 'View users cannot send edit requests.' });
+      return res.status(403).json({ success: false, message: 'View उपयोगकर्ता एडिट अनुरोध नहीं भेज सकते हैं।' });
     }
 
     const { recordId, proposedData, reason } = req.body;
     const targetRecordId = parseInt(recordId, 10);
 
     if (!proposedData || typeof proposedData !== 'object') {
-      return res.status(400).json({ success: false, message: 'Proposed changes are required.' });
+      return res.status(400).json({ success: false, message: 'बदलाव के विवरण आवश्यक हैं।' });
     }
 
     const records = await getRecords();
     const targetRecord = records.find(r => r.id === targetRecordId || r.rowIndex === targetRecordId);
 
     if (!targetRecord) {
-      return res.status(404).json({ success: false, message: 'Target record not found.' });
+      return res.status(404).json({ success: false, message: 'लक्षित रिकॉर्ड नहीं मिला।' });
     }
 
     // Check if ANY pending request (Edit OR Delete) already exists for this record/PID
@@ -114,7 +114,7 @@ router.post('/', async (req, res) => {
     if (existingPendingEdit) {
       return res.status(400).json({ 
         success: false, 
-        message: `Is PID (${targetRecord.pid}) ki Edit Request pehle se pending hai. Approval ka wait karein.` 
+        message: `इस PID (${targetRecord.pid}) का एडिट अनुरोध पहले से पेंडिंग है। कृपया एडमिन अप्रूवल का इंतजार करें।` 
       });
     }
 
@@ -125,7 +125,7 @@ router.post('/', async (req, res) => {
     if (existingPendingDelete) {
       return res.status(400).json({ 
         success: false, 
-        message: `Is PID (${targetRecord.pid}) ki Delete Request pehle se pending hai. Ek PID ke liye ek waqt me sirf 1 request bheji ja sakti hai.` 
+        message: `इस PID (${targetRecord.pid}) का डिलीट अनुरोध पहले से पेंडिंग है। एक PID के लिए एक समय में सिर्फ 1 अनुरोध भेजा जा सकता है।` 
       });
     }
 
@@ -135,7 +135,7 @@ router.post('/', async (req, res) => {
 
     const propDate = normalizeToYMD(proposedData.date);
     if (propDate && propDate > reqDate) {
-      return res.status(400).json({ success: false, message: 'Enter valid date. Future dates are not allowed. Today or previous dates are allowed.' });
+      return res.status(400).json({ success: false, message: 'अमान्य दिनांक। भविष्य की तारीख दर्ज नहीं की जा सकती। केवल आज या पिछली तारीख दर्ज करें।' });
     }
 
     const propRemark = (proposedData.remark || '').trim();
@@ -145,14 +145,14 @@ router.post('/', async (req, res) => {
     const sysSettings = await getSystemSettings();
     if (sysSettings.aadharMandatory && !isDisabledRemark) {
       if (!propAadhar || propAadhar === '' || propAadhar === '#N/A') {
-        return res.status(400).json({ success: false, message: 'Aadhar No. is mandatory according to system settings.' });
+        return res.status(400).json({ success: false, message: 'सिस्टम सेटिंग्स के अनुसार आधार नंबर अनिवार्य है।' });
       }
     }
 
     if (propAadhar && propAadhar !== '#N/A') {
       const cleanDigits = propAadhar.replace(/\D/g, '');
       if (cleanDigits.length < 12) {
-        return res.status(400).json({ success: false, message: 'Aadhar No must contain at least 12 digits.' });
+        return res.status(400).json({ success: false, message: 'आधार नंबर में कम से कम 12 अंक होने चाहिए।' });
       }
       propAadhar = `${cleanDigits.slice(0, 4)} ${cleanDigits.slice(4, 8)} ${cleanDigits.slice(8, 12)}`;
     } else if (!propAadhar && (!targetRecord.aadharNo || targetRecord.aadharNo === '#N/A')) {
@@ -197,9 +197,9 @@ router.post('/', async (req, res) => {
       reason: (reason || '').toString().trim()
     });
 
-    res.json({ success: true, message: `Edit request sent successfully for PID ${targetRecord.pid}!` });
+    res.json({ success: true, message: `PID ${targetRecord.pid} के लिए एडिट अनुरोध सफलतापूर्वक भेज दिया गया!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Send edit request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'एडिट अनुरोध भेजने में त्रुटि: ' + err.message });
   }
 });
 
@@ -252,16 +252,22 @@ router.get('/my-requests', async (req, res) => {
 // POST /api/edit-requests/:id/approve - Approve edit request and apply updates to record
 const handleApproveEdit = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getEditRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Edit request not found.' });
+      return res.status(404).json({ success: false, message: 'एडिट अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
     // Find target record and apply proposed updates
@@ -269,11 +275,11 @@ const handleApproveEdit = async (req, res) => {
     const targetRecord = records.find(r => 
       r.id === parseInt(targetReq.recordId, 10) || 
       r.rowIndex === parseInt(targetReq.recordId, 10) || 
-      (r.pid && r.pid === targetReq.pid)
+      (r.pid && String(r.pid) === String(targetReq.pid))
     );
 
     if (!targetRecord) {
-      return res.status(404).json({ success: false, message: 'Target record to update was not found.' });
+      return res.status(404).json({ success: false, message: 'अपडेट करने के लिए लक्षित रिकॉर्ड नहीं मिला।' });
     }
 
     const now = new Date();
@@ -315,11 +321,11 @@ const handleApproveEdit = async (req, res) => {
     await updateRecord(targetRecord.id || targetRecord.rowIndex, updatedObj);
 
     // Update edit request status to Approved
-    await updateEditRequestStatus(requestId, 'Approved', req.user.username);
+    await updateEditRequestStatus(targetReq.id || requestId, 'Approved', req.user.username);
 
-    res.json({ success: true, message: `Edit request approved. Record PID ${targetReq.pid} updated successfully!` });
+    res.json({ success: true, message: `एडिट अनुरोध स्वीकृत। रिकॉर्ड PID ${targetReq.pid} सफलतापूर्वक अपडेट हो गया!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Approve edit request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'एडिट अनुरोध स्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/approve', requireDeleteRequestPermission, handleApproveEdit);
@@ -328,23 +334,29 @@ router.put('/:id/approve', requireDeleteRequestPermission, handleApproveEdit);
 // POST /api/edit-requests/:id/reject - Reject edit request
 const handleRejectEdit = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getEditRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Edit request not found.' });
+      return res.status(404).json({ success: false, message: 'एडिट अनुरोध नहीं मिला।' });
     }
 
-    if (targetReq.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status.toLowerCase()}.` });
+    if (String(targetReq.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
     }
 
-    await updateEditRequestStatus(requestId, 'Rejected', req.user.username);
+    await updateEditRequestStatus(targetReq.id || requestId, 'Rejected', req.user.username);
 
-    res.json({ success: true, message: `Edit request for PID ${targetReq.pid} rejected.` });
+    res.json({ success: true, message: `PID ${targetReq.pid} के लिए एडिट अनुरोध अस्वीकृत (Reject) कर दिया गया।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Reject edit request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'एडिट अनुरोध अस्वीकृत करने में त्रुटि: ' + err.message });
   }
 };
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
@@ -353,28 +365,34 @@ router.put('/:id/reject', requireDeleteRequestPermission, handleRejectEdit);
 // Cancel / Withdraw pending edit request by the user who sent it
 const handleWithdrawEdit = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const requestId = parseInt(rawId, 10);
     const allRequests = await getEditRequests();
-    const targetReq = allRequests.find(r => r.id === requestId || r.rowIndex === requestId);
+    const targetReq = allRequests.find(r => 
+      r.id === requestId || 
+      r.rowIndex === requestId ||
+      String(r.id) === String(rawId) ||
+      String(r.pid) === String(rawId)
+    );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'Edit request not found.' });
+      return res.status(404).json({ success: false, message: 'एडिट अनुरोध नहीं मिला।' });
     }
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'You can only withdraw your own edit requests.' });
+      return res.status(403).json({ success: false, message: 'आप केवल अपने द्वारा भेजे गए एडिट अनुरोध को ही वापस (Withdraw) ले सकते हैं।' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `Cannot withdraw request that has already been ${targetReq.status.toLowerCase()}.` });
+      return res.status(400).json({ success: false, message: `जो अनुरोध पहले से ${targetReq.status} हो चुका है, उसे वापस नहीं लिया जा सकता।` });
     }
 
-    await deleteEditRequest(requestId);
+    await deleteEditRequest(targetReq.id || requestId);
 
-    res.json({ success: true, message: `Edit request for PID ${targetReq.pid} withdrawn successfully.` });
+    res.json({ success: true, message: `PID ${targetReq.pid} के लिए भेजा गया एडिट अनुरोध सफलतापूर्वक वापस (Withdraw) ले लिया गया है।` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Withdraw edit request error: ' + err.message });
+    res.status(500).json({ success: false, message: 'अनुरोध वापस लेने में त्रुटि: ' + err.message });
   }
 };
 router.delete('/:id/cancel', handleWithdrawEdit);
