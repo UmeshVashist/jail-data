@@ -15,10 +15,13 @@ export default function SystemSettings() {
   const [newRemark, setNewRemark] = useState('');
   const [newRemarkDisableAadhar, setNewRemarkDisableAadhar] = useState(false);
   const [newDeleteOption, setNewDeleteOption] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isAddingRemark, setIsAddingRemark] = useState(false);
+  const [isAddingDelete, setIsAddingDelete] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState(null);
 
-  const fetchSettings = useCallback(async () => {
-    setLoading(true);
+  const fetchSettings = useCallback(async (silent = false) => {
+    if (!silent) setInitialLoading(true);
     try {
       const [settingsRes, remarkRes, delRes] = await Promise.all([
         api.get('/api/records/settings').catch(() => ({ data: { aadharMandatory: false } })),
@@ -38,12 +41,12 @@ export default function SystemSettings() {
     } catch (err) {
       showToast('Error loading system settings: ' + (err.message || 'Error'), 'danger');
     } finally {
-      setLoading(false);
+      if (!silent) setInitialLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    fetchSettings();
+    fetchSettings(false);
   }, [fetchSettings]);
 
   if (!isAdmin) {
@@ -58,16 +61,19 @@ export default function SystemSettings() {
 
   // Toggle Mandatory Aadhar Setting
   const handleToggleAadharMandatory = async (newVal) => {
+    setAadharMandatory(newVal);
     try {
       const res = await api.put('/api/records/settings', {
         key: 'aadhar_mandatory',
         value: newVal ? 'true' : 'false'
       });
       if (res && res.success) {
-        setAadharMandatory(newVal);
         showToast(`Mandatory Aadhar enforcement ${newVal ? 'Enabled' : 'Disabled'}.`, 'success');
+      } else {
+        setAadharMandatory(!newVal);
       }
     } catch (err) {
+      setAadharMandatory(!newVal);
       showToast('Error updating Aadhar setting: ' + (err.message || 'Error'), 'danger');
     }
   };
@@ -75,38 +81,58 @@ export default function SystemSettings() {
   // Add Remark Option
   const handleAddRemark = async (e) => {
     e.preventDefault();
-    if (!newRemark.trim()) return;
+    const cleanVal = newRemark.trim();
+    if (!cleanVal || isAddingRemark) return;
+
+    setIsAddingRemark(true);
+    const newOpt = { optionValue: cleanVal, disableAadhar: newRemarkDisableAadhar };
+    setRemarkOptions(prev => [...prev, newOpt]);
+    setNewRemark('');
+    setNewRemarkDisableAadhar(false);
 
     try {
       const res = await api.post('/api/records/remark-options', {
-        optionValue: newRemark.trim(),
+        optionValue: cleanVal,
         disableAadhar: newRemarkDisableAadhar
       });
       if (res && res.success) {
-        showToast(`Remark option "${newRemark}" added successfully!`, 'success');
-        setNewRemark('');
-        setNewRemarkDisableAadhar(false);
-        fetchSettings();
+        showToast(`Remark option "${cleanVal}" added successfully!`, 'success');
+        fetchSettings(true);
+      } else {
+        setRemarkOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== cleanVal));
+        showToast((res && res.message) || 'Error adding remark option', 'danger');
       }
     } catch (err) {
+      setRemarkOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== cleanVal));
       showToast('Error adding remark option: ' + (err.message || 'Error'), 'danger');
+    } finally {
+      setIsAddingRemark(false);
     }
   };
 
   // Toggle Disable Aadhar on Remark Option
   const handleToggleRemarkAadhar = async (opt, newVal) => {
+    const val = typeof opt === 'object' ? opt.optionValue : opt;
+    setRemarkOptions(prev => prev.map(o => {
+      const cur = typeof o === 'object' ? o.optionValue : o;
+      if (cur === val) {
+        return typeof o === 'object' ? { ...o, disableAadhar: newVal } : { optionValue: cur, disableAadhar: newVal };
+      }
+      return o;
+    }));
+
     try {
-      const val = typeof opt === 'object' ? opt.optionValue : opt;
       const res = await api.put('/api/records/remark-options/toggle-aadhar', {
         optionValue: val,
         disableAadhar: newVal
       });
       if (res && res.success) {
         showToast(`Aadhar requirement updated for "${val}".`, 'success');
-        fetchSettings();
+        fetchSettings(true);
       }
     } catch (err) {
       showToast('Error updating remark option: ' + (err.message || 'Error'), 'danger');
+      fetchSettings(true);
     }
   };
 
@@ -115,35 +141,55 @@ export default function SystemSettings() {
     const val = typeof opt === 'object' ? opt.optionValue : opt;
     if (!window.confirm(`Are you sure you want to delete remark option "${val}"?`)) return;
 
+    const previous = [...remarkOptions];
+    setRemarkOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== val));
+    setActionInProgress(`del-remark-${val}`);
+
     try {
       const res = await api.delete('/api/records/remark-options', {
         optionValue: val
       });
       if (res && res.success) {
         showToast(`Remark option "${val}" deleted.`, 'info');
-        fetchSettings();
+        fetchSettings(true);
+      } else {
+        setRemarkOptions(previous);
+        showToast((res && res.message) || 'Error deleting remark option', 'danger');
       }
     } catch (err) {
+      setRemarkOptions(previous);
       showToast('Error deleting remark option: ' + (err.message || 'Error'), 'danger');
+    } finally {
+      setActionInProgress(null);
     }
   };
 
   // Add Delete Option
   const handleAddDeleteOption = async (e) => {
     e.preventDefault();
-    if (!newDeleteOption.trim()) return;
+    const cleanVal = newDeleteOption.trim();
+    if (!cleanVal || isAddingDelete) return;
+
+    setIsAddingDelete(true);
+    setDeleteOptions(prev => [...prev, cleanVal]);
+    setNewDeleteOption('');
 
     try {
       const res = await api.post('/api/records/delete-options', {
-        optionValue: newDeleteOption.trim()
+        optionValue: cleanVal
       });
       if (res && res.success) {
-        showToast(`Delete reason "${newDeleteOption}" added successfully!`, 'success');
-        setNewDeleteOption('');
-        fetchSettings();
+        showToast(`Delete reason "${cleanVal}" added successfully!`, 'success');
+        fetchSettings(true);
+      } else {
+        setDeleteOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== cleanVal));
+        showToast((res && res.message) || 'Error adding delete reason', 'danger');
       }
     } catch (err) {
+      setDeleteOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== cleanVal));
       showToast('Error adding delete reason: ' + (err.message || 'Error'), 'danger');
+    } finally {
+      setIsAddingDelete(false);
     }
   };
 
@@ -152,16 +198,26 @@ export default function SystemSettings() {
     const val = typeof opt === 'object' ? opt.optionValue : opt;
     if (!window.confirm(`Are you sure you want to delete reason option "${val}"?`)) return;
 
+    const previous = [...deleteOptions];
+    setDeleteOptions(prev => prev.filter(o => (typeof o === 'object' ? o.optionValue : o) !== val));
+    setActionInProgress(`del-opt-${val}`);
+
     try {
       const res = await api.delete('/api/records/delete-options', {
         optionValue: val
       });
       if (res && res.success) {
         showToast(`Delete reason "${val}" deleted.`, 'info');
-        fetchSettings();
+        fetchSettings(true);
+      } else {
+        setDeleteOptions(previous);
+        showToast((res && res.message) || 'Error deleting delete reason', 'danger');
       }
     } catch (err) {
+      setDeleteOptions(previous);
       showToast('Error deleting delete reason: ' + (err.message || 'Error'), 'danger');
+    } finally {
+      setActionInProgress(null);
     }
   };
 
@@ -219,10 +275,15 @@ export default function SystemSettings() {
                   placeholder="Enter new remark option..."
                   value={newRemark}
                   onChange={(e) => setNewRemark(e.target.value)}
+                  disabled={isAddingRemark}
                   required
                 />
-                <button type="submit" className="btn btn-primary px-3 fw-semibold">
-                  <i className="bi bi-plus-lg me-1"></i> Add
+                <button type="submit" className="btn btn-primary px-3 fw-semibold" disabled={isAddingRemark || !newRemark.trim()}>
+                  {isAddingRemark ? (
+                    <><span className="spinner-border spinner-border-sm me-1" role="status"></span> Adding...</>
+                  ) : (
+                    <><i className="bi bi-plus-lg me-1"></i> Add</>
+                  )}
                 </button>
               </div>
               <div className="form-check form-switch">
@@ -232,6 +293,7 @@ export default function SystemSettings() {
                   id="new-remark-disable-aadhar"
                   checked={newRemarkDisableAadhar}
                   onChange={(e) => setNewRemarkDisableAadhar(e.target.checked)}
+                  disabled={isAddingRemark}
                 />
                 <label className="form-check-label text-muted small" htmlFor="new-remark-disable-aadhar">
                   Disable Aadhar requirement when this remark is selected
@@ -250,9 +312,12 @@ export default function SystemSettings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {initialLoading ? (
                     <tr>
-                      <td colSpan="3" className="text-center py-3 text-muted">Loading options...</td>
+                      <td colSpan="3" className="text-center py-4 text-muted">
+                        <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
+                        Loading options...
+                      </td>
                     </tr>
                   ) : !Array.isArray(remarkOptions) || remarkOptions.length === 0 ? (
                     <tr>
@@ -262,6 +327,7 @@ export default function SystemSettings() {
                     (remarkOptions || []).map((opt, idx) => {
                       const val = typeof opt === 'object' ? opt.optionValue : opt;
                       const disable = typeof opt === 'object' ? !!opt.disableAadhar : false;
+                      const isDeletingThis = actionInProgress === `del-remark-${val}`;
                       return (
                         <tr key={idx}>
                           <td className="fw-semibold table-text-main">{val}</td>
@@ -280,9 +346,14 @@ export default function SystemSettings() {
                               type="button"
                               className="btn btn-sm btn-outline-danger p-1 px-2"
                               onClick={() => handleDeleteRemark(opt)}
+                              disabled={isDeletingThis}
                               title="Delete option"
                             >
-                              <i className="bi bi-trash"></i>
+                              {isDeletingThis ? (
+                                <span className="spinner-border spinner-border-sm" role="status"></span>
+                              ) : (
+                                <i className="bi bi-trash"></i>
+                              )}
                             </button>
                           </td>
                         </tr>
@@ -311,10 +382,15 @@ export default function SystemSettings() {
                   placeholder="Enter new deletion reason..."
                   value={newDeleteOption}
                   onChange={(e) => setNewDeleteOption(e.target.value)}
+                  disabled={isAddingDelete}
                   required
                 />
-                <button type="submit" className="btn btn-danger px-3 fw-semibold">
-                  <i className="bi bi-plus-lg me-1"></i> Add
+                <button type="submit" className="btn btn-danger px-3 fw-semibold" disabled={isAddingDelete || !newDeleteOption.trim()}>
+                  {isAddingDelete ? (
+                    <><span className="spinner-border spinner-border-sm me-1" role="status"></span> Adding...</>
+                  ) : (
+                    <><i className="bi bi-plus-lg me-1"></i> Add</>
+                  )}
                 </button>
               </div>
             </form>
@@ -329,9 +405,12 @@ export default function SystemSettings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {initialLoading ? (
                     <tr>
-                      <td colSpan="2" className="text-center py-3 text-muted">Loading options...</td>
+                      <td colSpan="2" className="text-center py-4 text-muted">
+                        <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
+                        Loading options...
+                      </td>
                     </tr>
                   ) : !Array.isArray(deleteOptions) || deleteOptions.length === 0 ? (
                     <tr>
@@ -340,6 +419,7 @@ export default function SystemSettings() {
                   ) : (
                     (deleteOptions || []).map((opt, idx) => {
                       const val = typeof opt === 'object' ? opt.optionValue : opt;
+                      const isDeletingThis = actionInProgress === `del-opt-${val}`;
                       return (
                         <tr key={idx}>
                           <td className="fw-semibold table-text-main">{val}</td>
@@ -348,9 +428,14 @@ export default function SystemSettings() {
                               type="button"
                               className="btn btn-sm btn-outline-danger p-1 px-2"
                               onClick={() => handleDeleteDeleteOption(opt)}
+                              disabled={isDeletingThis}
                               title="Delete reason option"
                             >
-                              <i className="bi bi-trash"></i>
+                              {isDeletingThis ? (
+                                <span className="spinner-border spinner-border-sm" role="status"></span>
+                              ) : (
+                                <i className="bi bi-trash"></i>
+                              )}
                             </button>
                           </td>
                         </tr>
