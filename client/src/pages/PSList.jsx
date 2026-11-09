@@ -45,7 +45,7 @@ export default function PSList() {
         }
       }
     } catch (err) {
-      showToast('थाना सूची लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
+      showToast('Error loading Police Station list: ' + (err.message || 'Error'), 'danger');
     } finally {
       setLoading(false);
     }
@@ -59,27 +59,27 @@ export default function PSList() {
     return (
       <div className="alert alert-danger p-4 rounded-3 text-center">
         <i className="bi bi-shield-lock-fill fs-2 d-block mb-2"></i>
-        <h5>पहुँच अस्वीकृत</h5>
-        <p className="small mb-0">आपके पास थाना सूची देखने की अनुमति नहीं है। कृपया एडमिन से संपर्क करें।</p>
+        <h5>Access Denied</h5>
+        <p className="small mb-0">You do not have permission to view the Police Station list. Please contact Admin.</p>
       </div>
     );
   }
 
   const handleDeletePS = async (item) => {
-    if (!window.confirm(`क्या आप वाकई थाना "${item.psName || item.ps}" को डिलीट करना चाहते हैं?`)) {
+    if (!window.confirm(`Are you sure you want to delete Police Station "${item.psName || item.ps}"?`)) {
       return;
     }
 
     try {
       const res = await api.delete(`/api/ps/${item.id}`);
       if (res && res.success) {
-        showToast(res.message || 'थाना सफलतापूर्वक डिलीट किया गया।', 'success');
+        showToast(res.message || 'Police Station deleted successfully.', 'success');
         fetchStations();
       } else {
-        showToast(res.message || 'थाना डिलीट करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to delete Police Station.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'थाना डिलीट करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error deleting Police Station.', 'danger');
     }
   };
 
@@ -105,7 +105,7 @@ export default function PSList() {
   const handleBulkDeletePS = async () => {
     const ids = Array.from(selectedPS);
     if (ids.length === 0) return;
-    if (!window.confirm(`क्या आप वाकई चुने गए ${ids.length} थानों को डिलीट करना चाहते हैं? इसे पूर्ववत नहीं किया जा सकता।`)) {
+    if (!window.confirm(`Are you sure you want to delete the selected ${ids.length} Police Station(s)? This cannot be undone.`)) {
       return;
     }
 
@@ -113,14 +113,14 @@ export default function PSList() {
     try {
       const res = await api.post('/api/ps/bulk-delete', { ids });
       if (res && res.success) {
-        showToast(res.message || `चयनित ${ids.length} थाने सफलतापूर्वक डिलीट कर दिए गए!`, 'success');
+        showToast(res.message || `Selected ${ids.length} Police Station(s) deleted successfully!`, 'success');
         setSelectedPS(new Set());
         fetchStations();
       } else {
-        showToast(res.message || 'चयनित थाने डिलीट करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to delete selected Police Stations.', 'danger');
       }
     } catch (err) {
-      showToast('थाने डिलीट करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
+      showToast('Error deleting Police Stations: ' + (err.message || 'Error'), 'danger');
     } finally {
       setIsBulkDeleting(false);
     }

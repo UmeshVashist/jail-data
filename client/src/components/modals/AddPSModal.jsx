@@ -19,7 +19,7 @@ export default function AddPSModal({ isOpen, onClose, onPSAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!psName.trim()) {
-      showToast('थाने (PS) का नाम दर्ज करना आवश्यक है।', 'warning');
+      showToast('Police Station name is required.', 'warning');
       return;
     }
 
@@ -32,17 +32,17 @@ export default function AddPSModal({ isOpen, onClose, onPSAdded }) {
       });
 
       if (res && res.success) {
-        showToast(res.message || 'थाना सफलतापूर्वक जोड़ा गया!', 'success');
+        showToast(res.message || 'Police Station added successfully!', 'success');
         setPsName('');
         setDistrict('');
         setState('');
         onClose();
         if (onPSAdded) onPSAdded(res.data);
       } else {
-        showToast(res.message || 'थाना जोड़ने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to add police station.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'थाना जोड़ने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error adding police station.', 'danger');
     } finally {
       setLoading(false);
     }

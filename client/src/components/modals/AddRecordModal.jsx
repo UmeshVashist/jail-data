@@ -141,11 +141,11 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
     if (submittingLockRef.current || isSubmitting) return;
 
     if (!pid.trim()) {
-      showToast('PID दर्ज करना अनिवार्य है।', 'warning');
+      showToast('PID is required.', 'warning');
       return;
     }
     if (!name.trim()) {
-      showToast('नाम दर्ज करना अनिवार्य है।', 'warning');
+      showToast('Name is required.', 'warning');
       return;
     }
 
@@ -156,7 +156,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
       // Check PID duplicate first
       const checkRes = await api.get(`/api/records/check-pid/${encodeURIComponent(pid.trim())}`);
       if (checkRes.exists) {
-        showToast(`इस PID "${pid.trim()}" का रिकॉर्ड पहले से मौजूद है!`, 'danger');
+        showToast(`Record with PID "${pid.trim()}" already exists!`, 'danger');
         submittingLockRef.current = false;
         setIsSubmitting(false);
         return;
@@ -184,7 +184,7 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
       });
 
       if (res && res.success) {
-        showToast(res.message || 'रिकॉर्ड सफलतापूर्वक जोड़ा गया!', 'success');
+        showToast(res.message || 'Record created successfully!', 'success');
         const createdRecord = res.record || res.data || {
           pid: pid.trim(),
           name: name.trim().toUpperCase(),
@@ -201,12 +201,12 @@ export default function AddRecordModal({ isOpen, onClose, onRecordAdded }) {
         onClose();
         if (onRecordAdded) onRecordAdded(createdRecord);
       } else {
-        showToast(res.message || 'रिकॉर्ड जोड़ने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to create record.', 'danger');
         submittingLockRef.current = false;
         setIsSubmitting(false);
       }
     } catch (err) {
-      showToast(err.message || 'रिकॉर्ड सेव करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error saving record.', 'danger');
       submittingLockRef.current = false;
       setIsSubmitting(false);
     }

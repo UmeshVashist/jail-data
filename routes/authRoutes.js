@@ -41,24 +41,24 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ success: false, message: 'यूज़रनेम और पासवर्ड दोनों आवश्यक हैं।' });
+      return res.status(400).json({ success: false, message: 'Username and Password are required.' });
     }
 
     const cleanUser = username.trim();
     const user = await getUserByUsername(cleanUser);
     if (!user) {
       console.warn(`[LOGIN FAIL] User "${cleanUser}" not found.`);
-      return res.status(401).json({ success: false, message: 'अमान्य यूज़रनेम या पासवर्ड।' });
+      return res.status(401).json({ success: false, message: 'Invalid Username or Password.' });
     }
 
     const passwordMatch = verifyPassword(password, user.password);
     if (!passwordMatch) {
       console.warn(`[LOGIN FAIL] Password mismatch for user "${cleanUser}".`);
-      return res.status(401).json({ success: false, message: 'अमान्य यूज़रनेम या पासवर्ड।' });
+      return res.status(401).json({ success: false, message: 'Invalid Username or Password.' });
     }
 
     if (user.status !== 'Active') {
-      return res.status(403).json({ success: false, message: 'खाता निष्क्रिय है। कृपया एडमिन से संपर्क करें।' });
+      return res.status(403).json({ success: false, message: 'Account is deactivated. Contact Admin.' });
     }
 
     // Auto-upgrade plaintext password to bcrypt hash if needed
@@ -82,12 +82,12 @@ router.post('/login', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'लॉगिन सफल रहा!',
+      message: 'Login successful!',
       user: req.session.user,
       data: req.session.user
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'लॉगिन सर्वर त्रुटि: ' + err.message });
+    return res.status(500).json({ success: false, message: 'Login server error: ' + err.message });
   }
 });
 
@@ -134,34 +134,34 @@ router.post('/change-password', requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: 'वर्तमान पासवर्ड और नया पासवर्ड दोनों आवश्यक हैं।' });
+      return res.status(400).json({ success: false, message: 'Current password and new password are required.' });
     }
     if (newPassword.trim().length < 6) {
-      return res.status(400).json({ success: false, message: 'नया पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।' });
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
     }
 
     const user = await getUserByUsername(req.user.username);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'यूज़र नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
     if (!verifyPassword(currentPassword, user.password)) {
-      return res.status(400).json({ success: false, message: 'वर्तमान पासवर्ड गलत है।' });
+      return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
     }
 
     const hashed = bcrypt.hashSync(newPassword.trim(), 10);
     await updateUser(user.id || user.rowIndex, { password: hashed });
 
-    return res.json({ success: true, message: 'पासवर्ड सफलतापूर्वक अपडेट हो गया!' });
+    return res.json({ success: true, message: 'Password updated successfully!' });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'पासवर्ड बदलने में त्रुटि: ' + err.message });
+    return res.status(500).json({ success: false, message: 'Error changing password: ' + err.message });
   }
 });
 
 // Logout user
 router.post('/logout', (req, res) => {
   req.session = null;
-  return res.json({ success: true, message: 'सफलतापूर्वक साइन आउट हो गए।' });
+  return res.json({ success: true, message: 'Signed out successfully.' });
 });
 
 module.exports = router;

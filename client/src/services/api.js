@@ -29,13 +29,13 @@ async function request(url, options = {}) {
     let errorMsg = data.message;
     if (!errorMsg) {
       if (response.status === 404) {
-        errorMsg = 'अनुरोधित डेटा या सेवा नहीं मिली (404)।';
+        errorMsg = 'Requested data or service not found (404).';
       } else if (response.status === 403) {
-        errorMsg = 'इस कार्य को करने के लिए अनुमति (Permission) नहीं है।';
+        errorMsg = 'Permission denied for this action.';
       } else if (response.status === 401) {
-        errorMsg = 'सत्र समाप्त हो गया है, कृपया पुनः लॉगिन करें।';
+        errorMsg = 'Session expired, please log in again.';
       } else {
-        errorMsg = `अनुरोध पूरा नहीं हो सका (Status: ${response.status})।`;
+        errorMsg = `Request failed with status ${response.status}.`;
       }
     }
     const err = new Error(errorMsg);

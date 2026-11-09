@@ -122,7 +122,7 @@ export default function TodayRecordsModal({
                   style={{ width: '135px' }}
                 />
                 {loading && (
-                  <span className="spinner-border spinner-border-sm text-cyan ms-1" role="status" title="डेटा लोड हो रहा है..."></span>
+                  <span className="spinner-border spinner-border-sm text-cyan ms-1" role="status" title="Loading data..."></span>
                 )}
                 <button
                   type="button"
@@ -186,14 +186,14 @@ export default function TodayRecordsModal({
                     <tr>
                       <td colSpan="8" className="text-center py-5 text-muted" style={{ height: '280px' }}>
                         <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
-                        लोड हो रहा है ({selectedDate})...
+                        Loading ({selectedDate})...
                       </td>
                     </tr>
                   ) : records.length === 0 ? (
                     <tr>
                       <td colSpan="8" className="text-center py-5 text-muted" style={{ height: '280px' }}>
                         <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                        {isToday ? 'आज का कोई अपलोड रिकॉर्ड उपलब्ध नहीं है।' : `${selectedDate} को कोई अपलोड रिकॉर्ड उपलब्ध नहीं है।`}
+                        {isToday ? 'No records uploaded today yet.' : `No records uploaded on ${selectedDate}.`}
                       </td>
                     </tr>
                   ) : (
@@ -252,10 +252,10 @@ export default function TodayRecordsModal({
           {/* Footer */}
           <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-2 d-flex justify-content-between align-items-center">
             <span className="small text-muted">
-              कुल <strong className="table-text-main">{records.length}</strong> रिकॉर्ड
+              Showing <strong className="table-text-main">{records.length}</strong> record(s)
             </span>
             <button type="button" className="btn btn-secondary btn-sm px-4" onClick={onClose}>
-              बंद करें (Close)
+              Close
             </button>
           </div>
         </div>

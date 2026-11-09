@@ -18,7 +18,7 @@ export default function ChangePasswordModal({ isOpen, onClose, targetUser }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newPassword.trim() || newPassword.length < 6) {
-      showToast('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।', 'warning');
+      showToast('Password must be at least 6 characters long.', 'warning');
       return;
     }
 
@@ -29,14 +29,14 @@ export default function ChangePasswordModal({ isOpen, onClose, targetUser }) {
       });
 
       if (res && res.success) {
-        showToast(res.message || `${targetUser.username} का पासवर्ड सफलतापूर्वक अपडेट हो गया!`, 'success');
+        showToast(res.message || `Password for ${targetUser.username} updated successfully!`, 'success');
         setNewPassword('');
         onClose();
       } else {
-        showToast(res.message || 'पासवर्ड अपडेट करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to update password.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'पासवर्ड अपडेट करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error updating password.', 'danger');
     } finally {
       setLoading(false);
     }

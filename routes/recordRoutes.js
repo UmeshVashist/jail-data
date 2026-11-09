@@ -62,12 +62,12 @@ router.post('/remark-options', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { optionValue, disableAadhar } = req.body;
     const cleanVal = (optionValue || '').trim();
-    if (!cleanVal) return res.status(400).json({ success: false, message: 'विकल्प का मान आवश्यक है।' });
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await addRemarkOption(cleanVal, !!disableAadhar);
-    res.json({ success: true, message: `रिमार्क विकल्प "${cleanVal}" सफलतापूर्वक जोड़ दिया गया।` });
+    res.json({ success: true, message: `Remark option "${cleanVal}" added successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिमार्क विकल्प जोड़ने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error adding remark option: ' + err.message });
   }
 });
 
@@ -76,12 +76,12 @@ router.put('/remark-options/toggle-aadhar', requireAuth, requireAdmin, async (re
   try {
     const { optionValue, disableAadhar } = req.body;
     const cleanVal = (optionValue || '').trim();
-    if (!cleanVal) return res.status(400).json({ success: false, message: 'विकल्प का मान आवश्यक है।' });
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await toggleRemarkOptionAadhar(cleanVal, !!disableAadhar);
-    res.json({ success: true, message: `रिमार्क विकल्प "${cleanVal}" के लिए आधार सेटिंग अपडेट हो गई।` });
+    res.json({ success: true, message: `Aadhar setting updated for remark option "${cleanVal}".` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'आधार सेटिंग बदलने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error updating Aadhar setting: ' + err.message });
   }
 });
 
@@ -91,12 +91,12 @@ router.put('/remark-options', requireAuth, requireAdmin, async (req, res) => {
     const { oldValue, newValue } = req.body;
     const cleanOld = (oldValue || '').trim();
     const cleanNew = (newValue || '').trim();
-    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'पुराना और नया विकल्प दोनों आवश्यक हैं।' });
+    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'Both old and new option values are required.' });
 
     await updateRemarkOption(cleanOld, cleanNew);
-    res.json({ success: true, message: `रिमार्क विकल्प "${cleanOld}" से बदलकर "${cleanNew}" कर दिया गया।` });
+    res.json({ success: true, message: `Remark option updated from "${cleanOld}" to "${cleanNew}".` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिमार्क विकल्प अपडेट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error updating remark option: ' + err.message });
   }
 });
 
@@ -105,12 +105,12 @@ router.delete('/remark-options', requireAuth, requireAdmin, async (req, res) => 
   try {
     const { optionValue } = req.body;
     const cleanVal = (optionValue || '').trim();
-    if (!cleanVal) return res.status(400).json({ success: false, message: 'विकल्प का मान आवश्यक है।' });
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await deleteRemarkOption(cleanVal);
-    res.json({ success: true, message: `रिमार्क विकल्प "${cleanVal}" हटा दिया गया।` });
+    res.json({ success: true, message: `Remark option "${cleanVal}" deleted successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिमार्क विकल्प हटाने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error deleting remark option: ' + err.message });
   }
 });
 
@@ -120,7 +120,7 @@ router.get('/delete-options', requireAuth, async (req, res) => {
     const options = await getDeleteOptions();
     res.json({ success: true, data: options });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट विकल्प लोड करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error loading delete options: ' + err.message });
   }
 });
 
@@ -129,12 +129,12 @@ router.post('/delete-options', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { optionValue } = req.body;
     const cleanVal = (optionValue || '').trim();
-    if (!cleanVal) return res.status(400).json({ success: false, message: 'विकल्प का नाम खाली नहीं हो सकता।' });
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option name cannot be empty.' });
 
     await addDeleteOption(cleanVal);
-    res.json({ success: true, message: `डिलीट कारण "${cleanVal}" सफलतापूर्वक जोड़ दिया गया।` });
+    res.json({ success: true, message: `Delete option "${cleanVal}" added successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट विकल्प जोड़ने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error adding delete option: ' + err.message });
   }
 });
 
@@ -144,12 +144,12 @@ router.put('/delete-options', requireAuth, requireAdmin, async (req, res) => {
     const { oldValue, newValue } = req.body;
     const cleanOld = (oldValue || '').trim();
     const cleanNew = (newValue || '').trim();
-    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'पुराना और नया विकल्प दोनों आवश्यक हैं।' });
+    if (!cleanOld || !cleanNew) return res.status(400).json({ success: false, message: 'Both old and new option values are required.' });
 
     await updateDeleteOption(cleanOld, cleanNew);
-    res.json({ success: true, message: `डिलीट कारण बदलकर "${cleanNew}" कर दिया गया।` });
+    res.json({ success: true, message: `Delete reason updated to "${cleanNew}".` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट विकल्प अपडेट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error updating delete option: ' + err.message });
   }
 });
 
@@ -158,12 +158,12 @@ router.delete('/delete-options', requireAuth, requireAdmin, async (req, res) => 
   try {
     const { optionValue } = req.body;
     const cleanVal = (optionValue || '').trim();
-    if (!cleanVal) return res.status(400).json({ success: false, message: 'विकल्प का मान आवश्यक है।' });
+    if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await deleteDeleteOption(cleanVal);
-    res.json({ success: true, message: `डिलीट कारण "${cleanVal}" हटा दिया गया।` });
+    res.json({ success: true, message: `Delete option "${cleanVal}" deleted successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट विकल्प हटाने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error deleting delete option: ' + err.message });
   }
 });
 
@@ -299,9 +299,9 @@ router.put('/settings', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { aadharMandatory } = req.body;
     const settings = await updateSystemSetting('aadhar_mandatory', aadharMandatory);
-    res.json({ success: true, settings, data: settings, message: 'सिस्टम सेटिंग्स सफलतापूर्वक अपडेट हो गईं।' });
+    res.json({ success: true, settings, data: settings, message: 'System settings updated successfully.' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'सेटिंग्स अपडेट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error updating settings: ' + err.message });
   }
 });
 
@@ -312,11 +312,11 @@ router.get('/by-pid/:pid', requireAuth, async (req, res) => {
     const records = await getRecords();
     const record = records.find(r => String(r.pid).toLowerCase() === pidParam.toLowerCase());
     if (!record) {
-      return res.status(404).json({ success: false, message: 'PID ' + pidParam + ' के लिए रिकॉर्ड नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Record not found for PID ' + pidParam + '.' });
     }
     res.json({ success: true, data: record });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड लोड करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error loading record: ' + err.message });
   }
 });
 
@@ -532,13 +532,13 @@ router.post('/', requireAuth, async (req, res) => {
   const cleanPid = (pid || '').toString().trim();
 
   if (cleanPid && inFlightAddPids.has(cleanPid)) {
-    return res.status(409).json({ success: false, message: 'इस PID के रिकॉर्ड पर कार्य प्रक्रियाधीन है। कृपया प्रतीक्षा करें।' });
+    return res.status(409).json({ success: false, message: 'Operation in progress for this PID. Please wait.' });
   }
   if (cleanPid) inFlightAddPids.add(cleanPid);
 
   try {
     if (req.user.role === 'View') {
-      return res.status(403).json({ success: false, message: 'केवल व्यू अनुमति वाले यूज़र नया रिकॉर्ड नहीं जोड़ सकते।' });
+      return res.status(403).json({ success: false, message: 'Users with View permission cannot create records.' });
     }
 
     const { name, father, utNo, recordType, aadharNo, date, remark } = req.body;
@@ -551,11 +551,11 @@ router.post('/', requireAuth, async (req, res) => {
       cleanUtNo = `${cleanUtNo}-${cleanRecordType}`;
     }
 
-    if (!cleanPid) return res.status(400).json({ success: false, message: 'PID दर्ज करना अनिवार्य है।' });
+    if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
-      return res.status(400).json({ success: false, message: 'PID में केवल अंक (Numbers) होने चाहिए।' });
+      return res.status(400).json({ success: false, message: 'PID must contain digits only.' });
     }
-    if (!cleanName) return res.status(400).json({ success: false, message: 'नाम दर्ज करना अनिवार्य है।' });
+    if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     const now = new Date();
     const createdDate = getFormattedDate(now);
@@ -565,7 +565,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (recordDate > createdDate) {
       return res.status(400).json({ 
         success: false, 
-        message: 'अमान्य दिनांक। भविष्य की तारीख दर्ज नहीं की जा सकती। केवल आज या पुरानी तारीख दर्ज करें।' 
+        message: 'Invalid date. Future dates are not allowed. Please enter today or an earlier date.' 
       });
     }
 
@@ -579,7 +579,7 @@ router.post('/', requireAuth, async (req, res) => {
       if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A' || /^n\/?a$/i.test(effectiveAadharNo.trim())) {
         return res.status(400).json({
           success: false,
-          message: 'सिस्टम सेटिंग्स के अनुसार आधार नंबर अनिवार्य है। कृपया 12 अंकों का आधार नंबर दर्ज करें।'
+          message: 'Aadhar number is mandatory as per system settings. Please enter a 12-digit Aadhar number.'
         });
       }
     }
@@ -595,7 +595,7 @@ router.post('/', requireAuth, async (req, res) => {
     // Check Duplicate PID
     const isPidDup = records.some(r => r.pid.toLowerCase() === cleanPid.toLowerCase());
     if (isPidDup) {
-      return res.status(400).json({ success: false, message: 'यह PID पहले से मौजूद है।' });
+      return res.status(400).json({ success: false, message: 'This PID already exists.' });
     }
 
     // Check Duplicate Aadhar No (if provided and not #N/A)
@@ -608,7 +608,7 @@ router.post('/', requireAuth, async (req, res) => {
       });
 
       if (isAadharDup) {
-        return res.status(400).json({ success: false, message: 'यह आधार नंबर पहले से मौजूद है।' });
+        return res.status(400).json({ success: false, message: 'This Aadhar number already exists.' });
       }
     }
 
@@ -626,9 +626,9 @@ router.post('/', requireAuth, async (req, res) => {
       createdTime: createdTime
     });
 
-    res.json({ success: true, message: 'रिकॉर्ड सफलतापूर्वक बनाया गया!', record: createdRec, data: createdRec });
+    res.json({ success: true, message: 'Record created successfully!', record: createdRec, data: createdRec });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड जोड़ने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error adding record: ' + err.message });
   } finally {
     if (cleanPid) inFlightAddPids.delete(cleanPid);
   }
@@ -682,11 +682,11 @@ router.put('/:id', requireAuth, async (req, res) => {
     const existingRecord = records.find(r => r.id === rowIndex || r.rowIndex === rowIndex);
 
     if (!existingRecord) {
-      return res.status(404).json({ success: false, message: 'रिकॉर्ड नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Record not found.' });
     }
 
     if (!canModifyRecord(req.user, existingRecord)) {
-      return res.status(403).json({ success: false, message: 'आपको यह रिकॉर्ड एडिट करने की अनुमति नहीं है (केवल स्वयं द्वारा 12 घंटे के भीतर बनाए गए रिकॉर्ड एडिट किए जा सकते हैं)।' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to edit this record (Only records created by yourself within 12 hours can be edited).' });
     }
 
     const { pid, name, father, utNo, recordType, aadharNo, date, remark } = req.body;
@@ -700,11 +700,11 @@ router.put('/:id', requireAuth, async (req, res) => {
       cleanUtNo = `${cleanUtNo}-${cleanRecordType}`;
     }
 
-    if (!cleanPid) return res.status(400).json({ success: false, message: 'PID दर्ज करना अनिवार्य है।' });
+    if (!cleanPid) return res.status(400).json({ success: false, message: 'PID is required.' });
     if (!/^\d+$/.test(cleanPid)) {
-      return res.status(400).json({ success: false, message: 'PID में केवल अंक (Numbers) होने चाहिए।' });
+      return res.status(400).json({ success: false, message: 'PID must contain digits only.' });
     }
-    if (!cleanName) return res.status(400).json({ success: false, message: 'नाम दर्ज करना अनिवार्य है।' });
+    if (!cleanName) return res.status(400).json({ success: false, message: 'Name is required.' });
 
     // Handle disabled remarks (Aadhar Not Made, Foreigner, etc.)
     const isDisabledRemark = await isAadharDisabledRemark(cleanRemark);
@@ -714,7 +714,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const sysSettings = await getSystemSettings();
     if (sysSettings.aadharMandatory && !isDisabledRemark) {
       if (!effectiveAadharNo || effectiveAadharNo.trim() === '' || effectiveAadharNo.trim() === '#N/A') {
-        return res.status(400).json({ success: false, message: 'सिस्टम सेटिंग्स के अनुसार आधार नंबर अनिवार्य है।' });
+        return res.status(400).json({ success: false, message: 'Aadhar number is mandatory as per system settings.' });
       }
     }
 
@@ -727,7 +727,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     // Check duplicate PID excluding current row
     const isPidDup = records.some(r => r.pid.toLowerCase() === cleanPid.toLowerCase() && (r.id !== rowIndex && r.rowIndex !== rowIndex));
     if (isPidDup) {
-      return res.status(400).json({ success: false, message: 'यह PID पहले से मौजूद है।' });
+      return res.status(400).json({ success: false, message: 'This PID already exists.' });
     }
 
     // Check duplicate Aadhar No excluding current row
@@ -740,7 +740,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       });
 
       if (isAadharDup) {
-        return res.status(400).json({ success: false, message: 'यह आधार नंबर पहले से मौजूद है।' });
+        return res.status(400).json({ success: false, message: 'This Aadhar number already exists.' });
       }
     }
 
@@ -752,7 +752,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (targetDate && targetDate > updatedDate) {
       return res.status(400).json({ 
         success: false, 
-        message: 'अमान्य दिनांक। भविष्य की तारीख दर्ज नहीं की जा सकती। केवल आज या पुरानी तारीख दर्ज करें।' 
+        message: 'Invalid date. Future dates are not allowed. Please enter today or an earlier date.' 
       });
     }
 
@@ -769,9 +769,9 @@ router.put('/:id', requireAuth, async (req, res) => {
       updatedTime: updatedTime
     });
 
-    res.json({ success: true, message: 'रिकॉर्ड सफलतापूर्वक अपडेट हो गया!' });
+    res.json({ success: true, message: 'Record updated successfully!' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड अपडेट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error updating record: ' + err.message });
   }
 });
 
@@ -783,18 +783,18 @@ router.delete('/:id', requireAuth, async (req, res) => {
     const existingRecord = records.find(r => r.id === rowIndex || r.rowIndex === rowIndex);
 
     if (!existingRecord) {
-      return res.status(404).json({ success: false, message: 'रिकॉर्ड नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Record not found.' });
     }
 
     if (!canModifyRecord(req.user, existingRecord)) {
-      return res.status(403).json({ success: false, message: 'आपको यह रिकॉर्ड डिलीट करने की अनुमति नहीं है (केवल स्वयं द्वारा 12 घंटे के भीतर बनाए गए रिकॉर्ड डिलीट किए जा सकते हैं)।' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to delete this record (Only records created by yourself within 12 hours can be deleted).' });
     }
 
     await deleteRecord(rowIndex);
 
-    res.json({ success: true, message: 'रिकॉर्ड सफलतापूर्वक डिलीट कर दिया गया।' });
+    res.json({ success: true, message: 'Record deleted successfully.' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड डिलीट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error deleting record: ' + err.message });
   }
 });
 

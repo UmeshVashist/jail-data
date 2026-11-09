@@ -19,7 +19,7 @@ export default function RequestListAddModal({ isOpen, onClose, onRequestAdded })
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!optionValue.trim()) {
-      showToast('विकल्प का नाम आवश्यक है।', 'warning');
+      showToast('Option value is required.', 'warning');
       return;
     }
 
@@ -32,17 +32,17 @@ export default function RequestListAddModal({ isOpen, onClose, onRequestAdded })
       });
 
       if (res && res.success) {
-        showToast(res.message || 'नया ड्रॉपडाउन विकल्प जोड़ने का अनुरोध सफलतापूर्वक एडमिन को भेज दिया गया!', 'success');
+        showToast(res.message || 'Request to add new dropdown option submitted successfully to Admin!', 'success');
         setOptionValue('');
         setReason('');
         setDisableAadhar(false);
         onClose();
         if (onRequestAdded) onRequestAdded(res.data);
       } else {
-        showToast(res.message || 'अनुरोध भेजने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to submit request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध भेजने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error submitting request.', 'danger');
     } finally {
       setLoading(false);
     }

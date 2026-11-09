@@ -34,7 +34,7 @@ export default function ImportData() {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) {
-      showToast('कृपया इम्पोर्ट करने के लिए एक्सेल या CSV फ़ाइल चुनें।', 'warning');
+      showToast('Please select an Excel or CSV file to import.', 'warning');
       return;
     }
 
@@ -48,14 +48,14 @@ export default function ImportData() {
     try {
       const res = await api.post('/api/import', formData);
       if (res && res.success) {
-        showToast(res.message || 'डेटा सफलतापूर्वक इम्पोर्ट हो गया!', 'success');
+        showToast(res.message || 'Data imported successfully!', 'success');
         setImportSummary(res.summary || res);
         setFile(null);
       } else {
-        showToast(res.message || 'इम्पोर्ट विफल रहा।', 'danger');
+        showToast(res.message || 'Import failed.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'फ़ाइल अपलोड करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error uploading file.', 'danger');
     } finally {
       setUploading(false);
     }

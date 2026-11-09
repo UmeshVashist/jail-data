@@ -5,7 +5,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { translateToHindi } from '../utils/hindiTranslator';
 import CyberBackground3D from '../components/CyberBackground3D';
 
 export default function Login() {
@@ -30,9 +29,8 @@ export default function Login() {
       await login(username.trim(), password);
       navigate('/dashboard');
     } catch (err) {
-      const rawMsg = err.message || 'अमान्य यूज़रनेम या पासवर्ड।';
-      const msg = translateToHindi(rawMsg);
-      if (!rawMsg.toLowerCase().includes('successful') && !rawMsg.includes('सफल')) {
+      const msg = err.message || 'Invalid Username or Password.';
+      if (!msg.toLowerCase().includes('successful')) {
         setError(msg);
       } else {
         navigate('/dashboard');

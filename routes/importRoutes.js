@@ -174,7 +174,7 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
   try {
     const records = req.body.records;
     if (!records || !Array.isArray(records) || records.length === 0) {
-      return res.status(400).json({ success: false, message: 'इम्पोर्ट करने के लिए कोई मान्य रिकॉर्ड नहीं मिला।' });
+      return res.status(400).json({ success: false, message: 'No valid records found to import.' });
     }
 
     const existingRecords = await getRecords();
@@ -327,7 +327,7 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'बैच इम्पोर्ट सफलतापूर्वक संपन्न हुआ।',
+      message: 'Batch import completed successfully.',
       data: {
         importedCount: importedCount,
         duplicateCount: duplicateCount,
@@ -340,7 +340,7 @@ router.post('/', requireAuth, requireImportPermission, async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'इम्पोर्ट प्रोसेसिंग त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Import processing error: ' + err.message });
   }
 });
 

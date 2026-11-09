@@ -49,14 +49,14 @@ export default function ReviewEditRequestModal({ isOpen, onClose, request, onAct
     try {
       const res = await api.put(`/api/edit-requests/${request.id}/approve`);
       if (res && res.success) {
-        showToast(res.message || 'एडिट अनुरोध स्वीकृत हुआ और रिकॉर्ड सफलतापूर्वक अपडेट हो गया!', 'success');
+        showToast(res.message || 'Edit request approved and record updated successfully!', 'success');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'Edit', status: 'Approved' });
       } else {
-        showToast(res.message || 'अनुरोध स्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to approve edit request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध स्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error approving edit request.', 'danger');
     } finally {
       setLoading(false);
     }
@@ -67,14 +67,14 @@ export default function ReviewEditRequestModal({ isOpen, onClose, request, onAct
     try {
       const res = await api.put(`/api/edit-requests/${request.id}/reject`);
       if (res && res.success) {
-        showToast(res.message || 'एडिट अनुरोध अस्वीकृत (Reject) कर दिया गया।', 'info');
+        showToast(res.message || 'Edit request rejected.', 'info');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'Edit', status: 'Rejected' });
       } else {
-        showToast(res.message || 'अनुरोध अस्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to reject edit request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध अस्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error rejecting edit request.', 'danger');
     } finally {
       setLoading(false);
     }

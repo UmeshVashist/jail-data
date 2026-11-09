@@ -18,14 +18,14 @@ export default function ReviewDeleteRequestModal({ isOpen, onClose, request, onA
     try {
       const res = await api.put(`/api/delete-requests/${request.id}/approve`);
       if (res && res.success) {
-        showToast(res.message || 'डिलीट अनुरोध स्वीकृत किया गया और रिकॉर्ड अप्रूव्ड लिस्ट में सुरक्षित कर दिया गया!', 'success');
+        showToast(res.message || 'Delete request approved and record archived safely!', 'success');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'Delete', status: 'Approved' });
       } else {
-        showToast(res.message || 'डिलीट अनुरोध स्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to approve delete request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'डिलीट अनुरोध स्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error approving delete request.', 'danger');
     } finally {
       setLoading(false);
     }
@@ -36,14 +36,14 @@ export default function ReviewDeleteRequestModal({ isOpen, onClose, request, onA
     try {
       const res = await api.put(`/api/delete-requests/${request.id}/reject`);
       if (res && res.success) {
-        showToast(res.message || 'डिलीट अनुरोध अस्वीकृत (Reject) कर दिया गया।', 'info');
+        showToast(res.message || 'Delete request rejected.', 'info');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'Delete', status: 'Rejected' });
       } else {
-        showToast(res.message || 'अनुरोध अस्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to reject request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध अस्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error rejecting request.', 'danger');
     } finally {
       setLoading(false);
     }

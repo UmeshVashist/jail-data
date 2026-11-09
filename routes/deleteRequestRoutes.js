@@ -43,7 +43,7 @@ function getFormattedTime(d = new Date()) {
 router.post('/', async (req, res) => {
   try {
     if (req.user.role === 'View') {
-      return res.status(403).json({ success: false, message: 'View उपयोगकर्ता डिलीट अनुरोध नहीं भेज सकते हैं।' });
+      return res.status(403).json({ success: false, message: 'Users with View permission cannot submit delete requests.' });
     }
 
     const { recordId, reason } = req.body;
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
     const targetRecord = records.find(r => r.id === targetRecordId || r.rowIndex === targetRecordId);
 
     if (!targetRecord) {
-      return res.status(404).json({ success: false, message: 'लक्षित रिकॉर्ड नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Target record not found.' });
     }
 
     // Check if ANY pending request (Delete OR Edit) already exists for this record/PID
@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
     if (existingPendingDelete) {
       return res.status(400).json({ 
         success: false, 
-        message: `इस PID (${targetRecord.pid}) का डिलीट अनुरोध पहले से पेंडिंग है। कृपया एडमिन अप्रूवल का इंतजार करें।` 
+        message: `A delete request for PID ${targetRecord.pid} is already pending. Please wait for Admin approval.` 
       });
     }
 
@@ -80,7 +80,7 @@ router.post('/', async (req, res) => {
     if (existingPendingEdit) {
       return res.status(400).json({ 
         success: false, 
-        message: `इस PID (${targetRecord.pid}) का एडिट अनुरोध पहले से पेंडिंग है। एक PID के लिए एक समय में सिर्फ 1 अनुरोध भेजा जा सकता है।` 
+        message: `An edit request for PID ${targetRecord.pid} is already pending. Only 1 pending request is allowed per PID.` 
       });
     }
 
@@ -101,9 +101,9 @@ router.post('/', async (req, res) => {
       reason: (reason || '').toString().trim()
     });
 
-    res.json({ success: true, message: `PID ${targetRecord.pid} के लिए डिलीट अनुरोध सफलतापूर्वक भेज दिया गया!` });
+    res.json({ success: true, message: `Delete request for PID ${targetRecord.pid} submitted successfully!` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट अनुरोध भेजने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error submitting delete request: ' + err.message });
   }
 });
 
@@ -170,11 +170,11 @@ const handleApproveDelete = async (req, res) => {
     );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Delete request not found.' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
+      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status}.` });
     }
 
     // Soft delete the record so it is hidden from active Data Records/Dashboard, but retained in database
@@ -194,10 +194,10 @@ const handleApproveDelete = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: `PID ${targetReq.pid} के लिए डिलीट अनुरोध स्वीकृत किया गया। रिकॉर्ड अप्रूव्ड लिस्ट में सुरक्षित है (एडमिन इसे बाद में स्थायी डिलीट या रीस्टोर कर सकते हैं)।` 
+      message: `Delete request for PID ${targetReq.pid} approved. The record is safely archived in the deletion approval list.` 
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट अनुरोध स्वीकृत करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error approving delete request: ' + err.message });
   }
 };
 router.post('/:id/approve', requireDeleteRequestPermission, handleApproveDelete);
@@ -240,9 +240,9 @@ const handlePermanentDeleteSingle = async (req, res) => {
     }
 
     const displayPid = targetReq ? targetReq.pid : (targetRecord ? targetRecord.pid : rawId);
-    res.json({ success: true, message: `रिकॉर्ड PID ${displayPid} डेटाबेस से हमेशा के लिए सफलतापूर्वक डिलीट कर दिया गया है।` });
+    res.json({ success: true, message: `Record PID ${displayPid} permanently deleted from the database.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड स्थायी रूप से डिलीट करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error permanently deleting record: ' + err.message });
   }
 };
 router.delete('/:id/permanent', requireAdmin, handlePermanentDeleteSingle);
@@ -257,7 +257,7 @@ const handleBulkPermanentDelete = async (req, res) => {
       try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(',').map(s => s.trim()); }
     }
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'कोई रिकॉर्ड आईडी प्रदान नहीं की गई।' });
+      return res.status(400).json({ success: false, message: 'No record IDs provided.' });
     }
 
     const allRequests = await getDeleteRequests();
@@ -296,9 +296,9 @@ const handleBulkPermanentDelete = async (req, res) => {
       deletedCount++;
     }
 
-    res.json({ success: true, message: `चयनित ${deletedCount} रिकॉर्ड डेटाबेस से हमेशा के लिए सफलतापूर्वक डिलीट कर दिए गए हैं।` });
+    res.json({ success: true, message: `Selected ${deletedCount} record(s) permanently deleted from the database.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'बल्क डिलीट में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error in bulk permanent delete: ' + err.message });
   }
 };
 router.post('/bulk-permanent', requireAdmin, handleBulkPermanentDelete);
@@ -356,9 +356,9 @@ const handleRestoreSingle = async (req, res) => {
     }
 
     const displayPid = targetReq ? targetReq.pid : (targetRecord ? targetRecord.pid : rawId);
-    res.json({ success: true, message: `रिकॉर्ड PID ${displayPid} मुख्य सक्रिय डेटा में सफलतापूर्वक रीस्टोर कर दिया गया है।` });
+    res.json({ success: true, message: `Record PID ${displayPid} restored to active data successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'रिकॉर्ड रीस्टोर करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error restoring record: ' + err.message });
   }
 };
 router.post('/:id/restore', requireAdmin, handleRestoreSingle);
@@ -373,7 +373,7 @@ const handleBulkRestore = async (req, res) => {
       try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(',').map(s => s.trim()); }
     }
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'कोई रिकॉर्ड आईडी प्रदान नहीं की गई।' });
+      return res.status(400).json({ success: false, message: 'No record IDs provided.' });
     }
 
     const allRequests = await getDeleteRequests();
@@ -426,9 +426,9 @@ const handleBulkRestore = async (req, res) => {
       restoredCount++;
     }
 
-    res.json({ success: true, message: `चयनित ${restoredCount} रिकॉर्ड मुख्य सक्रिय डेटा में सफलतापूर्वक रीस्टोर कर दिए गए हैं।` });
+    res.json({ success: true, message: `Selected ${restoredCount} record(s) restored to active data successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'बल्क रीस्टोर में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error in bulk restore: ' + err.message });
   }
 };
 router.post('/bulk-restore', requireAdmin, handleBulkRestore);
@@ -448,18 +448,18 @@ const handleRejectDelete = async (req, res) => {
     );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Delete request not found.' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `अनुरोध पहले से ही ${targetReq.status} है।` });
+      return res.status(400).json({ success: false, message: `Request is already ${targetReq.status}.` });
     }
 
     await updateDeleteRequestStatus(targetReq.id || requestId, 'Rejected', req.user.username);
 
-    res.json({ success: true, message: `PID ${targetReq.pid} के लिए डिलीट अनुरोध अस्वीकृत (Reject) कर दिया गया।` });
+    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} rejected.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'डिलीट अनुरोध अस्वीकृत करने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error rejecting delete request: ' + err.message });
   }
 };
 router.post('/:id/reject', requireDeleteRequestPermission, handleRejectDelete);
@@ -479,23 +479,23 @@ const handleWithdrawDelete = async (req, res) => {
     );
 
     if (!targetReq) {
-      return res.status(404).json({ success: false, message: 'डिलीट अनुरोध नहीं मिला।' });
+      return res.status(404).json({ success: false, message: 'Delete request not found.' });
     }
 
     // Verify ownership
     if (String(targetReq.requestedBy).toLowerCase() !== String(req.user.username).toLowerCase() && req.user.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'आप केवल अपने द्वारा भेजे गए डिलीट अनुरोध को ही वापस (Withdraw) ले सकते हैं।' });
+      return res.status(403).json({ success: false, message: 'You can only withdraw delete requests submitted by yourself.' });
     }
 
     if (String(targetReq.status || '').toLowerCase() !== 'pending') {
-      return res.status(400).json({ success: false, message: `जो अनुरोध पहले से ${targetReq.status} हो चुका है, उसे वापस नहीं लिया जा सकता।` });
+      return res.status(400).json({ success: false, message: `Requests with status ${targetReq.status} cannot be withdrawn.` });
     }
 
     await deleteDeleteRequest(targetReq.id || requestId);
 
-    res.json({ success: true, message: `PID ${targetReq.pid} के लिए भेजा गया डिलीट अनुरोध सफलतापूर्वक वापस (Withdraw) ले लिया गया है।` });
+    res.json({ success: true, message: `Delete request for PID ${targetReq.pid} withdrawn successfully.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'अनुरोध वापस लेने में त्रुटि: ' + err.message });
+    res.status(500).json({ success: false, message: 'Error withdrawing request: ' + err.message });
   }
 };
 router.delete('/:id/cancel', handleWithdrawDelete);

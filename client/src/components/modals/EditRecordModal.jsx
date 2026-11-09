@@ -90,7 +90,7 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
     if (isSubmitting || !record) return;
 
     if (!name.trim()) {
-      showToast('नाम दर्ज करना अनिवार्य है।', 'warning');
+      showToast('Name is required.', 'warning');
       return;
     }
 
@@ -117,7 +117,7 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
       });
 
       if (res && res.success) {
-        showToast(res.message || 'रिकॉर्ड सफलतापूर्वक अपडेट हो गया!', 'success');
+        showToast(res.message || 'Record updated successfully!', 'success');
         const updatedRec = res.data || res.record || {
           ...record,
           name: name.trim().toUpperCase(),
@@ -131,11 +131,11 @@ export default function EditRecordModal({ isOpen, onClose, record, onRecordUpdat
         onClose();
         if (onRecordUpdated) onRecordUpdated(updatedRec);
       } else {
-        showToast(res.message || 'रिकॉर्ड अपडेट करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to update record.', 'danger');
         setIsSubmitting(false);
       }
     } catch (err) {
-      showToast(err.message || 'रिकॉर्ड अपडेट करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error updating record.', 'danger');
       setIsSubmitting(false);
     }
   };

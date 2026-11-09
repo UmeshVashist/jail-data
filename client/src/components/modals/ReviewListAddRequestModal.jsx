@@ -18,14 +18,14 @@ export default function ReviewListAddRequestModal({ isOpen, onClose, request, on
     try {
       const res = await api.put(`/api/list-add-requests/${request.id}/approve`);
       if (res && res.success) {
-        showToast(res.message || 'ड्रॉपडाउन विकल्प स्वीकृत किया गया और स्थायी रूप से जोड़ दिया गया!', 'success');
+        showToast(res.message || 'Dropdown option approved and added permanently!', 'success');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'List Add', status: 'Approved' });
       } else {
-        showToast(res.message || 'अनुरोध स्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to approve request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध स्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error approving request.', 'danger');
     } finally {
       setLoading(false);
     }
@@ -36,14 +36,14 @@ export default function ReviewListAddRequestModal({ isOpen, onClose, request, on
     try {
       const res = await api.put(`/api/list-add-requests/${request.id}/reject`);
       if (res && res.success) {
-        showToast(res.message || 'ड्रॉपडाउन विकल्प अनुरोध अस्वीकृत (Reject) कर दिया गया।', 'info');
+        showToast(res.message || 'Dropdown option request rejected.', 'info');
         onClose();
         if (onActionCompleted) onActionCompleted({ id: request.id, requestType: 'List Add', status: 'Rejected' });
       } else {
-        showToast(res.message || 'अनुरोध अस्वीकृत करने में विफलता।', 'danger');
+        showToast(res.message || 'Failed to reject request.', 'danger');
       }
     } catch (err) {
-      showToast(err.message || 'अनुरोध अस्वीकृत करने में त्रुटि आई।', 'danger');
+      showToast(err.message || 'Error rejecting request.', 'danger');
     } finally {
       setLoading(false);
     }

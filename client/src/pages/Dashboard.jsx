@@ -270,11 +270,11 @@ export default function Dashboard() {
                               setEditRecord(rec);
                             } else {
                               if (rec.hasPendingEditRequest) {
-                                showToast(`PID ${rec.pid} का एडिट अनुरोध पहले से पेंडिंग है।`, 'warning');
+                                showToast(`An edit request for PID ${rec.pid} is already pending.`, 'warning');
                                 return;
                               }
                               if (rec.hasPendingDeleteRequest) {
-                                showToast(`PID ${rec.pid} का डिलीट अनुरोध पहले से पेंडिंग है। एक PID पर केवल 1 अनुरोध की अनुमति है।`, 'warning');
+                                showToast(`A delete request for PID ${rec.pid} is already pending. Only 1 request allowed per PID.`, 'warning');
                                 return;
                               }
                               setReqEditRecord(rec);
@@ -292,11 +292,11 @@ export default function Dashboard() {
                               setDelRecord(rec);
                             } else {
                               if (rec.hasPendingDeleteRequest) {
-                                showToast(`PID ${rec.pid} का डिलीट अनुरोध पहले से पेंडिंग है।`, 'warning');
+                                showToast(`A delete request for PID ${rec.pid} is already pending.`, 'warning');
                                 return;
                               }
                               if (rec.hasPendingEditRequest) {
-                                showToast(`PID ${rec.pid} का एडिट अनुरोध पहले से पेंडिंग है। एक PID पर केवल 1 अनुरोध की अनुमति है।`, 'warning');
+                                showToast(`An edit request for PID ${rec.pid} is already pending. Only 1 request allowed per PID.`, 'warning');
                                 return;
                               }
                               setReqDelRecord(rec);

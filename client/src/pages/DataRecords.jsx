@@ -98,7 +98,7 @@ export default function DataRecords() {
         setTotalPages(res.pagination?.totalPages || pages);
       }
     } catch (err) {
-      showToast('डेटा रिकॉर्ड लोड करने में समस्या आई: ' + (err.message || 'त्रुटि'), 'danger');
+      showToast('Error loading data records: ' + (err.message || 'Error'), 'danger');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -193,7 +193,7 @@ export default function DataRecords() {
       });
 
       if (!res.ok) {
-        let errorMsg = 'रिकॉर्ड निर्यात करने में विफलता।';
+        let errorMsg = 'Failed to export records.';
         try {
           const errData = await res.json();
           if (errData && errData.message) errorMsg = errData.message;
@@ -225,10 +225,10 @@ export default function DataRecords() {
         document.body.removeChild(a);
       }, 200);
 
-      showToast('एक्सेल फ़ाइल सफलतापूर्वक डाउनलोड हो गई!', 'success');
+      showToast('Excel file downloaded successfully!', 'success');
     } catch (err) {
       console.error('Export error:', err);
-      showToast('फ़ाइल डाउनलोड करने में त्रुटि: ' + (err.message || 'त्रुटि'), 'danger');
+      showToast('Error downloading file: ' + (err.message || 'Error'), 'danger');
     } finally {
       setIsExporting(false);
     }
@@ -550,11 +550,11 @@ export default function DataRecords() {
                               setEditRecord(rec);
                             } else {
                               if (rec.hasPendingEditRequest) {
-                                showToast(`PID ${rec.pid} का एडिट अनुरोध पहले से पेंडिंग है।`, 'warning');
+                                showToast(`An edit request for PID ${rec.pid} is already pending.`, 'warning');
                                 return;
                               }
                               if (rec.hasPendingDeleteRequest) {
-                                showToast(`PID ${rec.pid} का डिलीट अनुरोध पहले से पेंडिंग है। एक PID पर केवल 1 अनुरोध की अनुमति है।`, 'warning');
+                                showToast(`A delete request for PID ${rec.pid} is already pending. Only 1 request allowed per PID.`, 'warning');
                                 return;
                               }
                               setReqEditRecord(rec);
@@ -572,11 +572,11 @@ export default function DataRecords() {
                               setDelRecord(rec);
                             } else {
                               if (rec.hasPendingDeleteRequest) {
-                                showToast(`PID ${rec.pid} का डिलीट अनुरोध पहले से पेंडिंग है।`, 'warning');
+                                showToast(`A delete request for PID ${rec.pid} is already pending.`, 'warning');
                                 return;
                               }
                               if (rec.hasPendingEditRequest) {
-                                showToast(`PID ${rec.pid} का एडिट अनुरोध पहले से पेंडिंग है। एक PID पर केवल 1 अनुरोध की अनुमति है।`, 'warning');
+                                showToast(`An edit request for PID ${rec.pid} is already pending. Only 1 request allowed per PID.`, 'warning');
                                 return;
                               }
                               setReqDelRecord(rec);
