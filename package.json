@@ -6,9 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch --watch-path=server.js --watch-path=routes --watch-path=config --watch-path=middleware server.js",
-    "build:client": "cd client && npm install && npm run build",
+    "build:client": "npm install --prefix client && npm run build --prefix client",
     "build": "npm run build:client",
-    "client:dev": "cd client && npm run dev"
+    "postinstall": "npm run build:client",
+    "heroku-postbuild": "npm run build:client",
+    "client:dev": "npm run dev --prefix client"
   },
   "keywords": [
     "react",
