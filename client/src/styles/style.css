@@ -562,6 +562,11 @@ body.dark-theme .form-check-input:checked,
 body.dark-theme .form-check-input:indeterminate {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: 1 !important;
 }
 
 /* ==========================================================================
@@ -2616,13 +2621,53 @@ body.theme-classic .form-switch .form-check-input {
 }
 
 body:not(.theme-modern-3d) .form-check-input:checked,
-body:not(.theme-modern-3d) .form-check-input:indeterminate,
+body:not(.theme-modern-3d) .table .form-check-input:checked,
 body:not(.theme-modern-3d) .form-switch .form-check-input:checked,
 body.theme-classic .form-check-input:checked,
-body.theme-classic .form-check-input:indeterminate,
-body.theme-classic .form-switch .form-check-input:checked {
+body.theme-classic .table .form-check-input:checked,
+body.theme-classic .form-switch .form-check-input:checked,
+.form-check-input:checked,
+.table .form-check-input:checked {
   background-color: #2563eb !important;
   border-color: #2563eb !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: 1 !important;
+}
+
+body:not(.theme-modern-3d) .form-check-input:indeterminate,
+body:not(.theme-modern-3d) .table .form-check-input:indeterminate,
+body.theme-classic .form-check-input:indeterminate,
+body.theme-classic .table .form-check-input:indeterminate,
+.form-check-input:indeterminate,
+.table .form-check-input:indeterminate {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: 1 !important;
+}
+
+body:not(.theme-modern-3d) .form-check-input:not(:checked):not(:indeterminate),
+body:not(.theme-modern-3d) .table .form-check-input:not(:checked):not(:indeterminate),
+body.theme-classic .form-check-input:not(:checked):not(:indeterminate),
+body.theme-classic .table .form-check-input:not(:checked):not(:indeterminate),
+.table .form-check-input:not(:checked):not(:indeterminate) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+
+.table tbody tr.table-active {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+}
+
+.table tbody tr.table-active td {
+  background-color: rgba(37, 99, 235, 0.08) !important;
 }
 
 /* --- FIX: System Settings Card Header & Container (No black boxes!) --- */

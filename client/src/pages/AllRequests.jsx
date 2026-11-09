@@ -3,7 +3,7 @@
  * Admin Requests Management Hub (Edit, Delete, and List-Add Requests)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ReviewEditRequestModal from '../components/modals/ReviewEditRequestModal';
@@ -107,17 +107,16 @@ export default function AllRequests() {
     return true;
   });
 
-  // Check if an item can be selected for batch operations
-  const isSelectable = (r) => {
-    if (!r) return false;
-    if ((r.status || 'Pending') === 'Pending') return true;
-    if (r.requestType === 'Delete' && r.status === 'Approved') return true;
-    return false;
-  };
+  // Selection state for all currently filtered requests
+  const isAllSelected = filtered.length > 0 && filtered.every(r => selectedRequests.has(`${r.requestType}_${r.id}`));
+  const isIndeterminate = !isAllSelected && filtered.some(r => selectedRequests.has(`${r.requestType}_${r.id}`));
 
-  // Filtered items that can be selected
-  const selectableFiltered = filtered.filter(isSelectable);
-  const isAllSelected = selectableFiltered.length > 0 && selectableFiltered.every(r => selectedRequests.has(`${r.requestType}_${r.id}`));
+  const headerCheckboxRef = useRef(null);
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
 
   const toggleSelect = (req) => {
     const key = `${req.requestType}_${req.id}`;
@@ -131,11 +130,17 @@ export default function AllRequests() {
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
-      setSelectedRequests(new Map());
+      setSelectedRequests(prev => {
+        const next = new Map(prev);
+        filtered.forEach(r => next.delete(`${r.requestType}_${r.id}`));
+        return next;
+      });
     } else {
-      const next = new Map(selectedRequests);
-      selectableFiltered.forEach(r => next.set(`${r.requestType}_${r.id}`, r));
-      setSelectedRequests(next);
+      setSelectedRequests(prev => {
+        const next = new Map(prev);
+        filtered.forEach(r => next.set(`${r.requestType}_${r.id}`, r));
+        return next;
+      });
     }
   };
 
@@ -375,15 +380,28 @@ export default function AllRequests() {
           <div
             className={`card stat-card h-100 p-3 ${typeFilter === 'Edit' ? 'border-cyan border-2 shadow-sm' : ''}`}
             onClick={() => {
-              setTypeFilter(prev => prev === 'Edit' ? 'All' : 'Edit');
+              if (typeFilter === 'Edit' && statusFilter === 'All') {
+                setTypeFilter('All');
+              } else {
+                setTypeFilter('Edit');
+                setStatusFilter('All');
+              }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to filter Edit requests (Click again to show all types)"
+            title="Click to view all Edit requests (Click again to show all types)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Edit Requests</span>
-                <div className="d-flex align-items-baseline gap-2 mt-1">
+                <div 
+                  className="d-flex align-items-baseline gap-2 mt-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTypeFilter('Edit');
+                    setStatusFilter('Pending');
+                  }}
+                  title="Click to filter Pending Edit requests"
+                >
                   <h2 className="fw-bold text-cyan mb-0">{editPending}</h2>
                   <span className="small text-muted">Pending</span>
                 </div>
@@ -416,15 +434,28 @@ export default function AllRequests() {
           <div
             className={`card stat-card h-100 p-3 ${typeFilter === 'Delete' ? 'border-danger border-2 shadow-sm' : ''}`}
             onClick={() => {
-              setTypeFilter(prev => prev === 'Delete' ? 'All' : 'Delete');
+              if (typeFilter === 'Delete' && statusFilter === 'All') {
+                setTypeFilter('All');
+              } else {
+                setTypeFilter('Delete');
+                setStatusFilter('All');
+              }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to filter Delete requests (Click again to show all types)"
+            title="Click to view all Delete requests (Click again to show all types)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Delete Requests</span>
-                <div className="d-flex align-items-baseline gap-2 mt-1">
+                <div 
+                  className="d-flex align-items-baseline gap-2 mt-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTypeFilter('Delete');
+                    setStatusFilter('Pending');
+                  }}
+                  title="Click to filter Pending Delete requests"
+                >
                   <h2 className="fw-bold text-danger mb-0">{delPending}</h2>
                   <span className="small text-muted">Pending</span>
                 </div>
@@ -457,15 +488,28 @@ export default function AllRequests() {
           <div
             className={`card stat-card h-100 p-3 ${typeFilter === 'List Add' ? 'border-success border-2 shadow-sm' : ''}`}
             onClick={() => {
-              setTypeFilter(prev => prev === 'List Add' ? 'All' : 'List Add');
+              if (typeFilter === 'List Add' && statusFilter === 'All') {
+                setTypeFilter('All');
+              } else {
+                setTypeFilter('List Add');
+                setStatusFilter('All');
+              }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to filter List Add requests (Click again to show all types)"
+            title="Click to view all List Add requests (Click again to show all types)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">List Add Requests</span>
-                <div className="d-flex align-items-baseline gap-2 mt-1">
+                <div 
+                  className="d-flex align-items-baseline gap-2 mt-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTypeFilter('List Add');
+                    setStatusFilter('Pending');
+                  }}
+                  title="Click to filter Pending List Add requests"
+                >
                   <h2 className="fw-bold text-success mb-0">{listPending}</h2>
                   <span className="small text-muted">Pending</span>
                 </div>
@@ -557,12 +601,40 @@ export default function AllRequests() {
                 setTypeFilter('All');
                 setStatusFilter('All');
               }}
-              title="Reset filters"
+              title="Reset all filters"
             >
               <i className="bi bi-x-lg"></i>
             </button>
           </div>
         </div>
+
+        {/* Active Filter Indicator */}
+        {(typeFilter !== 'All' || statusFilter !== 'All' || searchQuery.trim()) && (
+          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2 pt-2 border-top border-secondary border-opacity-25 small text-muted">
+            <div className="d-flex align-items-center gap-1.5 flex-wrap">
+              <span>Active Filters:</span>
+              {typeFilter !== 'All' && (
+                <span className="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 d-inline-flex align-items-center gap-1">
+                  Type: {typeFilter}
+                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setTypeFilter('All')}></i>
+                </span>
+              )}
+              {statusFilter !== 'All' && (
+                <span className="badge bg-info bg-opacity-25 text-cyan border border-cyan border-opacity-25 d-inline-flex align-items-center gap-1">
+                  Status: {statusFilter}
+                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setStatusFilter('All')}></i>
+                </span>
+              )}
+              {searchQuery.trim() && (
+                <span className="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 d-inline-flex align-items-center gap-1">
+                  Search: "{searchQuery.trim()}"
+                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setSearchQuery('')}></i>
+                </span>
+              )}
+            </div>
+            <span>Showing <strong className="text-cyan">{filtered.length}</strong> of <strong>{requests.length}</strong> requests</span>
+          </div>
+        )}
       </div>
 
       {/* Bulk Action Banner */}
@@ -670,11 +742,13 @@ export default function AllRequests() {
                 <th style={{ width: '40px', textAlign: 'center' }}>
                   <input
                     type="checkbox"
+                    ref={headerCheckboxRef}
                     className="form-check-input"
                     checked={isAllSelected}
                     onChange={toggleSelectAll}
-                    disabled={selectableFiltered.length === 0}
-                    title="Select all selectable requests (Pending or Approved Delete)"
+                    disabled={filtered.length === 0}
+                    title={isAllSelected ? "Deselect all visible requests" : "Select all visible requests"}
+                    aria-label="Select all requests"
                   />
                 </th>
                 <th>Type</th>
@@ -698,8 +772,24 @@ export default function AllRequests() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="text-center py-5 text-muted">
-                    <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                    No requests match the current filters.
+                    <i className="bi bi-funnel fs-2 d-block mb-2 text-secondary"></i>
+                    <div className="fw-semibold">No requests match the current filters.</div>
+                    <div className="small text-muted mt-1">
+                      Type: <span className="badge bg-secondary me-1">{typeFilter}</span>
+                      Status: <span className="badge bg-secondary me-1">{statusFilter}</span>
+                      {searchQuery && <span className="badge bg-secondary">Search: "{searchQuery}"</span>}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-cyan btn-sm mt-3 px-3 py-1.5 fw-semibold"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setTypeFilter('All');
+                        setStatusFilter('All');
+                      }}
+                    >
+                      <i className="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -723,18 +813,24 @@ export default function AllRequests() {
                   const isSelected = selectedRequests.has(`${req.requestType}_${req.id}`);
 
                   return (
-                    <tr key={req.id || idx} className={isSelected ? 'table-active' : ''}>
-                      <td style={{ textAlign: 'center' }}>
-                        {isSelectable(req) ? (
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            checked={isSelected}
-                            onChange={() => toggleSelect(req)}
-                          />
-                        ) : (
-                          <span className="text-muted opacity-50">&bull;</span>
-                        )}
+                    <tr 
+                      key={`${req.requestType}_${req.id || idx}`} 
+                      className={isSelected ? 'table-active' : ''}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        if (e.target.closest('button, a, input, select, .badge[onClick]')) return;
+                        toggleSelect(req);
+                      }}
+                      title="Click anywhere on the row to toggle selection"
+                    >
+                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(req)}
+                          aria-label={`Select ${req.requestType} request #${req.id}`}
+                        />
                       </td>
                       <td>
                         <span className={`badge py-1 px-2 fw-semibold ${typeBadgeClass}`}>
