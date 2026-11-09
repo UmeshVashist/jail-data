@@ -1,5 +1,98 @@
 [
   {
+    "id": 12,
+    "rowIndex": 12,
+    "recordId": 546,
+    "pid": "751387",
+    "name": "SANJAY KUMAR YADAV",
+    "father": "MEWA LAL",
+    "utNo": "06-5121-2026-UT",
+    "aadharNo": "#N/A",
+    "date": "2026-11-06",
+    "remark": "Not Available",
+    "proposedData": {
+      "pid": "751387",
+      "name": "SANJAY KUMAR YADAV",
+      "father": "MEWA LAL",
+      "utNo": "06-5121-2026-UT",
+      "aadharNo": "#N/A",
+      "date": "2026-11-06",
+      "remark": "Not Available",
+      "createdBy": "addut",
+      "createdDate": "2026-11-06",
+      "createdTime": "06:48:22 PM"
+    },
+    "requestedBy": "addut",
+    "requestedDate": "2026-11-07",
+    "requestedTime": "09:23:16 PM",
+    "reason": "main",
+    "status": "Rejected",
+    "actionBy": "admin",
+    "actionDate": "2026-11-07 09:26:30 PM"
+  },
+  {
+    "id": 11,
+    "rowIndex": 11,
+    "recordId": 546,
+    "pid": "751387",
+    "name": "SANJAY KUMAR YADAV",
+    "father": "MEWA LAL",
+    "utNo": "06-5121-2026-UT",
+    "aadharNo": "#N/A",
+    "date": "2026-11-06",
+    "remark": "Not Available",
+    "proposedData": {
+      "pid": "751387",
+      "name": "SANJAY KUMAR YADAV",
+      "father": "MEWA LAL",
+      "utNo": "06-5121-2026-UT",
+      "aadharNo": "#N/A",
+      "date": "2026-11-06",
+      "remark": "Not Available",
+      "createdBy": "addut",
+      "createdDate": "2026-11-06",
+      "createdTime": "06:48:22 PM"
+    },
+    "requestedBy": "addut",
+    "requestedDate": "2026-11-07",
+    "requestedTime": "09:19:08 PM",
+    "reason": "nothing",
+    "status": "Rejected",
+    "actionBy": "admin",
+    "actionDate": "2026-11-07 09:22:40 PM"
+  },
+  {
+    "id": 10,
+    "rowIndex": 10,
+    "recordId": 548,
+    "pid": "1011",
+    "name": "WERT",
+    "father": "HGF",
+    "utNo": "458-CT",
+    "aadharNo": "#N/A",
+    "date": "2026-11-07",
+    "remark": "Not Available",
+    "proposedData": {
+      "pid": "1011",
+      "name": "WERT",
+      "father": "HGF",
+      "utNo": "458-UT",
+      "aadharNo": "#N/A",
+      "date": "2026-11-07",
+      "remark": "Not Available",
+      "createdBy": "admin",
+      "createdDate": "2026-11-07",
+      "createdTime": "08:16:07 PM"
+    },
+    "requestedBy": "addut",
+    "requestedDate": "2026-11-07",
+    "requestedTime": "08:17:40 PM",
+    "reason": "ut no chanfe",
+    "status": "Rejected",
+    "actionBy": "admin",
+    "actionDate": "2026-11-07 08:21:39 PM"
+  },
+  {
     "id": 9,
     "rowIndex": 9,
     "recordId": 537,
@@ -26,7 +119,9 @@
     "reason": "NENE TO CHANGE THE RECORD DATE",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-11-04 07:48:58 PM"
+    "actionDate": "2026-11-04 07:48:58 PM",
+    "date": "2026-10-22",
+    "remark": "Biometric Locked"
   },
   {
     "id": 8,
@@ -55,7 +150,9 @@
     "reason": "PLEASE DATE EDIT",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-10-21 01:16:21 PM"
+    "actionDate": "2026-10-21 01:16:21 PM",
+    "date": "2026-10-16",
+    "remark": "Not Available"
   },
   {
     "id": 7,
@@ -84,7 +181,9 @@
     "reason": "PLEASE EDIT THE DATE",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-09-16 08:29:10 PM"
+    "actionDate": "2026-09-16 08:29:10 PM",
+    "date": "2026-09-14",
+    "remark": "Not Available"
   },
   {
     "id": 6,
@@ -113,7 +212,9 @@
     "reason": "Testing edit request appearance",
     "status": "Rejected",
     "actionBy": "admin",
-    "actionDate": "2026-09-10 04:09:26 PM"
+    "actionDate": "2026-09-10 04:09:26 PM",
+    "date": "2026-09-07",
+    "remark": "Not Available"
   },
   {
     "id": 1,
@@ -142,7 +243,9 @@
     "reason": "Remark Changed",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-08-03 7:13:35"
+    "actionDate": "2026-08-03 7:13:35",
+    "date": "2026-08-02",
+    "remark": "Already Linked but other Prisoner"
   },
   {
     "id": 2,
@@ -171,7 +274,9 @@
     "reason": "need to edit request",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-08-10 7:53:12"
+    "actionDate": "2026-08-10 7:53:12",
+    "date": "2026-08-06",
+    "remark": "Biometric data not match"
   },
   {
     "id": 3,
@@ -200,7 +305,9 @@
     "reason": "BECAUSE I HAVE THIS PERSON ADHAR NUMBER PLEASE EDIT MY REQUEST",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-08-12 12:14:14 PM"
+    "actionDate": "2026-08-12 12:14:14 PM",
+    "date": "2026-08-29",
+    "remark": "Biometric Locked"
   },
   {
     "id": 4,
@@ -229,7 +336,9 @@
     "reason": "WRONG ENTRY",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-09-02 1:07:55 PM"
+    "actionDate": "2026-09-02 1:07:55 PM",
+    "date": "2026-09-10",
+    "remark": "Biometric Locked"
   },
   {
     "id": 5,
@@ -258,6 +367,8 @@
     "reason": "I WANT",
     "status": "Approved",
     "actionBy": "admin",
-    "actionDate": "2026-09-10 01:43:34 PM"
+    "actionDate": "2026-09-10 01:43:34 PM",
+    "date": "2026-09-07",
+    "remark": "Pending For Aadhar Link"
   }
 ]

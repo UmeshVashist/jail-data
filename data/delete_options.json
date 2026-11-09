@@ -14,5 +14,9 @@
   {
     "id": 4,
     "optionValue": "Other"
+  },
+  {
+    "id": 5,
+    "optionValue": "Aadhar has been Linked"
   }
 ]
