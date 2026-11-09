@@ -176,7 +176,22 @@ export default function Sidebar({ mobileOpen, setMobileOpen, onOpenSelfPassword 
 
       {/* User Profile & Sign Out Footer */}
       <div className="mt-auto p-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2">
+        {onOpenSelfPassword && (
+          <button
+            type="button"
+            className="btn btn-outline-warning w-100 btn-sm rounded-3 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium"
+            onClick={() => {
+              if (setMobileOpen) setMobileOpen(false);
+              onOpenSelfPassword();
+            }}
+            title="Change your account password"
+          >
+            <i className="bi bi-key-fill text-warning"></i>
+            <span>Change Password</span>
+          </button>
+        )}
         <button
+          type="button"
           className="btn btn-outline-danger w-100 btn-sm rounded-3 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium"
           onClick={logout}
         >

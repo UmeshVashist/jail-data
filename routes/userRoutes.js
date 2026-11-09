@@ -91,14 +91,28 @@ router.put('/:id', async (req, res) => {
 // PUT /api/users/:id/password - Reset Password
 router.put('/:id/password', async (req, res) => {
   try {
-    const rowIndex = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const rowIndex = parseInt(rawId, 10);
     const { newPassword } = req.body;
 
     if (!newPassword || newPassword.trim() === '') {
       return res.status(400).json({ success: false, message: 'New password cannot be empty.' });
     }
+    if (newPassword.trim().length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+    }
 
-    await updateUser(rowIndex, { password: newPassword });
+    let updated = false;
+    if (!isNaN(rowIndex)) {
+      updated = await updateUser(rowIndex, { password: newPassword });
+    }
+    if (!updated) {
+      updated = await updateUser(rawId, { password: newPassword });
+    }
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'User not found to reset password.' });
+    }
 
     res.json({ success: true, message: 'User password reset successfully.' });
   } catch (err) {

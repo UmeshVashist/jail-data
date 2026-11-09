@@ -150,7 +150,14 @@ router.post('/change-password', requireAuth, async (req, res) => {
     }
 
     const hashed = bcrypt.hashSync(newPassword.trim(), 10);
-    await updateUser(user.id || user.rowIndex, { password: hashed });
+    let updated = await updateUser(user.id || user.rowIndex, { password: hashed });
+    if (!updated) {
+      updated = await updateUser(user.username, { password: hashed });
+    }
+
+    if (!updated) {
+      return res.status(500).json({ success: false, message: 'Failed to update user password in database.' });
+    }
 
     return res.json({ success: true, message: 'Password updated successfully!' });
   } catch (err) {

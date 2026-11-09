@@ -967,7 +967,11 @@ async function createUser(userObj) {
 
 async function updateUser(rowIndex, updateFields) {
   await ensureUsersSynced(true);
-  const target = memoryStore.users.find(u => (u.id === parseInt(rowIndex, 10) || u.rowIndex === parseInt(rowIndex, 10)));
+  const parsedId = parseInt(rowIndex, 10);
+  const target = memoryStore.users.find(u => 
+    (!isNaN(parsedId) && (u.id === parsedId || u.rowIndex === parsedId)) ||
+    (u.username && String(u.username).toLowerCase() === String(rowIndex).toLowerCase())
+  );
   if (!target) return false;
 
   let passwordChanged = false;
