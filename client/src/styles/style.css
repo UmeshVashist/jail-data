@@ -5155,3 +5155,19 @@ body.theme-modern-3d .modal-target-record-box {
   border: 1px solid rgba(0, 240, 255, 0.25) !important;
   color: #f8fafc !important;
 }
+
+@keyframes shimmerBar {
+  0% {
+    opacity: 0.4;
+    transform: scaleX(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scaleX(0.7);
+  }
+}
+

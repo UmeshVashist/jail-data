@@ -1,9 +1,9 @@
 /**
  * client/src/components/modals/TodayRecordsModal.jsx
- * Dedicated Modal for Today's Uploaded Records with Date Picker Filter
+ * Dedicated Modal for Today's Uploaded Records with In-Place Smooth Data Refresh
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -30,23 +30,33 @@ export default function TodayRecordsModal({
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const activeFetchIdRef = useRef(0);
 
   const fetchRecordsForDate = useCallback(async (date) => {
+    const fetchId = ++activeFetchIdRef.current;
     setLoading(true);
     try {
       const target = (date && date.trim()) || todayStr;
       const res = await api.get(`/api/records?uploadDate=${encodeURIComponent(target)}&pageSize=All&t=${Date.now()}`);
-      if (res && res.success) {
-        const list = res.data?.records || (Array.isArray(res.data) ? res.data : []);
-        setRecords(list);
-      } else {
-        setRecords([]);
+      if (fetchId === activeFetchIdRef.current) {
+        if (res && res.success) {
+          const list = res.data?.records || (Array.isArray(res.data) ? res.data : []);
+          setRecords(list);
+        } else {
+          setRecords([]);
+        }
       }
     } catch (err) {
       console.error('Error fetching today records:', err);
-      setRecords([]);
+      if (fetchId === activeFetchIdRef.current) {
+        setRecords([]);
+      }
     } finally {
-      setLoading(false);
+      if (fetchId === activeFetchIdRef.current) {
+        setLoading(false);
+        setHasLoadedOnce(true);
+      }
     }
   }, [todayStr]);
 
@@ -54,6 +64,8 @@ export default function TodayRecordsModal({
     if (isOpen) {
       setSelectedDate(todayStr);
       fetchRecordsForDate(todayStr);
+    } else {
+      setHasLoadedOnce(false);
     }
   }, [isOpen, todayStr, fetchRecordsForDate]);
 
@@ -71,7 +83,7 @@ export default function TodayRecordsModal({
       }}
     >
       <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow-lg">
+        <div className="modal-content border-0 shadow-lg" style={{ minHeight: '440px' }}>
           {/* Header */}
           <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">
@@ -100,15 +112,18 @@ export default function TodayRecordsModal({
                 </label>
                 <input
                   type="date"
-                  className="form-control form-control-sm compact-date-input border-0 bg-transparent"
+                  className="form-control form-control-sm compact-date-input border-0 bg-transparent text-white"
                   value={selectedDate}
                   onChange={(e) => {
                     const val = e.target.value;
                     setSelectedDate(val);
-                    fetchRecordsForDate(val);
+                    if (val) fetchRecordsForDate(val);
                   }}
                   style={{ width: '135px' }}
                 />
+                {loading && (
+                  <span className="spinner-border spinner-border-sm text-cyan ms-1" role="status" title="डेटा लोड हो रहा है..."></span>
+                )}
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-info ms-1 px-2 py-1 rounded-2 fw-semibold"
@@ -132,9 +147,28 @@ export default function TodayRecordsModal({
           </div>
 
           {/* Body */}
-          <div className="modal-body p-0">
-            <div className="table-responsive" style={{ maxHeight: '480px', overflowY: 'auto' }}>
-              <table className="table table-hover align-middle mb-0">
+          <div className="modal-body p-0 position-relative" style={{ minHeight: '340px' }}>
+            {/* Top Loading Progress Line */}
+            {loading && (
+              <div
+                className="position-absolute top-0 start-0 end-0"
+                style={{
+                  height: '3px',
+                  background: 'linear-gradient(90deg, #0dcaf0, #20c997, #0dcaf0)',
+                  zIndex: 20,
+                  animation: 'shimmerBar 1.2s infinite'
+                }}
+              />
+            )}
+
+            <div className="table-responsive" style={{ maxHeight: '480px', minHeight: '340px', overflowY: 'auto' }}>
+              <table
+                className="table table-hover align-middle mb-0"
+                style={{
+                  transition: 'opacity 0.2s ease',
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
                 <thead className="modal-table-thead sticky-top shadow-sm" style={{ zIndex: 10 }}>
                   <tr className="text-uppercase small text-muted">
                     <th className="ps-4">PID</th>
@@ -148,23 +182,23 @@ export default function TodayRecordsModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {!hasLoadedOnce && loading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-5 text-muted">
+                      <td colSpan="8" className="text-center py-5 text-muted" style={{ height: '280px' }}>
                         <span className="spinner-border spinner-border-sm me-2 text-cyan" role="status"></span>
-                        Loading records for {selectedDate}...
+                        लोड हो रहा है ({selectedDate})...
                       </td>
                     </tr>
                   ) : records.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-5 text-muted">
+                      <td colSpan="8" className="text-center py-5 text-muted" style={{ height: '280px' }}>
                         <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                        {isToday ? 'No records uploaded today yet.' : `No records uploaded on ${selectedDate}.`}
+                        {isToday ? 'आज का कोई अपलोड रिकॉर्ड उपलब्ध नहीं है।' : `${selectedDate} को कोई अपलोड रिकॉर्ड उपलब्ध नहीं है।`}
                       </td>
                     </tr>
                   ) : (
                     records.map((rec, idx) => (
-                      <tr key={rec.id || idx}>
+                      <tr key={rec.id || rec.pid || idx}>
                         <td className="ps-4 fw-bold font-monospace">
                           <button
                             type="button"
@@ -218,10 +252,10 @@ export default function TodayRecordsModal({
           {/* Footer */}
           <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-2 d-flex justify-content-between align-items-center">
             <span className="small text-muted">
-              Showing <strong className="table-text-main">{records.length}</strong> record{records.length === 1 ? '' : 's'}
+              कुल <strong className="table-text-main">{records.length}</strong> रिकॉर्ड
             </span>
             <button type="button" className="btn btn-secondary btn-sm px-4" onClick={onClose}>
-              Close
+              बंद करें (Close)
             </button>
           </div>
         </div>
@@ -230,4 +264,3 @@ export default function TodayRecordsModal({
     document.body
   );
 }
-
