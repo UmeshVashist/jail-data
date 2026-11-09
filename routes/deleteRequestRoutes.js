@@ -179,11 +179,23 @@ const handleApproveDelete = async (req, res) => {
 
     // Soft delete the record so it is hidden from active Data Records/Dashboard, but retained in database
     const records = await getRecords(true);
-    const targetRecord = records.find(r => 
-      r.id === parseInt(targetReq.recordId, 10) || 
-      r.rowIndex === parseInt(targetReq.recordId, 10) || 
-      (r.pid && String(r.pid) === String(targetReq.pid))
-    );
+    let targetRecord = null;
+    if (targetReq.pid) {
+      targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
+    }
+    if (!targetRecord && targetReq.recordId) {
+      const recId = parseInt(targetReq.recordId, 10);
+      targetRecord = records.find(r => 
+        (r.id === recId || r.rowIndex === recId) && 
+        (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
+    if (!targetRecord && !isNaN(requestId)) {
+      targetRecord = records.find(r => 
+        (r.id === requestId || r.rowIndex === requestId) && 
+        (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
 
     if (targetRecord) {
       await softDeleteRecord(targetRecord.id || targetRecord.rowIndex, req.user.username);
@@ -218,16 +230,23 @@ const handlePermanentDeleteSingle = async (req, res) => {
     );
 
     const records = await getRecords(true);
-    const targetRecord = records.find(r => 
-      (targetReq && (
-        r.id === parseInt(targetReq.recordId, 10) || 
-        r.rowIndex === parseInt(targetReq.recordId, 10) || 
-        (r.pid && String(r.pid) === String(targetReq.pid))
-      )) ||
-      r.id === requestId || 
-      r.rowIndex === requestId || 
-      String(r.pid) === String(rawId)
-    );
+    let targetRecord = null;
+    if (targetReq && targetReq.pid) {
+      targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
+    }
+    if (!targetRecord && targetReq && targetReq.recordId) {
+      const recId = parseInt(targetReq.recordId, 10);
+      targetRecord = records.find(r => 
+        (r.id === recId || r.rowIndex === recId) && 
+        (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
+    if (!targetRecord && !isNaN(requestId)) {
+      targetRecord = records.find(r => 
+        (r.id === requestId || r.rowIndex === requestId) &&
+        (!targetReq || !targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
 
     if (targetRecord) {
       await deleteRecord(targetRecord.id || targetRecord.rowIndex);
@@ -274,16 +293,23 @@ const handleBulkPermanentDelete = async (req, res) => {
         String(r.recordId) === String(idStr)
       );
 
-      const targetRecord = records.find(r => 
-        (targetReq && (
-          r.id === parseInt(targetReq.recordId, 10) || 
-          r.rowIndex === parseInt(targetReq.recordId, 10) || 
-          (r.pid && String(r.pid) === String(targetReq.pid))
-        )) ||
-        r.id === requestId || 
-        r.rowIndex === requestId || 
-        String(r.pid) === String(idStr)
-      );
+      let targetRecord = null;
+      if (targetReq && targetReq.pid) {
+        targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
+      }
+      if (!targetRecord && targetReq && targetReq.recordId) {
+        const recId = parseInt(targetReq.recordId, 10);
+        targetRecord = records.find(r => 
+          (r.id === recId || r.rowIndex === recId) && 
+          (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+        );
+      }
+      if (!targetRecord && !isNaN(requestId)) {
+        targetRecord = records.find(r => 
+          (r.id === requestId || r.rowIndex === requestId) &&
+          (!targetReq || !targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+        );
+      }
 
       if (targetRecord) {
         await deleteRecord(targetRecord.id || targetRecord.rowIndex);
@@ -320,16 +346,23 @@ const handleRestoreSingle = async (req, res) => {
     );
 
     const records = await getRecords(true);
-    const targetRecord = records.find(r => 
-      (targetReq && (
-        r.id === parseInt(targetReq.recordId, 10) || 
-        r.rowIndex === parseInt(targetReq.recordId, 10) || 
-        (r.pid && String(r.pid) === String(targetReq.pid))
-      )) ||
-      r.id === requestId || 
-      r.rowIndex === requestId || 
-      String(r.pid) === String(rawId)
-    );
+    let targetRecord = null;
+    if (targetReq && targetReq.pid) {
+      targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
+    }
+    if (!targetRecord && targetReq && targetReq.recordId) {
+      const recId = parseInt(targetReq.recordId, 10);
+      targetRecord = records.find(r => 
+        (r.id === recId || r.rowIndex === recId) && 
+        (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
+    if (!targetRecord && !isNaN(requestId)) {
+      targetRecord = records.find(r => 
+        (r.id === requestId || r.rowIndex === requestId) &&
+        (!targetReq || !targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+      );
+    }
 
     if (targetRecord) {
       await restoreRecord(targetRecord.id || targetRecord.rowIndex);
@@ -390,16 +423,23 @@ const handleBulkRestore = async (req, res) => {
         String(r.recordId) === String(idStr)
       );
 
-      const targetRecord = records.find(r => 
-        (targetReq && (
-          r.id === parseInt(targetReq.recordId, 10) || 
-          r.rowIndex === parseInt(targetReq.recordId, 10) || 
-          (r.pid && String(r.pid) === String(targetReq.pid))
-        )) ||
-        r.id === requestId || 
-        r.rowIndex === requestId || 
-        String(r.pid) === String(idStr)
-      );
+      let targetRecord = null;
+      if (targetReq && targetReq.pid) {
+        targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
+      }
+      if (!targetRecord && targetReq && targetReq.recordId) {
+        const recId = parseInt(targetReq.recordId, 10);
+        targetRecord = records.find(r => 
+          (r.id === recId || r.rowIndex === recId) && 
+          (!targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+        );
+      }
+      if (!targetRecord && !isNaN(requestId)) {
+        targetRecord = records.find(r => 
+          (r.id === requestId || r.rowIndex === requestId) &&
+          (!targetReq || !targetReq.pid || String(r.pid).trim() === String(targetReq.pid).trim())
+        );
+      }
 
       if (targetRecord) {
         await restoreRecord(targetRecord.id || targetRecord.rowIndex);

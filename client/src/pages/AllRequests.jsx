@@ -863,22 +863,32 @@ export default function AllRequests() {
                             Review &rarr;
                           </button>
                         ) : isApprovedDelete ? (
-                          <div className="d-flex align-items-center justify-content-end gap-1.5 flex-wrap">
+                          <div className="d-flex align-items-center justify-content-end gap-1.5">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-danger px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
-                              onClick={() => handlePermanentDeleteSingle(req)}
-                              title="Permanently Delete this record from Database"
+                              className="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center p-0 rounded-2 shadow-sm"
+                              style={{ width: '32px', height: '32px' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePermanentDeleteSingle(req);
+                              }}
+                              title="Permanently Delete"
+                              aria-label="Permanently Delete"
                             >
-                              <i className="bi bi-trash3-fill"></i> Permanently Delete
+                              <i className="bi bi-trash3-fill"></i>
                             </button>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-success px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
-                              onClick={() => handleRestoreSingle(req)}
-                              title="Restore Record back to Main Active Data Records"
+                              className="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center p-0 rounded-2 shadow-sm"
+                              style={{ width: '32px', height: '32px' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestoreSingle(req);
+                              }}
+                              title="Restore to Main Data"
+                              aria-label="Restore to Main Data"
                             >
-                              <i className="bi bi-arrow-counterclockwise"></i> Restore to Main Data
+                              <i className="bi bi-arrow-counterclockwise"></i>
                             </button>
                           </div>
                         ) : (
