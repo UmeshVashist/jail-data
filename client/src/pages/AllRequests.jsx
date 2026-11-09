@@ -526,34 +526,6 @@ export default function AllRequests() {
             </button>
           </div>
         </div>
-
-        {/* Active Filter Indicator */}
-        {(typeFilter !== 'All' || statusFilter !== 'All' || searchQuery.trim()) && (
-          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2 pt-2 border-top border-secondary border-opacity-25 small text-muted">
-            <div className="d-flex align-items-center gap-1.5 flex-wrap">
-              <span>Active Filters:</span>
-              {typeFilter !== 'All' && (
-                <span className="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 d-inline-flex align-items-center gap-1">
-                  Type: {typeFilter}
-                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setTypeFilter('All')}></i>
-                </span>
-              )}
-              {statusFilter !== 'All' && (
-                <span className="badge bg-info bg-opacity-25 text-cyan border border-cyan border-opacity-25 d-inline-flex align-items-center gap-1">
-                  Status: {statusFilter}
-                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setStatusFilter('All')}></i>
-                </span>
-              )}
-              {searchQuery.trim() && (
-                <span className="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 d-inline-flex align-items-center gap-1">
-                  Search: "{searchQuery.trim()}"
-                  <i className="bi bi-x" style={{ cursor: 'pointer' }} onClick={() => setSearchQuery('')}></i>
-                </span>
-              )}
-            </div>
-            <span>Showing <strong className="text-cyan">{filtered.length}</strong> of <strong>{requests.length}</strong> requests</span>
-          </div>
-        )}
       </div>
 
       {/* Bulk Action Banner */}
