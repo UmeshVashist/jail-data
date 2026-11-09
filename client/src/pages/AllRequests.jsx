@@ -321,11 +321,8 @@ export default function AllRequests() {
   // KPI counts
   const totalPending = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
   const editPending = requests.filter(r => r.requestType === 'Edit' && (r.status || 'Pending') === 'Pending').length;
-  const editApproved = requests.filter(r => r.requestType === 'Edit' && r.status === 'Approved').length;
   const delPending = requests.filter(r => r.requestType === 'Delete' && (r.status || 'Pending') === 'Pending').length;
-  const delApproved = requests.filter(r => r.requestType === 'Delete' && r.status === 'Approved').length;
   const listPending = requests.filter(r => r.requestType === 'List Add' && (r.status || 'Pending') === 'Pending').length;
-  const listApproved = requests.filter(r => r.requestType === 'List Add' && r.status === 'Approved').length;
 
   return (
     <div id="all-requests-view" className="view-section">
@@ -361,7 +358,7 @@ export default function AllRequests() {
               }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to filter All Pending requests (Click again to show all statuses)"
+            title="Click to filter All Pending requests (Click again to show all)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
@@ -378,49 +375,23 @@ export default function AllRequests() {
         {/* Edit Requests */}
         <div className="col-12 col-sm-6 col-xl-3">
           <div
-            className={`card stat-card h-100 p-3 ${typeFilter === 'Edit' ? 'border-cyan border-2 shadow-sm' : ''}`}
+            className={`card stat-card h-100 p-3 ${typeFilter === 'Edit' && statusFilter === 'Pending' ? 'border-cyan border-2 shadow-sm' : ''}`}
             onClick={() => {
-              if (typeFilter === 'Edit' && statusFilter === 'All') {
+              if (typeFilter === 'Edit' && statusFilter === 'Pending') {
                 setTypeFilter('All');
+                setStatusFilter('All');
               } else {
                 setTypeFilter('Edit');
-                setStatusFilter('All');
+                setStatusFilter('Pending');
               }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to view all Edit requests (Click again to show all types)"
+            title="Click to filter Pending Edit requests (Click again to show all)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Edit Requests</span>
-                <div 
-                  className="d-flex align-items-baseline gap-2 mt-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTypeFilter('Edit');
-                    setStatusFilter('Pending');
-                  }}
-                  title="Click to filter Pending Edit requests"
-                >
-                  <h2 className="fw-bold text-cyan mb-0">{editPending}</h2>
-                  <span className="small text-muted">Pending</span>
-                </div>
-                {editApproved > 0 && (
-                  <div className="mt-1">
-                    <span 
-                      className="badge bg-cyan bg-opacity-25 text-cyan border border-cyan border-opacity-25 px-1.5 py-0.5"
-                      style={{ cursor: 'pointer', fontSize: '0.72rem' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTypeFilter('Edit');
-                        setStatusFilter('Approved');
-                      }}
-                      title="Click to view Approved Edit requests"
-                    >
-                      {editApproved} Approved
-                    </span>
-                  </div>
-                )}
+                <h2 className="fw-bold text-cyan mb-0 mt-1">{editPending}</h2>
               </div>
               <div className="stat-icon bg-info-subtle-custom">
                 <i className="bi bi-pencil-square"></i>
@@ -432,49 +403,23 @@ export default function AllRequests() {
         {/* Delete Requests */}
         <div className="col-12 col-sm-6 col-xl-3">
           <div
-            className={`card stat-card h-100 p-3 ${typeFilter === 'Delete' ? 'border-danger border-2 shadow-sm' : ''}`}
+            className={`card stat-card h-100 p-3 ${typeFilter === 'Delete' && statusFilter === 'Pending' ? 'border-danger border-2 shadow-sm' : ''}`}
             onClick={() => {
-              if (typeFilter === 'Delete' && statusFilter === 'All') {
+              if (typeFilter === 'Delete' && statusFilter === 'Pending') {
                 setTypeFilter('All');
+                setStatusFilter('All');
               } else {
                 setTypeFilter('Delete');
-                setStatusFilter('All');
+                setStatusFilter('Pending');
               }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to view all Delete requests (Click again to show all types)"
+            title="Click to filter Pending Delete requests (Click again to show all)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">Delete Requests</span>
-                <div 
-                  className="d-flex align-items-baseline gap-2 mt-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTypeFilter('Delete');
-                    setStatusFilter('Pending');
-                  }}
-                  title="Click to filter Pending Delete requests"
-                >
-                  <h2 className="fw-bold text-danger mb-0">{delPending}</h2>
-                  <span className="small text-muted">Pending</span>
-                </div>
-                {delApproved > 0 && (
-                  <div className="mt-1">
-                    <span 
-                      className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-1.5 py-0.5"
-                      style={{ cursor: 'pointer', fontSize: '0.72rem' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTypeFilter('Delete');
-                        setStatusFilter('Approved');
-                      }}
-                      title="Click to view Approved Delete requests"
-                    >
-                      {delApproved} Approved for Delete
-                    </span>
-                  </div>
-                )}
+                <h2 className="fw-bold text-danger mb-0 mt-1">{delPending}</h2>
               </div>
               <div className="stat-icon bg-danger-subtle-custom">
                 <i className="bi bi-trash3"></i>
@@ -486,49 +431,23 @@ export default function AllRequests() {
         {/* List Add Requests */}
         <div className="col-12 col-sm-6 col-xl-3">
           <div
-            className={`card stat-card h-100 p-3 ${typeFilter === 'List Add' ? 'border-success border-2 shadow-sm' : ''}`}
+            className={`card stat-card h-100 p-3 ${typeFilter === 'List Add' && statusFilter === 'Pending' ? 'border-success border-2 shadow-sm' : ''}`}
             onClick={() => {
-              if (typeFilter === 'List Add' && statusFilter === 'All') {
+              if (typeFilter === 'List Add' && statusFilter === 'Pending') {
                 setTypeFilter('All');
+                setStatusFilter('All');
               } else {
                 setTypeFilter('List Add');
-                setStatusFilter('All');
+                setStatusFilter('Pending');
               }
             }}
             style={{ cursor: 'pointer' }}
-            title="Click to view all List Add requests (Click again to show all types)"
+            title="Click to filter Pending List Add requests (Click again to show all)"
           >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <span className="text-muted small fw-semibold text-uppercase">List Add Requests</span>
-                <div 
-                  className="d-flex align-items-baseline gap-2 mt-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTypeFilter('List Add');
-                    setStatusFilter('Pending');
-                  }}
-                  title="Click to filter Pending List Add requests"
-                >
-                  <h2 className="fw-bold text-success mb-0">{listPending}</h2>
-                  <span className="small text-muted">Pending</span>
-                </div>
-                {listApproved > 0 && (
-                  <div className="mt-1">
-                    <span 
-                      className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-1.5 py-0.5"
-                      style={{ cursor: 'pointer', fontSize: '0.72rem' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTypeFilter('List Add');
-                        setStatusFilter('Approved');
-                      }}
-                      title="Click to view Approved List Add requests"
-                    >
-                      {listApproved} Approved
-                    </span>
-                  </div>
-                )}
+                <h2 className="fw-bold text-success mb-0 mt-1">{listPending}</h2>
               </div>
               <div className="stat-icon bg-success-subtle-custom">
                 <i className="bi bi-plus-square"></i>
