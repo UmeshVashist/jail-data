@@ -19,6 +19,7 @@ function getTodayStr() {
 export default function TodayRecordsModal({
   isOpen,
   onClose,
+  refreshKey = 0,
   onViewRecord,
   onEditRecord,
   onRequestEdit,
@@ -68,6 +69,12 @@ export default function TodayRecordsModal({
       setHasLoadedOnce(false);
     }
   }, [isOpen, todayStr, fetchRecordsForDate]);
+
+  useEffect(() => {
+    if (isOpen && refreshKey > 0) {
+      fetchRecordsForDate(selectedDate);
+    }
+  }, [refreshKey, isOpen, selectedDate, fetchRecordsForDate]);
 
   if (!isOpen) return null;
 

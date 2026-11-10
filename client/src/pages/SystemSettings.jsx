@@ -146,7 +146,7 @@ export default function SystemSettings() {
     setActionInProgress(`del-remark-${val}`);
 
     try {
-      const res = await api.delete('/api/records/remark-options', {
+      const res = await api.post('/api/records/remark-options/delete', {
         optionValue: val
       });
       if (res && res.success) {
@@ -203,7 +203,7 @@ export default function SystemSettings() {
     setActionInProgress(`del-opt-${val}`);
 
     try {
-      const res = await api.delete('/api/records/delete-options', {
+      const res = await api.post('/api/records/delete-options/delete', {
         optionValue: val
       });
       if (res && res.success) {

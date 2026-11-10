@@ -21,7 +21,7 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 // Initialize Cloudflare R2 Database Service
-const { initCloudflareStorage, getIsConnected } = require('./config/cloudflareStorage');
+const { ensureCloudflareReady } = require('./config/cloudflareStorage');
 
 // Terminal Request Logger & Visual Error Diagnostics
 const {
@@ -46,6 +46,7 @@ const listAddRequestRoutes = require('./routes/listAddRequestRoutes');
 const psRoutes = require('./routes/psRoutes');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
@@ -86,25 +87,19 @@ app.use(
 // Real-Time Color-Coded Terminal Logger for all requests & status codes
 app.use(terminalRequestLogger);
 
-// Non-blocking auto-reconnect for Cloudflare R2 if disconnected (never stalls HTTP requests)
-let lastReconnectAttempt = 0;
-app.use((req, res, next) => {
-  const now = Date.now();
-  if (!getIsConnected() && (now - lastReconnectAttempt > 30000)) {
-    lastReconnectAttempt = now;
-    initCloudflareStorage().catch(err => console.warn('[R2 Background Init Warning]:', err.message));
-  }
-  next();
-});
-
-// Disable ETags and Browser Caching for all Dynamic API Routes (Prevents 304 Not Modified stalls)
-app.use('/api', (req, res, next) => {
+// Ensure Cloudflare R2 is connected and synced on cold start before handling API requests
+app.use('/api', async (req, res, next) => {
   res.set({
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
     'Surrogate-Control': 'no-store'
   });
+  try {
+    await ensureCloudflareReady();
+  } catch (err) {
+    console.warn('[R2 Ready Warning]:', err.message);
+  }
   next();
 });
 
@@ -150,15 +145,15 @@ app.get('*', (req, res) => {
 // Centralized Terminal Error Handler (Catches all uncaught route errors with full stack trace)
 app.use(terminalErrorHandler);
 
-// Boot Server for Local Development
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Boot Server for Standalone / Local Development (Skipped on Vercel Serverless)
+if (!process.env.VERCEL) {
   const server = app.listen(PORT, async () => {
     console.log(`\n=======================================================`);
     console.log(`  🚀 ${COLORS.brightCyan}${COLORS.bold}JAM Portal Server Running${COLORS.reset}`);
     console.log(`  🔗 ${COLORS.bold}Local URL:${COLORS.reset} http://localhost:${PORT}`);
     console.log(`  🔍 ${COLORS.bold}Terminal Diagnostics:${COLORS.reset} ${COLORS.brightGreen}ENABLED (Real-time colored logs & errors)${COLORS.reset}`);
     console.log(`=======================================================\n`);
-    await initCloudflareStorage();
+    await ensureCloudflareReady();
   });
 
   server.on('error', (err) => {

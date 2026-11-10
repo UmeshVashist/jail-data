@@ -22,7 +22,9 @@ if (fs.existsSync(envLocalPath)) {
   require('dotenv').config({ path: envPath });
 }
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
+const SEED_DATA_DIR = path.join(__dirname, '..', 'data');
+const DATA_DIR = IS_SERVERLESS ? path.join('/tmp', 'jam_data') : SEED_DATA_DIR;
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 }
@@ -36,6 +38,9 @@ const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME ? process.env.CLOUDFLA
 let s3Client = null;
 let isConnected = false;
 let connectionError = null;
+let initPromise = null;
+let lastConnectAttempt = 0;
+const r2Etags = {};
 
 /* Keys for JSON data stored in Cloudflare R2 */
 const R2_KEYS = {
@@ -84,26 +89,36 @@ const memoryStore = {
   psList: []
 };
 
-/* Helper: Save a collection locally to data/ directory */
+/* Helper: Save a collection locally to writable data directory */
 function saveLocal(key, data) {
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
     const filename = path.basename(key);
     fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2), 'utf8');
   } catch (err) {
-    console.error(`[Local Storage Warning] Could not save ${key}:`, err.message);
+    if (!IS_SERVERLESS) {
+      console.error(`[Local Storage Warning] Could not save ${key}:`, err.message);
+    }
   }
 }
 
-/* Helper: Read a collection from local data/ directory */
+/* Helper: Read a collection from local writable cache or seed data directory */
 function readLocal(key) {
-  try {
-    const filename = path.basename(key);
-    const filepath = path.join(DATA_DIR, filename);
-    if (fs.existsSync(filepath)) {
-      const raw = fs.readFileSync(filepath, 'utf8');
-      return JSON.parse(raw);
-    }
-  } catch (e) {}
+  const filename = path.basename(key);
+  const pathsToCheck = DATA_DIR === SEED_DATA_DIR
+    ? [path.join(DATA_DIR, filename)]
+    : [path.join(DATA_DIR, filename), path.join(SEED_DATA_DIR, filename)];
+
+  for (const filepath of pathsToCheck) {
+    try {
+      if (fs.existsSync(filepath)) {
+        const raw = fs.readFileSync(filepath, 'utf8');
+        return JSON.parse(raw);
+      }
+    } catch (e) {}
+  }
   return null;
 }
 
@@ -155,34 +170,53 @@ function streamToString(stream) {
   });
 }
 
+const NOT_MODIFIED_SENTINEL = Symbol('R2_NOT_MODIFIED');
+
 /* Helper: Save a collection to Cloudflare R2 & Local Disk */
 async function saveToR2(key, data) {
   saveLocal(key, data);
-  if (!s3Client || !isConnected) return;
-  try {
-    const jsonStr = JSON.stringify(data, null, 2);
-    await s3Client.send(new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: jsonStr,
-      ContentType: 'application/json'
-    }));
-  } catch (err) {
-    console.error(`[Cloudflare R2 Write Warning] Could not save ${key}:`, err.message);
+  if (!s3Client || !isConnected) return false;
+  const jsonStr = JSON.stringify(data, null, 2);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const putRes = await s3Client.send(new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: jsonStr,
+        ContentType: 'application/json'
+      }));
+      if (putRes && putRes.ETag) {
+        r2Etags[key] = putRes.ETag;
+      }
+      return true;
+    } catch (err) {
+      if (attempt === 2) {
+        console.error(`[Cloudflare R2 Write Error] Could not save ${key}:`, err.message);
+        return false;
+      }
+    }
   }
+  return false;
 }
 
-/* Helper: Read a collection from Cloudflare R2 with local fallback */
-async function readFromR2(key) {
+/* Helper: Read a collection from Cloudflare R2 with ETag support and local fallback */
+async function readFromR2(key, useEtag = false) {
   if (s3Client && isConnected) {
     try {
-      const res = await s3Client.send(new GetObjectCommand({
+      const cmdParams = {
         Bucket: BUCKET_NAME,
         Key: key
-      }));
+      };
+      if (useEtag && r2Etags[key]) {
+        cmdParams.IfNoneMatch = r2Etags[key];
+      }
+      const res = await s3Client.send(new GetObjectCommand(cmdParams));
+      if (res && res.ETag) {
+        r2Etags[key] = res.ETag;
+      }
       const content = await streamToString(res.Body);
       const parsed = JSON.parse(content);
-      if (parsed) {
+      if (parsed !== undefined && parsed !== null) {
         if (key === R2_KEYS.USERS && Array.isArray(parsed)) {
           parsed.forEach(u => {
             if (u.password && !u.password.startsWith('$2a$') && !u.password.startsWith('$2b$')) {
@@ -196,6 +230,9 @@ async function readFromR2(key) {
         return parsed;
       }
     } catch (err) {
+      if (useEtag && (err?.$metadata?.httpStatusCode === 304 || err?.Code === 'NotModified')) {
+        return NOT_MODIFIED_SENTINEL;
+      }
       if (err.name !== 'NoSuchKey') {
         console.warn(`[Cloudflare R2 Read Notice] ${key}:`, err.message);
       }
@@ -229,41 +266,66 @@ const lastWriteTimestamps = {
   psList: 0
 };
 
-const syncInFlight = {
-  users: false,
-  records: false,
-  deleteRequests: false,
-  editRequests: false,
-  listAddRequests: false,
-  remarkOptions: false,
-  deleteOptions: false,
-  settings: false,
-  psList: false
+const syncPromises = {
+  users: null,
+  records: null,
+  deleteRequests: null,
+  editRequests: null,
+  listAddRequests: null,
+  remarkOptions: null,
+  deleteOptions: null,
+  settings: null,
+  psList: null
 };
 
 const CACHE_TTLS = {
-  records: 15000,        // 15s cache TTL for records
-  deleteRequests: 15000, // 15s cache TTL for delete requests
-  editRequests: 15000,   // 15s cache TTL for edit requests
-  listAddRequests: 15000,// 15s cache TTL for list add requests
-  users: 30000,          // 30s cache TTL for users
-  remarkOptions: 60000,  // 60s cache TTL for remark options
-  deleteOptions: 60000,  // 60s cache TTL for delete options
-  settings: 60000,       // 60s cache TTL for settings
-  psList: 10 * 60 * 1000 // 10 minutes cache TTL for 3.3MB Police Station list
+  records: IS_SERVERLESS ? 1500 : 15000,
+  deleteRequests: IS_SERVERLESS ? 1500 : 15000,
+  editRequests: IS_SERVERLESS ? 1500 : 15000,
+  listAddRequests: IS_SERVERLESS ? 1500 : 15000,
+  users: IS_SERVERLESS ? 3000 : 30000,
+  remarkOptions: IS_SERVERLESS ? 5000 : 60000,
+  deleteOptions: IS_SERVERLESS ? 5000 : 60000,
+  settings: IS_SERVERLESS ? 5000 : 60000,
+  psList: 10 * 60 * 1000
 };
 
-async function ensureRecordsSynced(force = false) {
-  const needsInitialLoad = (!memoryStore.records || memoryStore.records.length === 0);
+async function runSync(colKey, fetchFn, force = false) {
+  const needsInitialLoad = (isConnected && (lastSyncTimestamps[colKey] || 0) === 0);
   const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.records > CACHE_TTLS.records);
+  const ttl = CACHE_TTLS[colKey] || 15000;
+  const isStale = (now - (lastSyncTimestamps[colKey] || 0) > ttl);
 
-  const fetchRecords = async () => {
+  if (force || needsInitialLoad || (IS_SERVERLESS && isStale)) {
+    if (syncPromises[colKey]) {
+      return await syncPromises[colKey];
+    }
+    syncPromises[colKey] = Promise.resolve()
+      .then(() => fetchFn())
+      .finally(() => {
+        syncPromises[colKey] = null;
+      });
+    return await syncPromises[colKey];
+  } else if (isStale && !syncPromises[colKey] && (now - (lastWriteTimestamps[colKey] || 0) > ttl)) {
+    syncPromises[colKey] = Promise.resolve()
+      .then(() => fetchFn())
+      .finally(() => {
+        syncPromises[colKey] = null;
+      });
+  }
+}
+
+async function ensureRecordsSynced(force = false) {
+  return runSync('records', async () => {
     const fetchStart = Date.now();
     try {
-      const remote = await readFromR2(R2_KEYS.RECORDS);
+      const useEtag = (lastSyncTimestamps.records > 0 && Array.isArray(memoryStore.records));
+      const remote = await readFromR2(R2_KEYS.RECORDS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.records = Date.now();
+        return;
+      }
       if (remote && Array.isArray(remote)) {
-        // Guard against race conditions: if a local write occurred during or after fetch, do not overwrite memory
         if (lastWriteTimestamps.records > fetchStart) {
           return;
         }
@@ -274,32 +336,18 @@ async function ensureRecordsSynced(force = false) {
     } catch (err) {
       console.warn('[Sync Records Warning]:', err.message);
     }
-  };
-
-  if (force || needsInitialLoad) {
-    if (syncInFlight.records) return;
-    syncInFlight.records = true;
-    try {
-      await fetchRecords();
-    } finally {
-      syncInFlight.records = false;
-    }
-  } else if (isStale && !syncInFlight.records && (now - lastWriteTimestamps.records > 15000)) {
-    // Non-blocking background sync: instant response to user, fresh data synced in background only if no recent write
-    syncInFlight.records = true;
-    fetchRecords().finally(() => {
-      syncInFlight.records = false;
-    });
-  }
+  }, force);
 }
 
 async function ensurePSSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.psList > CACHE_TTLS.psList);
-
-  const fetchPS = async () => {
+  return runSync('psList', async () => {
     try {
-      const remote = await readFromR2(R2_KEYS.PS_LIST);
+      const useEtag = (lastSyncTimestamps.psList > 0 && Array.isArray(memoryStore.psList));
+      const remote = await readFromR2(R2_KEYS.PS_LIST, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.psList = Date.now();
+        return;
+      }
       if (remote && Array.isArray(remote)) {
         memoryStore.psList = remote.filter(p => {
           const name = (p.psName || p.ps || '').trim().toLowerCase();
@@ -310,31 +358,18 @@ async function ensurePSSynced(force = false) {
     } catch (err) {
       console.warn('[Sync PS List Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.psList) return;
-    syncInFlight.psList = true;
-    try {
-      await fetchPS();
-    } finally {
-      syncInFlight.psList = false;
-    }
-  } else if (isStale && !syncInFlight.psList) {
-    syncInFlight.psList = true;
-    fetchPS().finally(() => {
-      syncInFlight.psList = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureUsersSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.users > CACHE_TTLS.users);
-
-  const fetchUsers = async () => {
+  return runSync('users', async () => {
     try {
-      const remote = await readFromR2(R2_KEYS.USERS);
+      const useEtag = (lastSyncTimestamps.users > 0 && Array.isArray(memoryStore.users));
+      const remote = await readFromR2(R2_KEYS.USERS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.users = Date.now();
+        return;
+      }
       if (remote && Array.isArray(remote)) {
         let changed = false;
         const normalized = remote.map(u => {
@@ -351,37 +386,24 @@ async function ensureUsersSynced(force = false) {
         memoryStore.users = normalized;
         lastSyncTimestamps.users = Date.now();
         if (changed) {
-          saveToR2(R2_KEYS.USERS, memoryStore.users).catch(() => {});
+          await saveToR2(R2_KEYS.USERS, memoryStore.users);
         }
       }
     } catch (err) {
       console.warn('[Sync Users Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.users) return;
-    syncInFlight.users = true;
-    try {
-      await fetchUsers();
-    } finally {
-      syncInFlight.users = false;
-    }
-  } else if (isStale && !syncInFlight.users) {
-    syncInFlight.users = true;
-    fetchUsers().finally(() => {
-      syncInFlight.users = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureSettingsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.settings > CACHE_TTLS.settings);
-
-  const fetchSettings = async () => {
+  return runSync('settings', async () => {
     try {
-      const remote = await readFromR2(R2_KEYS.SETTINGS);
+      const useEtag = (lastSyncTimestamps.settings > 0 && memoryStore.settings);
+      const remote = await readFromR2(R2_KEYS.SETTINGS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.settings = Date.now();
+        return;
+      }
       if (remote && typeof remote === 'object') {
         memoryStore.settings = remote;
         lastSyncTimestamps.settings = Date.now();
@@ -389,31 +411,19 @@ async function ensureSettingsSynced(force = false) {
     } catch (err) {
       console.warn('[Sync Settings Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.settings) return;
-    syncInFlight.settings = true;
-    try {
-      await fetchSettings();
-    } finally {
-      syncInFlight.settings = false;
-    }
-  } else if (isStale && !syncInFlight.settings) {
-    syncInFlight.settings = true;
-    fetchSettings().finally(() => {
-      syncInFlight.settings = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureDeleteRequestsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.deleteRequests > CACHE_TTLS.deleteRequests);
-
-  const fetchDeleteRequests = async () => {
+  return runSync('deleteRequests', async () => {
+    const fetchStart = Date.now();
     try {
-      let remote = await readFromR2(R2_KEYS.DELETE_REQUESTS);
+      const useEtag = (lastSyncTimestamps.deleteRequests > 0 && Array.isArray(memoryStore.deleteRequests));
+      let remote = await readFromR2(R2_KEYS.DELETE_REQUESTS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.deleteRequests = Date.now();
+        return;
+      }
       if (!remote || !Array.isArray(remote) || remote.length === 0) {
         try {
           const { dbAll } = require('./database');
@@ -441,37 +451,27 @@ async function ensureDeleteRequestsSynced(force = false) {
         } catch (e) {}
       }
       if (remote && Array.isArray(remote)) {
+        if (lastWriteTimestamps.deleteRequests > fetchStart) return;
         memoryStore.deleteRequests = remote;
+        saveLocal(R2_KEYS.DELETE_REQUESTS, remote);
         lastSyncTimestamps.deleteRequests = Date.now();
       }
     } catch (err) {
       console.warn('[Sync Delete Requests Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.deleteRequests) return;
-    syncInFlight.deleteRequests = true;
-    try {
-      await fetchDeleteRequests();
-    } finally {
-      syncInFlight.deleteRequests = false;
-    }
-  } else if (isStale && !syncInFlight.deleteRequests) {
-    syncInFlight.deleteRequests = true;
-    fetchDeleteRequests().finally(() => {
-      syncInFlight.deleteRequests = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureEditRequestsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.editRequests > CACHE_TTLS.editRequests);
-
-  const fetchEditRequests = async () => {
+  return runSync('editRequests', async () => {
+    const fetchStart = Date.now();
     try {
-      let remote = await readFromR2(R2_KEYS.EDIT_REQUESTS);
+      const useEtag = (lastSyncTimestamps.editRequests > 0 && Array.isArray(memoryStore.editRequests));
+      let remote = await readFromR2(R2_KEYS.EDIT_REQUESTS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.editRequests = Date.now();
+        return;
+      }
       if (!remote || !Array.isArray(remote) || remote.length === 0) {
         try {
           const { dbAll } = require('./database');
@@ -501,37 +501,27 @@ async function ensureEditRequestsSynced(force = false) {
         } catch (e) {}
       }
       if (remote && Array.isArray(remote)) {
+        if (lastWriteTimestamps.editRequests > fetchStart) return;
         memoryStore.editRequests = remote;
+        saveLocal(R2_KEYS.EDIT_REQUESTS, remote);
         lastSyncTimestamps.editRequests = Date.now();
       }
     } catch (err) {
       console.warn('[Sync Edit Requests Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.editRequests) return;
-    syncInFlight.editRequests = true;
-    try {
-      await fetchEditRequests();
-    } finally {
-      syncInFlight.editRequests = false;
-    }
-  } else if (isStale && !syncInFlight.editRequests) {
-    syncInFlight.editRequests = true;
-    fetchEditRequests().finally(() => {
-      syncInFlight.editRequests = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureListAddRequestsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.listAddRequests > CACHE_TTLS.listAddRequests);
-
-  const fetchListAddRequests = async () => {
+  return runSync('listAddRequests', async () => {
+    const fetchStart = Date.now();
     try {
-      let remote = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS);
+      const useEtag = (lastSyncTimestamps.listAddRequests > 0 && Array.isArray(memoryStore.listAddRequests));
+      let remote = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.listAddRequests = Date.now();
+        return;
+      }
       if (!remote || !Array.isArray(remote) || remote.length === 0) {
         try {
           const { dbAll } = require('./database');
@@ -555,40 +545,29 @@ async function ensureListAddRequestsSynced(force = false) {
         } catch (e) {}
       }
       if (remote && Array.isArray(remote)) {
+        if (lastWriteTimestamps.listAddRequests > fetchStart) return;
         memoryStore.listAddRequests = remote.map(r => ({
           ...r,
           disableAadhar: !!(r.disable_aadhar !== undefined ? r.disable_aadhar : r.disableAadhar)
         }));
+        saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
         lastSyncTimestamps.listAddRequests = Date.now();
       }
     } catch (err) {
       console.warn('[Sync List Add Requests Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.listAddRequests) return;
-    syncInFlight.listAddRequests = true;
-    try {
-      await fetchListAddRequests();
-    } finally {
-      syncInFlight.listAddRequests = false;
-    }
-  } else if (isStale && !syncInFlight.listAddRequests) {
-    syncInFlight.listAddRequests = true;
-    fetchListAddRequests().finally(() => {
-      syncInFlight.listAddRequests = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureRemarkOptionsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - lastSyncTimestamps.remarkOptions > CACHE_TTLS.remarkOptions);
-
-  const fetchRemarkOptions = async () => {
+  return runSync('remarkOptions', async () => {
     try {
-      let remote = await readFromR2(R2_KEYS.REMARK_OPTIONS);
+      const useEtag = (lastSyncTimestamps.remarkOptions > 0 && Array.isArray(memoryStore.remarkOptions));
+      let remote = await readFromR2(R2_KEYS.REMARK_OPTIONS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.remarkOptions = Date.now();
+        return;
+      }
       if (!remote || !Array.isArray(remote) || remote.length === 0) {
         try {
           const { dbAll } = require('./database');
@@ -602,38 +581,25 @@ async function ensureRemarkOptionsSynced(force = false) {
           }
         } catch (e) {}
       }
-      if (remote && Array.isArray(remote) && remote.length > 0) {
+      if (remote && Array.isArray(remote)) {
         memoryStore.remarkOptions = remote;
         lastSyncTimestamps.remarkOptions = Date.now();
       }
     } catch (err) {
       console.warn('[Sync Remark Options Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.remarkOptions) return;
-    syncInFlight.remarkOptions = true;
-    try {
-      await fetchRemarkOptions();
-    } finally {
-      syncInFlight.remarkOptions = false;
-    }
-  } else if (isStale && !syncInFlight.remarkOptions) {
-    syncInFlight.remarkOptions = true;
-    fetchRemarkOptions().finally(() => {
-      syncInFlight.remarkOptions = false;
-    });
-  }
+  }, force);
 }
 
 async function ensureDeleteOptionsSynced(force = false) {
-  const now = Date.now();
-  const isStale = (now - (lastSyncTimestamps.deleteOptions || 0) > CACHE_TTLS.deleteOptions);
-
-  const fetchDeleteOptions = async () => {
+  return runSync('deleteOptions', async () => {
     try {
-      let remote = await readFromR2(R2_KEYS.DELETE_OPTIONS);
+      const useEtag = (lastSyncTimestamps.deleteOptions > 0 && Array.isArray(memoryStore.deleteOptions));
+      let remote = await readFromR2(R2_KEYS.DELETE_OPTIONS, useEtag);
+      if (remote === NOT_MODIFIED_SENTINEL) {
+        lastSyncTimestamps.deleteOptions = Date.now();
+        return;
+      }
       if (!remote || !Array.isArray(remote) || remote.length === 0) {
         try {
           const { dbAll } = require('./database');
@@ -646,29 +612,14 @@ async function ensureDeleteOptionsSynced(force = false) {
           }
         } catch (e) {}
       }
-      if (remote && Array.isArray(remote) && remote.length > 0) {
+      if (remote && Array.isArray(remote)) {
         memoryStore.deleteOptions = remote;
         lastSyncTimestamps.deleteOptions = Date.now();
       }
     } catch (err) {
       console.warn('[Sync Delete Options Warning]:', err.message);
     }
-  };
-
-  if (force) {
-    if (syncInFlight.deleteOptions) return;
-    syncInFlight.deleteOptions = true;
-    try {
-      await fetchDeleteOptions();
-    } finally {
-      syncInFlight.deleteOptions = false;
-    }
-  } else if (isStale && !syncInFlight.deleteOptions) {
-    syncInFlight.deleteOptions = true;
-    fetchDeleteOptions().finally(() => {
-      syncInFlight.deleteOptions = false;
-    });
-  }
+  }, force);
 }
 
 /* Helper: Date-Time formatter */
@@ -695,6 +646,26 @@ function formatDateValue(val) {
     return `${p[2]}-${p[1]}-${p[0]}`;
   }
   return str;
+}
+
+/**
+ * Single-flight connection & initial sync guard for serverless / multi-request safety
+ */
+async function ensureCloudflareReady() {
+  if (isConnected) return true;
+  if (initPromise) return await initPromise;
+  const now = Date.now();
+  if (!ENDPOINT || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY) {
+    return false;
+  }
+  if (lastConnectAttempt > 0 && (now - lastConnectAttempt < 15000)) {
+    return false;
+  }
+  lastConnectAttempt = now;
+  initPromise = initCloudflareStorage().finally(() => {
+    initPromise = null;
+  });
+  return await initPromise;
 }
 
 /**
@@ -755,8 +726,32 @@ async function syncAllCollections() {
   if (!isConnected) return;
 
   try {
+    // Fetch primary collections in parallel for fast cold starts
+    const [
+      r2Users,
+      r2Records,
+      r2DelReqs,
+      r2EditReqs,
+      r2ListReqs,
+      r2Options,
+      r2DelOptions,
+      r2Settings,
+      r2PS
+    ] = await Promise.all([
+      readFromR2(R2_KEYS.USERS),
+      readFromR2(R2_KEYS.RECORDS),
+      readFromR2(R2_KEYS.DELETE_REQUESTS),
+      readFromR2(R2_KEYS.EDIT_REQUESTS),
+      readFromR2(R2_KEYS.LIST_ADD_REQUESTS),
+      readFromR2(R2_KEYS.REMARK_OPTIONS),
+      readFromR2(R2_KEYS.DELETE_OPTIONS),
+      readFromR2(R2_KEYS.SETTINGS),
+      readFromR2(R2_KEYS.PS_LIST)
+    ]);
+
+    const nowTs = Date.now();
+
     // 1. Users (Enforce Bcrypt Password Hashing in Cloudflare R2 and Memory)
-    const r2Users = await readFromR2(R2_KEYS.USERS);
     let usersList = (r2Users && Array.isArray(r2Users) && r2Users.length > 0) ? r2Users : (memoryStore.users || []);
     let needsR2Update = false;
     usersList = usersList.map(u => {
@@ -772,13 +767,12 @@ async function syncAllCollections() {
     if (needsR2Update || !r2Users || r2Users.length === 0) {
       await saveToR2(R2_KEYS.USERS, memoryStore.users);
     }
+    lastSyncTimestamps.users = nowTs;
 
     // 2. Records
-    const r2Records = await readFromR2(R2_KEYS.RECORDS);
     if (r2Records && Array.isArray(r2Records)) {
       memoryStore.records = r2Records;
     } else {
-      // If R2 has no records yet, check if local SQLite has existing records to migrate
       try {
         const { dbAll } = require('./database');
         const rows = await dbAll('SELECT * FROM records ORDER BY id DESC');
@@ -806,49 +800,57 @@ async function syncAllCollections() {
         }
       } catch (e) {}
     }
+    lastSyncTimestamps.records = nowTs;
 
     // 3. Delete Requests
-    const r2DelReqs = await readFromR2(R2_KEYS.DELETE_REQUESTS);
     if (r2DelReqs && Array.isArray(r2DelReqs)) {
       memoryStore.deleteRequests = r2DelReqs;
     } else {
       await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
     }
+    lastSyncTimestamps.deleteRequests = nowTs;
 
     // 4. Edit Requests
-    const r2EditReqs = await readFromR2(R2_KEYS.EDIT_REQUESTS);
     if (r2EditReqs && Array.isArray(r2EditReqs)) {
       memoryStore.editRequests = r2EditReqs;
     } else {
       await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
     }
+    lastSyncTimestamps.editRequests = nowTs;
 
     // 5. List Add Requests
-    const r2ListReqs = await readFromR2(R2_KEYS.LIST_ADD_REQUESTS);
     if (r2ListReqs && Array.isArray(r2ListReqs)) {
       memoryStore.listAddRequests = r2ListReqs;
     } else {
       await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
     }
+    lastSyncTimestamps.listAddRequests = nowTs;
 
     // 6. Remark Options
-    const r2Options = await readFromR2(R2_KEYS.REMARK_OPTIONS);
     if (r2Options && Array.isArray(r2Options) && r2Options.length > 0) {
       memoryStore.remarkOptions = r2Options;
     } else {
       await saveToR2(R2_KEYS.REMARK_OPTIONS, memoryStore.remarkOptions);
     }
+    lastSyncTimestamps.remarkOptions = nowTs;
 
-    // 7. System Settings
-    const r2Settings = await readFromR2(R2_KEYS.SETTINGS);
+    // 7. Delete Options
+    if (r2DelOptions && Array.isArray(r2DelOptions) && r2DelOptions.length > 0) {
+      memoryStore.deleteOptions = r2DelOptions;
+    } else {
+      await saveToR2(R2_KEYS.DELETE_OPTIONS, memoryStore.deleteOptions);
+    }
+    lastSyncTimestamps.deleteOptions = nowTs;
+
+    // 8. System Settings
     if (r2Settings && typeof r2Settings === 'object') {
       memoryStore.settings = r2Settings;
     } else {
       await saveToR2(R2_KEYS.SETTINGS, memoryStore.settings);
     }
+    lastSyncTimestamps.settings = nowTs;
 
-    // 8. PS List
-    const r2PS = await readFromR2(R2_KEYS.PS_LIST);
+    // 9. PS List
     if (r2PS && Array.isArray(r2PS)) {
       memoryStore.psList = r2PS.filter(p => {
         const name = (p.psName || p.ps || '').trim().toLowerCase();
@@ -858,7 +860,6 @@ async function syncAllCollections() {
         await saveToR2(R2_KEYS.PS_LIST, memoryStore.psList);
       }
     } else {
-      // Check local SQLite database
       try {
         const { dbAll } = require('./database');
         const rows = await dbAll('SELECT * FROM police_stations ORDER BY id DESC');
@@ -891,6 +892,7 @@ async function syncAllCollections() {
         }) : [];
       }
     }
+    lastSyncTimestamps.psList = nowTs;
 
     console.log(`[Cloudflare R2] Successfully synced all collections with bucket "${BUCKET_NAME}".`);
   } catch (err) {
@@ -1031,8 +1033,8 @@ async function deleteUser(rowIndex) {
    Records Data Access Methods
    ========================================================================== */
 
-async function getRecords(includeDeleted = false) {
-  await ensureRecordsSynced();
+async function getRecords(includeDeleted = false, forceSync = false) {
+  await ensureRecordsSynced(forceSync);
   let list = memoryStore.records;
   if (!includeDeleted) {
     list = list.filter(r => !r.isDeleted && !r.is_deleted);
@@ -1059,18 +1061,15 @@ async function getRecords(includeDeleted = false) {
 }
 
 async function addRecord(recObj) {
-  if (!memoryStore.records || memoryStore.records.length === 0) {
-    await ensureRecordsSynced(true);
-  }
+  await ensureRecordsSynced(true);
   const cleanPid = (recObj.pid || '').toString().trim().toLowerCase();
   if (cleanPid) {
     const existingIndex = memoryStore.records.findIndex(r => String(r.pid).toLowerCase() === cleanPid);
     if (existingIndex !== -1) {
-      // Record with this PID was already saved concurrently; return it instead of creating a duplicate
       return memoryStore.records[existingIndex];
     }
   }
-  const newId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => r.id || 0)) + 1 : 1;
+  const newId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => Number(r.id) || 0)) + 1 : 1;
   const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
 
   const newRec = {
@@ -1095,9 +1094,7 @@ async function addRecord(recObj) {
   memoryStore.records.unshift(newRec);
   lastWriteTimestamps.records = Date.now();
   lastSyncTimestamps.records = Date.now();
-  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
-  // Sync to local SQLite
   try {
     const { dbRun } = require('./database');
     await dbRun(
@@ -1106,18 +1103,19 @@ async function addRecord(recObj) {
     );
   } catch (e) {}
 
-  // Sync to Cloudflare R2
-  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return newRec;
 }
 
 async function updateRecord(rowIndex, recObj) {
-  if (!memoryStore.records || memoryStore.records.length === 0) {
-    await ensureRecordsSynced(true);
-  }
-  const target = memoryStore.records.find(r => (r.id === parseInt(rowIndex, 10) || r.rowIndex === parseInt(rowIndex, 10)));
+  await ensureRecordsSynced(true);
+  const idNum = parseInt(rowIndex, 10);
+  const idStr = String(rowIndex);
+  const target = memoryStore.records.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (!target) return false;
 
   const recType = recObj.recordType || recObj.type || (/\b(CT|CP|DT|DP)\b|CT|CP|DT|DP/i.test(recObj.utNo) ? 'CT' : (/\bUT\b|UT/i.test(recObj.utNo) ? 'UT' : ''));
@@ -1136,9 +1134,7 @@ async function updateRecord(rowIndex, recObj) {
 
   lastWriteTimestamps.records = Date.now();
   lastSyncTimestamps.records = Date.now();
-  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
-  // Sync to local SQLite
   try {
     const { dbRun } = require('./database');
     await dbRun(
@@ -1147,42 +1143,71 @@ async function updateRecord(rowIndex, recObj) {
     );
   } catch (e) {}
 
-  // Sync to Cloudflare R2
-  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return true;
 }
 
 async function deleteRecord(rowIndex) {
-  if (!memoryStore.records || memoryStore.records.length === 0) {
-    await ensureRecordsSynced(true);
-  }
+  await ensureRecordsSynced(true);
   const idNum = parseInt(rowIndex, 10);
-  memoryStore.records = memoryStore.records.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
+  const idStr = String(rowIndex);
+  memoryStore.records = memoryStore.records.filter(r =>
+    !((!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+      String(r.id) === idStr ||
+      String(r.rowIndex) === idStr)
+  );
   lastWriteTimestamps.records = Date.now();
   lastSyncTimestamps.records = Date.now();
-  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
-  // Sync to local SQLite
   try {
     const { dbRun } = require('./database');
     await dbRun(`DELETE FROM records WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  // Sync to Cloudflare R2
-  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return true;
 }
 
+async function bulkDeleteRecords(idList) {
+  if (!Array.isArray(idList) || idList.length === 0) return 0;
+  await ensureRecordsSynced(true);
+  const idSet = new Set(idList.map(id => String(id).trim()));
+  const numSet = new Set(idList.map(id => parseInt(id, 10)).filter(n => !isNaN(n)));
+  const beforeLen = memoryStore.records.length;
+
+  memoryStore.records = memoryStore.records.filter(r =>
+    !numSet.has(Number(r.id)) &&
+    !numSet.has(Number(r.rowIndex)) &&
+    !idSet.has(String(r.id)) &&
+    !idSet.has(String(r.rowIndex))
+  );
+
+  const deletedCount = beforeLen - memoryStore.records.length;
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
+
+  try {
+    const { dbRun } = require('./database');
+    const nums = Array.from(numSet);
+    if (nums.length > 0) {
+      const placeholders = nums.map(() => '?').join(',');
+      await dbRun(`DELETE FROM records WHERE id IN (${placeholders})`, nums);
+    }
+  } catch (e) {}
+
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
+  return deletedCount;
+}
+
 async function softDeleteRecord(rowIndex, deletedBy = 'Admin') {
-  if (!memoryStore.records || memoryStore.records.length === 0) {
-    await ensureRecordsSynced(true);
-  }
+  await ensureRecordsSynced(true);
   const idNum = parseInt(rowIndex, 10);
-  const target = memoryStore.records.find(r => (r.id === idNum || r.rowIndex === idNum));
+  const idStr = String(rowIndex);
+  const target = memoryStore.records.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (!target) return false;
 
   target.isDeleted = true;
@@ -1192,25 +1217,25 @@ async function softDeleteRecord(rowIndex, deletedBy = 'Admin') {
 
   lastWriteTimestamps.records = Date.now();
   lastSyncTimestamps.records = Date.now();
-  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
   try {
     const { dbRun } = require('./database');
     await dbRun(`UPDATE records SET is_deleted = 1 WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return true;
 }
 
 async function restoreRecord(rowIndex) {
-  if (!memoryStore.records || memoryStore.records.length === 0) {
-    await ensureRecordsSynced(true);
-  }
+  await ensureRecordsSynced(true);
   const idNum = parseInt(rowIndex, 10);
-  const target = memoryStore.records.find(r => (r.id === idNum || r.rowIndex === idNum));
+  const idStr = String(rowIndex);
+  const target = memoryStore.records.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (!target) return false;
 
   target.isDeleted = false;
@@ -1220,23 +1245,21 @@ async function restoreRecord(rowIndex) {
 
   lastWriteTimestamps.records = Date.now();
   lastSyncTimestamps.records = Date.now();
-  saveLocal(R2_KEYS.RECORDS, memoryStore.records);
 
   try {
     const { dbRun } = require('./database');
     await dbRun(`UPDATE records SET is_deleted = 0 WHERE id = ?`, [idNum]);
   } catch (e) {}
 
-  saveToR2(R2_KEYS.RECORDS, memoryStore.records).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return true;
 }
 
 async function batchAddRecords(recordsArr) {
   if (!Array.isArray(recordsArr) || recordsArr.length === 0) return true;
+  await ensureRecordsSynced(true);
 
-  let maxId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => r.id || 0)) : 0;
+  let maxId = memoryStore.records.length > 0 ? Math.max(...memoryStore.records.map(r => Number(r.id) || 0)) : 0;
 
   for (const rec of recordsArr) {
     maxId++;
@@ -1270,7 +1293,8 @@ async function batchAddRecords(recordsArr) {
     } catch (e) {}
   }
 
-  // Save batch once to Cloudflare R2
+  lastWriteTimestamps.records = Date.now();
+  lastSyncTimestamps.records = Date.now();
   await saveToR2(R2_KEYS.RECORDS, memoryStore.records);
   return true;
 }
@@ -1279,8 +1303,8 @@ async function batchAddRecords(recordsArr) {
    Delete Requests Methods
    ========================================================================== */
 
-async function getDeleteRequests() {
-  await ensureDeleteRequestsSynced();
+async function getDeleteRequests(forceSync = false) {
+  await ensureDeleteRequestsSynced(forceSync);
   return memoryStore.deleteRequests.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -1302,9 +1326,9 @@ async function getDeleteRequests() {
 }
 
 async function createDeleteRequest(reqObj) {
-  await ensureDeleteRequestsSynced();
+  await ensureDeleteRequestsSynced(true);
   const remarkVal = (reqObj.remark || reqObj.reason || '').toString().trim();
-  const newId = memoryStore.deleteRequests.length > 0 ? Math.max(...memoryStore.deleteRequests.map(r => r.id || 0)) + 1 : 1;
+  const newId = memoryStore.deleteRequests.length > 0 ? Math.max(...memoryStore.deleteRequests.map(r => Number(r.id) || 0)) + 1 : 1;
 
   const item = {
     id: newId,
@@ -1337,17 +1361,20 @@ async function createDeleteRequest(reqObj) {
 
   lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
-  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
-  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
   return true;
 }
 
 async function updateDeleteRequestStatus(requestId, status, actionBy) {
   await ensureDeleteRequestsSynced(true);
   const actionDate = getFormattedDateTime();
-  const target = memoryStore.deleteRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
+  const idNum = parseInt(requestId, 10);
+  const idStr = String(requestId);
+  const target = memoryStore.deleteRequests.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (target) {
     target.status = status;
     target.actionBy = actionBy;
@@ -1364,17 +1391,19 @@ async function updateDeleteRequestStatus(requestId, status, actionBy) {
 
   lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
-  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
-  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
   return true;
 }
 
 async function deleteDeleteRequest(requestId) {
   await ensureDeleteRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
-  memoryStore.deleteRequests = memoryStore.deleteRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
+  const idStr = String(requestId);
+  memoryStore.deleteRequests = memoryStore.deleteRequests.filter(r =>
+    !((!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+      String(r.id) === idStr ||
+      String(r.rowIndex) === idStr)
+  );
 
   try {
     const { dbRun } = require('./database');
@@ -1383,25 +1412,52 @@ async function deleteDeleteRequest(requestId) {
 
   lastWriteTimestamps.deleteRequests = Date.now();
   lastSyncTimestamps.deleteRequests = Date.now();
-  saveLocal(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
-  saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
   return true;
+}
+
+async function bulkDeleteDeleteRequests(idList) {
+  if (!Array.isArray(idList) || idList.length === 0) return 0;
+  await ensureDeleteRequestsSynced(true);
+  const idSet = new Set(idList.map(id => String(id).trim()));
+  const numSet = new Set(idList.map(id => parseInt(id, 10)).filter(n => !isNaN(n)));
+  const beforeLen = memoryStore.deleteRequests.length;
+
+  memoryStore.deleteRequests = memoryStore.deleteRequests.filter(r =>
+    !numSet.has(Number(r.id)) &&
+    !numSet.has(Number(r.rowIndex)) &&
+    !idSet.has(String(r.id)) &&
+    !idSet.has(String(r.rowIndex))
+  );
+
+  const deletedCount = beforeLen - memoryStore.deleteRequests.length;
+  lastWriteTimestamps.deleteRequests = Date.now();
+  lastSyncTimestamps.deleteRequests = Date.now();
+
+  try {
+    const { dbRun } = require('./database');
+    const nums = Array.from(numSet);
+    if (nums.length > 0) {
+      const placeholders = nums.map(() => '?').join(',');
+      await dbRun(`DELETE FROM delete_requests WHERE id IN (${placeholders})`, nums);
+    }
+  } catch (e) {}
+
+  await saveToR2(R2_KEYS.DELETE_REQUESTS, memoryStore.deleteRequests);
+  return deletedCount;
 }
 
 /* ==========================================================================
    Edit Requests Methods
    ========================================================================== */
 
-async function getEditRequests() {
-  await ensureEditRequestsSynced();
+async function getEditRequests(forceSync = false) {
+  await ensureEditRequestsSynced(forceSync);
   return memoryStore.editRequests.map(r => {
     let recDate = (r.date || '').toString().trim();
     let recRemark = (r.remark || '').toString().trim();
     let recAadhar = (r.aadharNo || '').toString().trim();
 
-    // If date, remark or aadharNo is empty, resolve from memoryStore.records
     if ((!recDate || !recRemark || !recAadhar) && Array.isArray(memoryStore.records)) {
       const target = memoryStore.records.find(m => 
         (r.recordId && String(m.id || m.rowIndex) === String(r.recordId)) || 
@@ -1441,9 +1497,9 @@ async function getEditRequests() {
 }
 
 async function createEditRequest(reqObj) {
-  await ensureEditRequestsSynced();
+  await ensureEditRequestsSynced(true);
   const reasonVal = (reqObj.reason || '').toString().trim();
-  const newId = memoryStore.editRequests.length > 0 ? Math.max(...memoryStore.editRequests.map(r => r.id || 0)) + 1 : 1;
+  const newId = memoryStore.editRequests.length > 0 ? Math.max(...memoryStore.editRequests.map(r => Number(r.id) || 0)) + 1 : 1;
 
   const item = {
     id: newId,
@@ -1479,17 +1535,20 @@ async function createEditRequest(reqObj) {
 
   lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
-  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
-  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
   return true;
 }
 
 async function updateEditRequestStatus(requestId, status, actionBy) {
   await ensureEditRequestsSynced(true);
   const actionDate = getFormattedDateTime();
-  const target = memoryStore.editRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
+  const idNum = parseInt(requestId, 10);
+  const idStr = String(requestId);
+  const target = memoryStore.editRequests.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (target) {
     target.status = status;
     target.actionBy = actionBy;
@@ -1506,17 +1565,19 @@ async function updateEditRequestStatus(requestId, status, actionBy) {
 
   lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
-  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
-  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
   return true;
 }
 
 async function deleteEditRequest(requestId) {
   await ensureEditRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
-  memoryStore.editRequests = memoryStore.editRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
+  const idStr = String(requestId);
+  memoryStore.editRequests = memoryStore.editRequests.filter(r =>
+    !((!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+      String(r.id) === idStr ||
+      String(r.rowIndex) === idStr)
+  );
 
   try {
     const { dbRun } = require('./database');
@@ -1525,10 +1586,7 @@ async function deleteEditRequest(requestId) {
 
   lastWriteTimestamps.editRequests = Date.now();
   lastSyncTimestamps.editRequests = Date.now();
-  saveLocal(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
-  saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.EDIT_REQUESTS, memoryStore.editRequests);
   return true;
 }
 
@@ -1536,8 +1594,8 @@ async function deleteEditRequest(requestId) {
    List Add Requests Methods
    ========================================================================== */
 
-async function getListAddRequests() {
-  await ensureListAddRequestsSynced();
+async function getListAddRequests(forceSync = false) {
+  await ensureListAddRequestsSynced(forceSync);
   return memoryStore.listAddRequests.map(r => ({
     id: r.id || r.rowIndex,
     rowIndex: r.rowIndex || r.id,
@@ -1555,8 +1613,8 @@ async function getListAddRequests() {
 }
 
 async function createListAddRequest(reqObj) {
-  await ensureListAddRequestsSynced();
-  const newId = memoryStore.listAddRequests.length > 0 ? Math.max(...memoryStore.listAddRequests.map(r => r.id || 0)) + 1 : 1;
+  await ensureListAddRequestsSynced(true);
+  const newId = memoryStore.listAddRequests.length > 0 ? Math.max(...memoryStore.listAddRequests.map(r => Number(r.id) || 0)) + 1 : 1;
   const nowMs = Date.now();
 
   const item = {
@@ -1593,17 +1651,20 @@ async function createListAddRequest(reqObj) {
 
   lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
-  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
-  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
   return true;
 }
 
 async function updateListAddRequestStatus(requestId, status, actionBy) {
   await ensureListAddRequestsSynced(true);
   const actionDate = getFormattedDateTime();
-  const target = memoryStore.listAddRequests.find(r => (r.id === parseInt(requestId, 10) || r.rowIndex === parseInt(requestId, 10)));
+  const idNum = parseInt(requestId, 10);
+  const idStr = String(requestId);
+  const target = memoryStore.listAddRequests.find(r =>
+    (!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+    String(r.id) === idStr ||
+    String(r.rowIndex) === idStr
+  );
   if (target) {
     target.status = status;
     target.actionBy = actionBy;
@@ -1620,17 +1681,19 @@ async function updateListAddRequestStatus(requestId, status, actionBy) {
 
   lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
-  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
-  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
   return true;
 }
 
 async function deleteListAddRequest(requestId) {
   await ensureListAddRequestsSynced(true);
   const idNum = parseInt(requestId, 10);
-  memoryStore.listAddRequests = memoryStore.listAddRequests.filter(r => (r.id !== idNum && r.rowIndex !== idNum));
+  const idStr = String(requestId);
+  memoryStore.listAddRequests = memoryStore.listAddRequests.filter(r =>
+    !((!isNaN(idNum) && (Number(r.id) === idNum || Number(r.rowIndex) === idNum)) ||
+      String(r.id) === idStr ||
+      String(r.rowIndex) === idStr)
+  );
 
   try {
     const { dbRun } = require('./database');
@@ -1639,10 +1702,7 @@ async function deleteListAddRequest(requestId) {
 
   lastWriteTimestamps.listAddRequests = Date.now();
   lastSyncTimestamps.listAddRequests = Date.now();
-  saveLocal(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
-  saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests).catch(err => {
-    console.error('[Cloudflare R2 Write Warning]:', err.message);
-  });
+  await saveToR2(R2_KEYS.LIST_ADD_REQUESTS, memoryStore.listAddRequests);
   return true;
 }
 
@@ -2036,6 +2096,7 @@ async function batchAddPS(entriesArr) {
 
 module.exports = {
   initCloudflareStorage,
+  ensureCloudflareReady,
   getUsers,
   getUserByUsername,
   createUser,
@@ -2045,6 +2106,7 @@ module.exports = {
   addRecord,
   updateRecord,
   deleteRecord,
+  bulkDeleteRecords,
   softDeleteRecord,
   restoreRecord,
   batchAddRecords,
@@ -2052,6 +2114,7 @@ module.exports = {
   createDeleteRequest,
   updateDeleteRequestStatus,
   deleteDeleteRequest,
+  bulkDeleteDeleteRequests,
   getEditRequests,
   createEditRequest,
   updateEditRequestStatus,

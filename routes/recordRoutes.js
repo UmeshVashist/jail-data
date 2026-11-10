@@ -101,10 +101,9 @@ router.put('/remark-options', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/records/remark-options - Delete remark option (Admin Only)
-router.delete('/remark-options', requireAuth, requireAdmin, async (req, res) => {
+const handleDeleteRemarkOpt = async (req, res) => {
   try {
-    const { optionValue } = req.body;
-    const cleanVal = (optionValue || '').trim();
+    const cleanVal = ((req.body && req.body.optionValue) || (req.query && req.query.optionValue) || '').trim();
     if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await deleteRemarkOption(cleanVal);
@@ -112,7 +111,9 @@ router.delete('/remark-options', requireAuth, requireAdmin, async (req, res) => 
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting remark option: ' + err.message });
   }
-});
+};
+router.delete('/remark-options', requireAuth, requireAdmin, handleDeleteRemarkOpt);
+router.post('/remark-options/delete', requireAuth, requireAdmin, handleDeleteRemarkOpt);
 
 // GET /api/records/delete-options - Fetch delete request reason options
 router.get('/delete-options', requireAuth, async (req, res) => {
@@ -154,10 +155,9 @@ router.put('/delete-options', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/records/delete-options - Delete delete option (Admin Only)
-router.delete('/delete-options', requireAuth, requireAdmin, async (req, res) => {
+const handleDeleteDelOpt = async (req, res) => {
   try {
-    const { optionValue } = req.body;
-    const cleanVal = (optionValue || '').trim();
+    const cleanVal = ((req.body && req.body.optionValue) || (req.query && req.query.optionValue) || '').trim();
     if (!cleanVal) return res.status(400).json({ success: false, message: 'Option value is required.' });
 
     await deleteDeleteOption(cleanVal);
@@ -165,7 +165,9 @@ router.delete('/delete-options', requireAuth, requireAdmin, async (req, res) => 
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting delete option: ' + err.message });
   }
-});
+};
+router.delete('/delete-options', requireAuth, requireAdmin, handleDeleteDelOpt);
+router.post('/delete-options/delete', requireAuth, requireAdmin, handleDeleteDelOpt);
 
 // GET /api/records/check-pid/:pid - Check if PID already exists in database
 router.get('/check-pid/:pid', requireAuth, async (req, res) => {
@@ -778,9 +780,14 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/records/:id - Delete Record
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const rowIndex = parseInt(req.params.id, 10);
-    const records = await getRecords();
-    const existingRecord = records.find(r => r.id === rowIndex || r.rowIndex === rowIndex);
+    const rawId = req.params.id;
+    const rowIndex = parseInt(rawId, 10);
+    const records = await getRecords(false, true);
+    const existingRecord = records.find(r =>
+      (!isNaN(rowIndex) && (Number(r.id) === rowIndex || Number(r.rowIndex) === rowIndex)) ||
+      String(r.id) === String(rawId) ||
+      String(r.rowIndex) === String(rawId)
+    );
 
     if (!existingRecord) {
       return res.status(404).json({ success: false, message: 'Record not found.' });
@@ -790,7 +797,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'You do not have permission to delete this record (Only records created by yourself within 12 hours can be deleted).' });
     }
 
-    await deleteRecord(rowIndex);
+    await deleteRecord(existingRecord.id || existingRecord.rowIndex || rawId);
 
     res.json({ success: true, message: 'Record deleted successfully.' });
   } catch (err) {

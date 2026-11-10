@@ -8,13 +8,15 @@ const {
   getRecords, 
   addRecord,
   deleteRecord, 
+  bulkDeleteRecords,
   softDeleteRecord,
   restoreRecord,
   getDeleteRequests, 
   getEditRequests,
   createDeleteRequest, 
   updateDeleteRequestStatus, 
-  deleteDeleteRequest 
+  deleteDeleteRequest,
+  bulkDeleteDeleteRequests
 } = require('../config/cloudflareStorage');
 const { requireAuth, requireDeleteRequestPermission, requireAdmin } = require('../middleware/auth');
 
@@ -161,7 +163,7 @@ const handleApproveDelete = async (req, res) => {
   try {
     const rawId = req.params.id;
     const requestId = parseInt(rawId, 10);
-    const allRequests = await getDeleteRequests();
+    const allRequests = await getDeleteRequests(true);
     const targetReq = allRequests.find(r => 
       r.id === requestId || 
       r.rowIndex === requestId || 
@@ -178,7 +180,7 @@ const handleApproveDelete = async (req, res) => {
     }
 
     // Soft delete the record so it is hidden from active Data Records/Dashboard, but retained in database
-    const records = await getRecords(true);
+    const records = await getRecords(true, true);
     let targetRecord = null;
     if (targetReq.pid) {
       targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
@@ -220,7 +222,7 @@ const handlePermanentDeleteSingle = async (req, res) => {
   try {
     const rawId = req.params.id;
     const requestId = parseInt(rawId, 10);
-    const allRequests = await getDeleteRequests();
+    const allRequests = await getDeleteRequests(true);
     const targetReq = allRequests.find(r => 
       r.id === requestId || 
       r.rowIndex === requestId || 
@@ -229,7 +231,7 @@ const handlePermanentDeleteSingle = async (req, res) => {
       String(r.recordId) === String(rawId)
     );
 
-    const records = await getRecords(true);
+    const records = await getRecords(true, true);
     let targetRecord = null;
     if (targetReq && targetReq.pid) {
       targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
@@ -279,8 +281,10 @@ const handleBulkPermanentDelete = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No record IDs provided.' });
     }
 
-    const allRequests = await getDeleteRequests();
-    const records = await getRecords(true);
+    const allRequests = await getDeleteRequests(true);
+    const records = await getRecords(true, true);
+    const recordIdsToDelete = [];
+    const requestIdsToDelete = [];
     let deletedCount = 0;
 
     for (const idStr of ids) {
@@ -312,14 +316,21 @@ const handleBulkPermanentDelete = async (req, res) => {
       }
 
       if (targetRecord) {
-        await deleteRecord(targetRecord.id || targetRecord.rowIndex);
+        recordIdsToDelete.push(targetRecord.id || targetRecord.rowIndex);
       }
       if (targetReq) {
-        await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+        requestIdsToDelete.push(targetReq.id || targetReq.rowIndex);
       } else if (!isNaN(requestId)) {
-        await deleteDeleteRequest(requestId).catch(() => {});
+        requestIdsToDelete.push(requestId);
       }
       deletedCount++;
+    }
+
+    if (recordIdsToDelete.length > 0) {
+      await bulkDeleteRecords(recordIdsToDelete);
+    }
+    if (requestIdsToDelete.length > 0) {
+      await bulkDeleteDeleteRequests(requestIdsToDelete);
     }
 
     res.json({ success: true, message: `Selected ${deletedCount} record(s) permanently deleted from the database.` });
@@ -336,7 +347,7 @@ const handleRestoreSingle = async (req, res) => {
   try {
     const rawId = req.params.id;
     const requestId = parseInt(rawId, 10);
-    const allRequests = await getDeleteRequests();
+    const allRequests = await getDeleteRequests(true);
     const targetReq = allRequests.find(r => 
       r.id === requestId || 
       r.rowIndex === requestId || 
@@ -345,7 +356,7 @@ const handleRestoreSingle = async (req, res) => {
       String(r.recordId) === String(rawId)
     );
 
-    const records = await getRecords(true);
+    const records = await getRecords(true, true);
     let targetRecord = null;
     if (targetReq && targetReq.pid) {
       targetRecord = records.find(r => r.pid && String(r.pid).trim() === String(targetReq.pid).trim());
@@ -409,8 +420,9 @@ const handleBulkRestore = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No record IDs provided.' });
     }
 
-    const allRequests = await getDeleteRequests();
-    const records = await getRecords(true);
+    const allRequests = await getDeleteRequests(true);
+    const records = await getRecords(true, true);
+    const requestIdsToDelete = [];
     let restoredCount = 0;
 
     for (const idStr of ids) {
@@ -459,11 +471,15 @@ const handleBulkRestore = async (req, res) => {
       }
 
       if (targetReq) {
-        await deleteDeleteRequest(targetReq.id || targetReq.rowIndex);
+        requestIdsToDelete.push(targetReq.id || targetReq.rowIndex);
       } else if (!isNaN(requestId)) {
-        await deleteDeleteRequest(requestId).catch(() => {});
+        requestIdsToDelete.push(requestId);
       }
       restoredCount++;
+    }
+
+    if (requestIdsToDelete.length > 0) {
+      await bulkDeleteDeleteRequests(requestIdsToDelete);
     }
 
     res.json({ success: true, message: `Selected ${restoredCount} record(s) restored to active data successfully.` });
@@ -479,7 +495,7 @@ const handleRejectDelete = async (req, res) => {
   try {
     const rawId = req.params.id;
     const requestId = parseInt(rawId, 10);
-    const allRequests = await getDeleteRequests();
+    const allRequests = await getDeleteRequests(true);
     const targetReq = allRequests.find(r => 
       r.id === requestId || 
       r.rowIndex === requestId || 
@@ -510,7 +526,7 @@ const handleWithdrawDelete = async (req, res) => {
   try {
     const rawId = req.params.id;
     const requestId = parseInt(rawId, 10);
-    const allRequests = await getDeleteRequests();
+    const allRequests = await getDeleteRequests(true);
     const targetReq = allRequests.find(r => 
       r.id === requestId || 
       r.rowIndex === requestId || 

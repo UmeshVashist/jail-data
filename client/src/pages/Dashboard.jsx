@@ -31,6 +31,7 @@ export default function Dashboard() {
   // Modals state
   const [addRecordOpen, setAddRecordOpen] = useState(false);
   const [todayModalOpen, setTodayModalOpen] = useState(false);
+  const [todayModalRefreshKey, setTodayModalRefreshKey] = useState(0);
   const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState(null);
   const [editRecord, setEditRecord] = useState(null);
@@ -75,6 +76,7 @@ export default function Dashboard() {
         )
       }));
     }
+    setTodayModalRefreshKey(k => k + 1);
     fetchDashboardData();
   };
 
@@ -91,6 +93,7 @@ export default function Dashboard() {
         )
       }));
     }
+    setTodayModalRefreshKey(k => k + 1);
     fetchDashboardData();
   };
 
@@ -356,6 +359,7 @@ export default function Dashboard() {
       <TodayRecordsModal
         isOpen={todayModalOpen}
         onClose={() => setTodayModalOpen(false)}
+        refreshKey={todayModalRefreshKey}
         onViewRecord={(rec) => setViewRecord(rec)}
         onEditRecord={(rec) => setEditRecord(rec)}
         onRequestEdit={(rec) => setReqEditRecord(rec)}
